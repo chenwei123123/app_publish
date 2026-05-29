@@ -1,0 +1,37 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/app_publish_prod?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+app:
+  storage-root: ${APP_STORAGE_ROOT:storage/prod}
+  store-api:
+    stores:
+      huawei:
+        mock-enabled: ${STORE_HUAWEI_MOCK_ENABLED:false}
+      xiaomi:
+        mock-enabled: ${STORE_XIAOMI_MOCK_ENABLED:false}
+      oppo:
+        mock-enabled: ${STORE_OPPO_MOCK_ENABLED:false}
+      vivo:
+        # vivo 默认使用正式环境地址，可通过 STORE_VIVO_SANDBOX_ENABLED 覆盖
+        mock-enabled: ${STORE_VIVO_MOCK_ENABLED:false}
+        sandbox-enabled: ${STORE_VIVO_SANDBOX_ENABLED:false}
+      yingyongbao:
+        mock-enabled: ${STORE_YINGYONGBAO_MOCK_ENABLED:false}
+      sanxing:
+        mock-enabled: ${STORE_SANXING_MOCK_ENABLED:false}
+      rongyao:
+        mock-enabled: ${STORE_RONGYAO_MOCK_ENABLED:false}
+
+logging:
+  level:
+    root: INFO
+    com.app.publishservice: INFO
+    com.app.publishservice.repository: ${MYBATIS_SQL_LOG_LEVEL:INFO}
+    org.apache.ibatis: ${MYBATIS_SQL_LOG_LEVEL:INFO}

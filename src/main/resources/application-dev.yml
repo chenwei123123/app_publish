@@ -1,0 +1,37 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/app_publish?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+app:
+  storage-root: ${APP_STORAGE_ROOT:storage/dev}
+  store-api:
+    stores:
+      huawei:
+        mock-enabled: ${STORE_HUAWEI_MOCK_ENABLED:true}
+      xiaomi:
+        mock-enabled: ${STORE_XIAOMI_MOCK_ENABLED:true}
+      oppo:
+        mock-enabled: ${STORE_OPPO_MOCK_ENABLED:true}
+      vivo:
+        # vivo 默认使用测试环境地址，可通过 STORE_VIVO_SANDBOX_ENABLED 覆盖
+        mock-enabled: ${STORE_VIVO_MOCK_ENABLED:true}
+        sandbox-enabled: ${STORE_VIVO_SANDBOX_ENABLED:true}
+      yingyongbao:
+        mock-enabled: ${STORE_YINGYONGBAO_MOCK_ENABLED:true}
+      sanxing:
+        mock-enabled: ${STORE_SANXING_MOCK_ENABLED:true}
+      rongyao:
+        mock-enabled: ${STORE_RONGYAO_MOCK_ENABLED:true}
+
+logging:
+  level:
+    root: INFO
+    com.app.publishservice: DEBUG
+    com.app.publishservice.repository: DEBUG
+    org.apache.ibatis: DEBUG

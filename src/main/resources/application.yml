@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: app-publish-service
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:@env.name@}
+  servlet:
+    multipart:
+      max-file-size: 2GB
+      max-request-size: 2GB
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    url: /openapi.yaml
+
+app:
+  token-refresh-ahead-seconds: 300
+  review-poll-delay-ms: 60000
+  review-auto-pass-seconds: 180
+  package-repository:
+    base-url: ${PACKAGE_REPOSITORY_BASE_URL:}
+  store-api:
+    default-timeout-seconds: 15
+
+logging:
+  file:
+    path: ${LOG_PATH:logs}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId}] %logger{36} - %msg%n"
+  logback:
+    rollingpolicy:
+      max-file-size: 50MB
+      max-history: 30
+      total-size-cap: 2GB

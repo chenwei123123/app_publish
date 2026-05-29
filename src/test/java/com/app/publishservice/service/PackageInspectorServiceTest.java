@@ -1,0 +1,44 @@
+package com.app.publishservice.service;
+
+import com.app.publishservice.service.model.PackageMetadata;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class PackageInspectorServiceTest {
+
+    private final PackageInspectorService packageInspectorService = new PackageInspectorService(new ObjectMapper());
+
+    @Test
+    void shouldReadMetadataFromArchive() throws Exception {
+        Path tempFile = Files.createTempFile("demo-1.2.3-build45-reinforced", ".apk");
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(Files.newOutputStream(tempFile), StandardCharsets.UTF_8)) {
+            zipOutputStream.putNextEntry(new ZipEntry("app-publish-metadata.json"));
+            zipOutputStream.write("""
+                    {
+                      "versionName": "1.2.3",
+                      "versionCode": 45,
+                      "reinforced": true
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
+            zipOutputStream.closeEntry();
+        }
+
+        PackageMetadata metadata = packageInspectorService.inspect(tempFile);
+
+        assertEquals("apk", metadata.packageType());
+        assertEquals("1.2.3", metadata.versionName());
+        assertEquals(45, metadata.versionCode());
+        assertTrue(metadata.reinforced());
+        assertEquals(64, metadata.checksum().length());
+    }
+}
+

@@ -1,0 +1,28 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:app_publish;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-h2.sql
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    banner: false
+
+app:
+  storage-root: target/test-storage
+  token-refresh-ahead-seconds: 300
+  review-poll-delay-ms: 60000
+  review-auto-pass-seconds: 1
+  store-api:
+    default-timeout-seconds: 1
+    stores:
+      huawei:
+        mock-enabled: true

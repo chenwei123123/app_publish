@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.app.publishservice.repository.AppReleaseRecordRepository">
+
+    <resultMap id="AppReleaseRecordResultMap" type="com.app.publishservice.domain.entity.AppReleaseRecord">
+        <id property="id" column="id"/>
+        <result property="appId" column="app_id"/>
+        <result property="versionId" column="version_id"/>
+        <result property="storeType" column="store_type"
+                javaType="com.app.publishservice.domain.enums.StoreType"
+                typeHandler="com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler"/>
+        <result property="releaseMode" column="release_mode"
+                javaType="com.app.publishservice.domain.enums.ReleaseMode"
+                typeHandler="com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler"/>
+        <result property="releaseType" column="release_type"/>
+        <result property="grayPercent" column="gray_percent"/>
+        <result property="grayStartTime" column="gray_start_time"/>
+        <result property="grayEndTime" column="gray_end_time"/>
+        <result property="releaseStatus" column="release_status"
+                javaType="com.app.publishservice.domain.enums.ReleaseStatus"
+                typeHandler="com.baomidou.mybatisplus.core.handlers.MybatisEnumTypeHandler"/>
+        <result property="storeReleaseId" column="store_release_id"/>
+        <result property="rejectReason" column="reject_reason"/>
+        <result property="apiRequestLog" column="api_request_log"/>
+        <result property="apiResponseLog" column="api_response_log"/>
+        <result property="releaseTime" column="release_time"/>
+        <result property="finishTime" column="finish_time"/>
+        <result property="createUser" column="create_user"/>
+        <result property="updateUser" column="update_user"/>
+        <result property="appName" column="app_name"/>
+        <result property="packageName" column="package_name"/>
+        <result property="appDescription" column="app_description"/>
+        <result property="versionCode" column="version_code"/>
+    </resultMap>
+
+    <select id="selectReleaseRecordPage" resultMap="AppReleaseRecordResultMap">
+        SELECT
+            r.id,
+            r.app_id,
+            r.version_id,
+            r.store_type,
+            r.release_mode,
+            r.release_type,
+            r.gray_percent,
+            r.gray_start_time,
+            r.gray_end_time,
+            r.release_status,
+            r.store_release_id,
+            r.reject_reason,
+            r.api_request_log,
+            r.api_response_log,
+            r.release_time,
+            r.finish_time,
+            r.create_user,
+            r.update_user,
+            ai.app_name,
+            ai.package_name,
+            ai.app_description,
+            av.version_code
+        FROM app_release_record r
+        LEFT JOIN app_info ai ON ai.id = r.app_id
+        LEFT JOIN app_version av ON av.id = r.version_id AND av.app_id = r.app_id
+        <where>
+            <if test="key != null and key != ''">
+                AND (
+                    r.store_type LIKE CONCAT('%', #{key}, '%')
+                    OR ai.app_name LIKE CONCAT('%', #{key}, '%')
+                    OR ai.package_name LIKE CONCAT('%', #{key}, '%')
+                    OR ai.app_description LIKE CONCAT('%', #{key}, '%')
+                    OR CONCAT('', av.version_code) LIKE CONCAT('%', #{key}, '%')
+                )
+            </if>
+
+            <if test="appId != null">
+               AND  ai.id = #{appId}
+            </if>
+        </where>
+        ORDER BY r.finish_time DESC
+    </select>
+
+    <select id="selectReleaseRecordDetail" resultMap="AppReleaseRecordResultMap">
+        SELECT
+            r.id,
+            r.app_id,
+            r.version_id,
+            r.store_type,
+            r.release_mode,
+            r.release_type,
+            r.gray_percent,
+            r.gray_start_time,
+            r.gray_end_time,
+            r.release_status,
+            r.store_release_id,
+            r.reject_reason,
+            r.api_request_log,
+            r.api_response_log,
+            r.release_time,
+            r.finish_time,
+            r.create_user,
+            r.update_user,
+            ai.app_name,
+            ai.package_name,
+            ai.app_description,
+            av.version_code
+        FROM app_release_record r
+        LEFT JOIN app_info ai ON ai.id = r.app_id
+        LEFT JOIN app_version av ON av.id = r.version_id AND av.app_id = r.app_id
+        WHERE r.id = #{releaseId}
+        LIMIT 1
+    </select>
+
+    <select id="selectReleaseRecordsByAppId" resultMap="AppReleaseRecordResultMap">
+        SELECT
+            r.id,
+            r.app_id,
+            r.version_id,
+            r.store_type,
+            r.release_mode,
+            r.release_type,
+            r.gray_percent,
+            r.gray_start_time,
+            r.gray_end_time,
+            r.release_status,
+            r.store_release_id,
+            r.reject_reason,
+            r.api_request_log,
+            r.api_response_log,
+            r.release_time,
+            r.finish_time,
+            r.create_user,
+            r.update_user,
+            ai.app_name,
+            ai.package_name,
+            ai.app_description,
+            av.version_code
+        FROM app_release_record r
+        LEFT JOIN app_info ai ON ai.id = r.app_id
+        LEFT JOIN app_version av ON av.id = r.version_id AND av.app_id = r.app_id
+        WHERE r.app_id = #{appId}
+        ORDER BY r.release_time DESC, r.finish_time DESC, r.id DESC
+    </select>
+
+    <select id="selectReviewingReleaseRecords" resultMap="AppReleaseRecordResultMap">
+        SELECT
+            r.id,
+            r.app_id,
+            r.version_id,
+            r.store_type,
+            r.release_mode,
+            r.release_type,
+            r.gray_percent,
+            r.gray_start_time,
+            r.gray_end_time,
+            r.release_status,
+            r.store_release_id,
+            r.reject_reason,
+            r.api_request_log,
+            r.api_response_log,
+            r.release_time,
+            r.finish_time,
+            r.create_user,
+            r.update_user,
+            ai.app_name,
+            ai.package_name,
+            ai.app_description,
+            av.version_code
+        FROM app_release_record r
+        LEFT JOIN app_info ai ON ai.id = r.app_id
+        LEFT JOIN app_version av ON av.id = r.version_id AND av.app_id = r.app_id
+        WHERE r.release_status = #{releaseStatus}
+        ORDER BY r.id ASC
+    </select>
+</mapper>
