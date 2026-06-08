@@ -42,7 +42,9 @@ CREATE TABLE IF NOT EXISTS app_version (
     app_id BIGINT NOT NULL,
     version_name VARCHAR(30) NOT NULL,
     version_code INT NOT NULL DEFAULT 0,
-    package_url VARCHAR(255),
+    package_url_low VARCHAR(255),
+    package_url_high VARCHAR(255),
+    build_code VARCHAR(64),
     update_log CLOB,
     is_reinforce TINYINT NOT NULL DEFAULT 0,
     create_user VARCHAR(255),
@@ -107,3 +109,29 @@ CREATE TABLE IF NOT EXISTS app_release_task_log (
     CONSTRAINT fk_release_task_log_record FOREIGN KEY (release_record_id) REFERENCES app_release_record (id)
 );
 CREATE INDEX IF NOT EXISTS idx_release_task_log_record ON app_release_task_log (release_record_id);
+
+CREATE TABLE IF NOT EXISTS app_store_request_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    release_record_id BIGINT,
+    store_config_id BIGINT NOT NULL,
+    store_type VARCHAR(20) NOT NULL,
+    action VARCHAR(100) NOT NULL,
+    request_order BIGINT,
+    request_method VARCHAR(10) NOT NULL,
+    request_url VARCHAR(500) NOT NULL,
+    request_params CLOB,
+    request_body CLOB,
+    response_status_code INT,
+    response_body CLOB,
+    request_status VARCHAR(20) NOT NULL,
+    error_message VARCHAR(1000),
+    duration_ms BIGINT,
+    create_user VARCHAR(255),
+    update_user VARCHAR(255),
+    create_time TIMESTAMP NOT NULL,
+    update_time TIMESTAMP NOT NULL,
+    CONSTRAINT fk_store_request_log_release_record FOREIGN KEY (release_record_id) REFERENCES app_release_record (id),
+    CONSTRAINT fk_store_request_log_store_config FOREIGN KEY (store_config_id) REFERENCES app_store_config (id)
+);
+CREATE INDEX IF NOT EXISTS idx_store_request_log_release_order ON app_store_request_log (release_record_id, request_order);
+CREATE INDEX IF NOT EXISTS idx_store_request_log_store_type_time ON app_store_request_log (store_type, create_time);

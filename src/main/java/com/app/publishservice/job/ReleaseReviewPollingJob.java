@@ -17,7 +17,7 @@ public class ReleaseReviewPollingJob {
         this.releaseOrchestrationService = releaseOrchestrationService;
     }
 
-    @Scheduled(fixedDelayString = "${app.review-poll-delay-ms:60000}")
+    @Scheduled(fixedDelayString = "${app.review-poll-delay-ms:600000000}")
     public void poll() {
         log.debug("Trigger release review polling job");
         releaseOrchestrationService.pollAuditResults();

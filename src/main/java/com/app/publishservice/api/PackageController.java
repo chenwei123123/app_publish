@@ -31,7 +31,9 @@ public class PackageController {
 
     @GetMapping
     @Operation(summary = "查询版本列表", description = "查询指定应用下的所有安装包版本")
-    public ApiResponse<List<AppVersionResponse>> list(@Parameter(description = "应用 ID", required = true) @PathVariable Long appId) {
+    public ApiResponse<List<AppVersionResponse>> list(
+            @Parameter(description = "应用 ID", required = true) @PathVariable Long appId
+    ) {
         return ApiResponse.success(packageVersionService.listVersions(appId));
     }
 

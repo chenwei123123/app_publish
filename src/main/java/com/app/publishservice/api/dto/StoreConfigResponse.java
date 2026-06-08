@@ -4,10 +4,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "渠道配置响应")
+@Schema(description = "应用市场账户配置响应")
 public record StoreConfigResponse(
-        @Schema(description = "渠道配置 ID") Long id,
-        @Schema(description = "渠道类型") String storeType,
+        @Schema(description = "应用市场账户 ID") Long id,
+        @Schema(description = "应用市场名称") String storeType,
         @Schema(description = "开发者账号名称") String accountName,
         @Schema(description = "联系邮箱") String email,
         @Schema(description = "联系电话") String phone,
@@ -17,7 +17,7 @@ public record StoreConfigResponse(
         @Schema(description = "小米私钥") String miPrivateKey,
         @Schema(description = "固定 Token") String token,
         @Schema(description = "IP 白名单") String ipWhitelist,
-        @Schema(description = "API 状态") Integer apiStatus,
+        @Schema(description = "API 状态：1=启用，0=禁用") Integer apiStatus,
         @Schema(description = "创建人") String createUser,
         @Schema(description = "更新人") String updateUser,
         @Schema(description = "创建时间") LocalDateTime createTime,

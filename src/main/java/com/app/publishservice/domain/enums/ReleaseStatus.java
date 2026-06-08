@@ -6,6 +6,7 @@ public enum ReleaseStatus {
     DRAFT("draft"),
     API_PENDING("api_pending"),
     AUDITING("auditing"),
+    
     PASS("pass"),
     REJECT("reject"),
     OFFLINE("offline");

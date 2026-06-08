@@ -63,6 +63,8 @@ public class AppProperties {
     public static class PackageRepositoryProperties {
 
         private String baseUrl;
+        private boolean streamUploadEnabled;
+        private String authorization;
 
         public String getBaseUrl() {
             return baseUrl;
@@ -70,6 +72,22 @@ public class AppProperties {
 
         public void setBaseUrl(String baseUrl) {
             this.baseUrl = baseUrl;
+        }
+
+        public boolean isStreamUploadEnabled() {
+            return streamUploadEnabled;
+        }
+
+        public void setStreamUploadEnabled(boolean streamUploadEnabled) {
+            this.streamUploadEnabled = streamUploadEnabled;
+        }
+
+        public String getAuthorization() {
+            return authorization;
+        }
+
+        public void setAuthorization(String authorization) {
+            this.authorization = authorization;
         }
     }
 }

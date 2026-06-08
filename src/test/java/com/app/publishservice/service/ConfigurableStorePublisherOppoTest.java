@@ -16,6 +16,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.web.client.RestClient;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -64,7 +65,7 @@ class ConfigurableStorePublisherOppoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
             TokenPayload payload = publisher.refreshToken(oppoStoreConfig());
 
             assertEquals("access_token", payload.tokenType());
@@ -142,7 +143,7 @@ class ConfigurableStorePublisherOppoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
             StoreSubmitResult result = publisher.submitRelease(oppoStoreConfig(), appVersion(apk), new AppReleaseRecord(), "oppo-access-token");
 
             assertEquals("task-123", result.storeReleaseId());
@@ -204,7 +205,7 @@ class ConfigurableStorePublisherOppoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
             AppReleaseRecord record = new AppReleaseRecord();
             record.setId(11L);
             record.setPackageName("com.demo.oppo.app");

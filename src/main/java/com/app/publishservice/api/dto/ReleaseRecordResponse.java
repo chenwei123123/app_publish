@@ -15,7 +15,7 @@ public record ReleaseRecordResponse(
         @Schema(description = "版本号") Integer versionCode,
         @Schema(description = "商店类型") String storeType,
         @Schema(description = "发布方式") String releaseMode,
-        @Schema(description = "发布类型：1全量 2分阶段发布") Long releaseType,
+        @Schema(description = "发布类型：1=全量发布，2=分阶段发布") Long releaseType,
         @Schema(description = "灰度比例") Long grayPercent,
         @Schema(description = "灰度开始时间") LocalDateTime grayStartTime,
         @Schema(description = "灰度结束时间") LocalDateTime grayEndTime,

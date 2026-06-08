@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Schema(description = "发布提交请求")
+@Schema(description = "发版提交请求")
 public class ReleaseSubmitRequest {
 
     @NotNull
@@ -21,7 +21,7 @@ public class ReleaseSubmitRequest {
     @Schema(description = "发布模式，默认 api")
     private String releaseMode = "api";
 
-    @Schema(description = "发布类型：1全量 2分阶段发布")
+    @Schema(description = "发布类型：1=全量发布，2=分阶段发布")
     private Long releaseType = 1L;
 
     @Schema(description = "灰度比例，仅分阶段发布时生效")

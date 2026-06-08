@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -26,6 +27,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -53,9 +56,17 @@ class QueryApiIntegrationTest {
 
     @Test
     void shouldExposeSwaggerUiAndOpenapiYaml() throws Exception {
-        mockMvc.perform(get("/openapi.yaml"))
+        MvcResult openapiResult = mockMvc.perform(get("/openapi.yaml"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("openapi: 3.0.3")));
+                .andReturn();
+        String openapiYaml = new String(openapiResult.getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
+        assertTrue(openapiYaml.contains("openapi: 3.0.3"));
+        assertTrue(openapiYaml.contains("url: /"));
+        assertFalse(openapiYaml.contains("http://localhost:8080"));
+        assertTrue(openapiYaml.contains("description: 应用请求体"));
+        assertTrue(openapiYaml.contains("description: 响应消息"));
+        assertTrue(openapiYaml.contains("description: 构建号"));
+        assertTrue(openapiYaml.contains("description: 32 位安装包访问地址"));
 
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());
@@ -142,7 +153,7 @@ class QueryApiIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.storeType").value(StoreType.OPPO软件商店.getValue()))
+                .andExpect(jsonPath("$.data.storeType").value("oppo"))
                 .andExpect(jsonPath("$.data.accountName").value("backup-account"));
 
         MockMultipartFile multipartFile = new MockMultipartFile(
@@ -196,13 +207,15 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.size").value(1))
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.pages").value(1))
-                .andExpect(jsonPath("$.data.records[0].storeType").value("华为应用市场"))
+                .andExpect(jsonPath("$.data.records[0].storeType").value("huawei"))
                 .andExpect(jsonPath("$.data.records[0].token").value("demo-token-updated"));
 
         mockMvc.perform(get("/api/apps/{appId}/versions", app.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(uploadResponse.versionId()))
-                .andExpect(jsonPath("$.data[0].versionCode").value(101));
+                .andExpect(jsonPath("$.data[0].versionCode").value(101))
+                .andExpect(jsonPath("$.data[0].packageUrlLow").value(uploadResponse.storedPath()))
+                .andExpect(jsonPath("$.data[0].packageUrlHigh").isEmpty());
 
         mockMvc.perform(get("/api/apps/{appId}/versions/{versionId}", app.id(), uploadResponse.versionId()))
                 .andExpect(status().isOk())
@@ -247,7 +260,7 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data[1].action").value("SUBMIT_REVIEW"));
 
         Long secondConfigId = appManagementService.getStoreConfigResponses().stream()
-                .filter(config -> "OPPO软件商店".equals(config.storeType()))
+                .filter(config -> "oppo".equals(config.storeType()))
                 .findFirst()
                 .orElseThrow()
                 .id();
@@ -265,7 +278,7 @@ class QueryApiIntegrationTest {
 
         mockMvc.perform(get("/api/store-configs/{configId}", firstConfigId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.storeType").value("华为应用市场"));
+                .andExpect(jsonPath("$.data.storeType").value("huawei"));
     }
 
     @Test
@@ -275,6 +288,7 @@ class QueryApiIntegrationTest {
         request.setPackageName("com.demo.init.version.app");
         request.setAppType(1);
         request.setVersionCode(100);
+        request.setBuildCode("b1843");
 
         AppResponse app = appManagementService.saveApp(request);
 
@@ -283,8 +297,30 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.id").value(app.id()))
                 .andExpect(jsonPath("$.data.versions[0].versionCode").value(100))
                 .andExpect(jsonPath("$.data.versions[0].versionName").value("100"))
+                .andExpect(jsonPath("$.data.versions[0].buildCode").value("b1843"))
                 .andExpect(jsonPath("$.data.versions[0].updateLog").value("创建应用时自动初始化版本记录"))
-                .andExpect(jsonPath("$.data.versions[0].packageUrl").isEmpty());
+                .andExpect(jsonPath("$.data.versions[0].packageUrl").isEmpty())
+                .andExpect(jsonPath("$.data.versions[0].packageUrlLow").isEmpty())
+                .andExpect(jsonPath("$.data.versions[0].packageUrlHigh").isEmpty());
+
+        mockMvc.perform(put("/api/apps/{appId}", app.id())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "appName": "Demo Init Version App",
+                                  "packageName": "com.demo.init.version.app",
+                                  "appType": 1,
+                                  "versionCode": 100,
+                                  "buildCode": "b1844"
+                                }
+                                """))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/apps/{appId}", app.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.versions[0].versionCode").value(100))
+                .andExpect(jsonPath("$.data.versions[0].versionName").value("100"))
+                .andExpect(jsonPath("$.data.versions[0].buildCode").value("b1844"));
     }
 
     private byte[] buildArchive(String versionName, int versionCode, boolean reinforced) throws Exception {

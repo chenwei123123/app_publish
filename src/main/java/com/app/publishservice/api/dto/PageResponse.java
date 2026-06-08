@@ -14,7 +14,8 @@ public record PageResponse<T>(
 ) {
 
     public static <T> PageResponse<T> of(long current, long size, long total, List<T> records) {
-        long pages = size <= 0 ? 0 : (total + size - 1) / size;
-        return new PageResponse<>(current, size, total, pages, records);
+        long safeSize = size <= 0 ? 1 : size;
+        long calculatedPages = total <= 0 ? 0 : (total + safeSize - 1) / safeSize;
+        return new PageResponse<>(current, size, total, calculatedPages, records);
     }
 }

@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -74,7 +75,7 @@ public class AppManagementService {
         appInfo.setUserAgreementUrl(request.getUserAgreementUrl());
         appInfo.setStatus(request.getStatus() == null ? 1 : request.getStatus());
         saveOrUpdate(appInfoRepository, appInfo);
-        initializeAppVersionIfNeeded(appInfo, request.getVersionCode());
+        initializeAppVersionIfNeeded(appInfo, request.getVersionCode(), request.getBuildCode());
         return toResponse(appInfo);
     }
 
@@ -322,7 +323,10 @@ public class AppManagementService {
                 version.getAppId(),
                 version.getVersionName(),
                 version.getVersionCode(),
+                version.getBuildCode(),
                 version.getPackageUrl(),
+                version.getPackageUrlLow(),
+                version.getPackageUrlHigh(),
                 version.getUpdateLog(),
                 version.getIsReinforce() != null && version.getIsReinforce() == 1,
                 version.getCreateUser(),
@@ -389,8 +393,12 @@ public class AppManagementService {
         }
     }
 
-    private void initializeAppVersionIfNeeded(AppInfo appInfo, Integer versionCode) {
+    private void initializeAppVersionIfNeeded(AppInfo appInfo, Integer versionCode, String buildCode) {
+        String normalizedBuildCode = normalizeBuildCode(buildCode);
         if (versionCode == null) {
+            if (buildCode != null) {
+                throw new IllegalArgumentException("buildCode requires versionCode");
+            }
             return;
         }
         if (versionCode < 1) {
@@ -404,6 +412,21 @@ public class AppManagementService {
                         .last("limit 1")
         );
         if (existingVersion != null) {
+            boolean changed = false;
+            String resolvedVersionName = String.valueOf(versionCode);
+            if (!Objects.equals(existingVersion.getVersionName(), resolvedVersionName)) {
+                existingVersion.setVersionName(resolvedVersionName);
+                changed = true;
+            }
+            if (!Objects.equals(existingVersion.getBuildCode(), normalizedBuildCode)) {
+                existingVersion.setBuildCode(normalizedBuildCode);
+                existingVersion.setPackageUrlLow(null);
+                existingVersion.setPackageUrlHigh(null);
+                changed = true;
+            }
+            if (changed) {
+                appVersionRepository.updateById(existingVersion);
+            }
             return;
         }
 
@@ -423,9 +446,17 @@ public class AppManagementService {
         initialVersion.setAppInfo(appInfo);
         initialVersion.setVersionName(String.valueOf(versionCode));
         initialVersion.setVersionCode(versionCode);
+        initialVersion.setBuildCode(normalizedBuildCode);
         initialVersion.setUpdateLog("创建应用时自动初始化版本记录");
         initialVersion.setIsReinforce(0);
         appVersionRepository.insert(initialVersion);
+    }
+
+    private String normalizeBuildCode(String buildCode) {
+        if (!StringUtils.hasText(buildCode)) {
+            return null;
+        }
+        return buildCode.trim();
     }
 
     private long normalizeCurrent(Long current) {

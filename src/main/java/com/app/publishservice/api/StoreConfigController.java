@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/store-configs")
-@Tag(name = "渠道配置", description = "应用商店账号配置的新增、修改、查询和删除接口")
+@Tag(name = "应用商店账号管理配置", description = "应用商店账号配置的新增、修改、查询和删除接口")
 public class StoreConfigController {
 
     private final AppManagementService appManagementService;
@@ -31,7 +31,7 @@ public class StoreConfigController {
     }
 
     @PostMapping
-    @Operation(summary = "创建渠道配置", description = "创建应用商店账号配置")
+    @Operation(summary = "创建应用商店账号", description = "创建应用商店账号配置")
     public ApiResponse<StoreConfigResponse> create(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "渠道配置请求")
             @Valid @RequestBody StoreConfigRequest request
@@ -40,7 +40,7 @@ public class StoreConfigController {
     }
 
     @PutMapping("/{configId}")
-    @Operation(summary = "更新渠道配置", description = "根据配置 ID 更新应用商店账号配置")
+    @Operation(summary = "更新应用商店账号", description = "根据配置 ID 更新应用商店账号配置")
     public ApiResponse<StoreConfigResponse> update(
             @Parameter(description = "配置 ID", required = true) @PathVariable Long configId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "渠道配置请求")
@@ -50,7 +50,7 @@ public class StoreConfigController {
     }
 
     @DeleteMapping("/{configId}")
-    @Operation(summary = "删除渠道配置", description = "根据配置 ID 删除应用商店账号配置")
+    @Operation(summary = "删除应用商店账号", description = "根据配置 ID 删除应用商店账号配置")
     public ApiResponse<Void> delete(
             @Parameter(description = "配置 ID", required = true) @PathVariable Long configId
     ) {
@@ -59,7 +59,7 @@ public class StoreConfigController {
     }
 
     @GetMapping
-    @Operation(summary = "查询渠道配置列表", description = "分页查询应用商店账号配置")
+    @Operation(summary = "查询应用商店账号列表", description = "分页查询应用商店账号配置")
     public ApiResponse<PageResponse<StoreConfigResponse>> list(
             @Parameter(description = "当前页，兼容 pageNum")
             @RequestParam(value = "current", required = false) Long current,
@@ -78,7 +78,7 @@ public class StoreConfigController {
     }
 
     @GetMapping("/{configId}")
-    @Operation(summary = "查询渠道配置详情", description = "根据配置 ID 查询应用商店账号配置")
+    @Operation(summary = "查询应用商店账号详情", description = "根据配置 ID 查询应用商店账号配置")
     public ApiResponse<StoreConfigResponse> get(
             @Parameter(description = "配置 ID", required = true) @PathVariable Long configId
     ) {
@@ -86,7 +86,7 @@ public class StoreConfigController {
     }
 
     @PutMapping("/{configId}/status")
-    @Operation(summary = "更新渠道配置状态", description = "启用或禁用应用商店账号配置")
+    @Operation(summary = "更新应用商店账号状态", description = "启用或禁用应用商店账号配置")
     public ApiResponse<StoreConfigResponse> updateStatus(
             @Parameter(description = "配置 ID", required = true) @PathVariable Long configId,
             @Parameter(description = "API 状态：1=启用，0=禁用", required = true)

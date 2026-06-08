@@ -95,7 +95,20 @@
 
 ## 运行与测试
 
-```bash
-mvn -s settings.xml spring-boot:run
+项目根目录新增了 [`startup`](/D:/app_publish/startup/README.md) 启动目录，统一使用 Windows `bat` 脚本，不再提供 `bash` / `.sh` 启动方式。
+
+启动示例：
+
+```cmd
+startup\start-dev.bat
+startup\start-sit.bat
+startup\start-prod.bat
+startup\stop-dev.bat
+startup\package.bat prod
+```
+
+测试示例：
+
+```cmd
 mvn -s settings.xml test
 ```

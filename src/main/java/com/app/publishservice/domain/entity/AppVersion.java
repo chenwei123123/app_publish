@@ -20,7 +20,14 @@ public class AppVersion {
 
     private Integer versionCode;
 
+    @TableField(exist = false)
     private String packageUrl;
+
+    private String packageUrlLow;
+
+    private String packageUrlHigh;
+
+    private String buildCode;
 
     private String updateLog;
 
@@ -80,11 +87,41 @@ public class AppVersion {
     }
 
     public String getPackageUrl() {
-        return packageUrl;
+        if (hasText(packageUrl)) {
+            return packageUrl;
+        }
+        if (hasText(packageUrlLow)) {
+            return packageUrlLow;
+        }
+        return packageUrlHigh;
     }
 
     public void setPackageUrl(String packageUrl) {
         this.packageUrl = packageUrl;
+    }
+
+    public String getPackageUrlLow() {
+        return packageUrlLow;
+    }
+
+    public void setPackageUrlLow(String packageUrlLow) {
+        this.packageUrlLow = packageUrlLow;
+    }
+
+    public String getPackageUrlHigh() {
+        return packageUrlHigh;
+    }
+
+    public void setPackageUrlHigh(String packageUrlHigh) {
+        this.packageUrlHigh = packageUrlHigh;
+    }
+
+    public String getBuildCode() {
+        return buildCode;
+    }
+
+    public void setBuildCode(String buildCode) {
+        this.buildCode = buildCode;
     }
 
     public String getUpdateLog() {
@@ -125,5 +162,9 @@ public class AppVersion {
 
     public void setCreateTime(LocalDateTime createTime) {
         this.createTime = createTime;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

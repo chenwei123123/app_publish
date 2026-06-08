@@ -28,6 +28,8 @@ app:
   review-auto-pass-seconds: 180
   package-repository:
     base-url: ${PACKAGE_REPOSITORY_BASE_URL:}
+    stream-upload-enabled: ${PACKAGE_REPOSITORY_STREAM_UPLOAD_ENABLED:false}
+    authorization: ${PACKAGE_REPOSITORY_AUTHORIZATION:}
   store-api:
     default-timeout-seconds: 15
 

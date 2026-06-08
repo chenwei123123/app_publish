@@ -3,14 +3,14 @@ package com.app.publishservice.api.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "全局渠道配置请求")
+@Schema(description = "应用商店账号配置请求")
 public class StoreConfigRequest {
 
     @Schema(description = "用于更新请求的渠道配置 ID")
     private Long id;
 
     @NotBlank
-    @Schema(description = "渠道类型，例如 vivo 或 xiaomi", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "应用市场名称，例如 vivo 或 xiaomi", requiredMode = Schema.RequiredMode.REQUIRED)
     private String storeType;
 
     @Schema(description = "开发者账号名称")

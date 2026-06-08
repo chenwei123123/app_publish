@@ -2,6 +2,7 @@ package com.app.publishservice.api;
 
 import com.app.publishservice.api.dto.ApiResponse;
 import com.app.publishservice.common.exception.NotFoundException;
+import com.app.publishservice.common.exception.StoreApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -41,6 +42,19 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining("; "));
         log.warn("Validation failed, method={}, uri={}, message={}", request.getMethod(), request.getRequestURI(), message);
         return ResponseEntity.badRequest().body(ApiResponse.failure(message));
+    }
+
+    @ExceptionHandler(StoreApiException.class)
+    public ResponseEntity<ApiResponse<Void>> handleStoreApi(StoreApiException ex, HttpServletRequest request) {
+        log.warn(
+                "Upstream store API failed, method={}, uri={}, status={}, message={}",
+                request.getMethod(),
+                request.getRequestURI(),
+                ex.getStatus().value(),
+                ex.getMessage(),
+                ex
+        );
+        return ResponseEntity.status(ex.getStatus()).body(ApiResponse.failure(ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

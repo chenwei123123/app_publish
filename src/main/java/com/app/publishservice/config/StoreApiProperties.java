@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class StoreApiProperties {
 
-    private int defaultTimeoutSeconds = 15;
+    private int defaultTimeoutSeconds = 60*10;
     private Map<String, StoreEndpointProperties> stores = new HashMap<>();
 
     public int getDefaultTimeoutSeconds() {

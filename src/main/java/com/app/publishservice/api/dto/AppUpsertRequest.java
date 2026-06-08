@@ -23,7 +23,7 @@ public class AppUpsertRequest {
     @NotNull
     @Min(1)
     @Max(2)
-    @Schema(description = "应用类型：1=安卓应用，2=iOS 应用", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "应用类型，1=Android 应用，2=iOS 应用", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer appType;
 
     @Schema(description = "应用描述")
@@ -47,10 +47,11 @@ public class AppUpsertRequest {
     @Schema(description = "状态：1=启用，0=禁用")
     private Integer status = 1;
 
-    @Schema(description = "版本号")
+    @Schema(description = "版本号编码")
     private Integer versionCode;
 
-
+    @Schema(description = "构建号")
+    private String buildCode;
 
     public Long getId() {
         return id;
@@ -146,5 +147,13 @@ public class AppUpsertRequest {
 
     public void setVersionCode(Integer versionCode) {
         this.versionCode = versionCode;
+    }
+
+    public String getBuildCode() {
+        return buildCode;
+    }
+
+    public void setBuildCode(String buildCode) {
+        this.buildCode = buildCode;
     }
 }

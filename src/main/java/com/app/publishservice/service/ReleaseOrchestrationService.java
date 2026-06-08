@@ -60,6 +60,7 @@ public class ReleaseOrchestrationService {
     public List<ReleaseRecordResponse> submit(ReleaseSubmitRequest request) {
         log.info("Start release submit, versionId={}, releaseMode={}, stores={}", request.getVersionId(), request.getReleaseMode(), request.getStoreTypes());
         AppVersion version = packageVersionService.requireVersion(request.getVersionId());
+        version = packageVersionService.prepareVersionForSubmit(version);
         List<ReleaseRecordResponse> responses = new ArrayList<>();
         ReleaseMode releaseMode = ReleaseMode.fromCode(request.getReleaseMode());
         Long releaseType = normalizeReleaseType(request.getReleaseType());
@@ -92,22 +93,24 @@ public class ReleaseOrchestrationService {
             releaseLogService.log(record, "CREATE_RELEASE", null, ReleaseStatus.API_PENDING, "Release task created", null);
 
             try {
-                String token = tokenService.getValidToken(storeConfig);
-                StoreSubmitResult result = storePublisher.submitRelease(storeConfig, version, record, token);
-                record.setStoreReleaseId(result.storeReleaseId());
-                record.setApiRequestLog(result.requestLog());
-                record.setApiResponseLog(result.responseLog());
-                record.setReleaseStatus(ReleaseStatus.AUDITING);
-                record.setReleaseTime(LocalDateTime.now());
-                releaseRecordRepository.updateById(record);
-                log.info(
-                        "Submit review success, releaseId={}, storeType={}, storeReleaseId={}, status={}",
-                        record.getId(),
-                        storeType.getCode(),
-                        record.getStoreReleaseId(),
-                        record.getReleaseStatus().getCode()
-                );
-                releaseLogService.log(record, "SUBMIT_REVIEW", ReleaseStatus.API_PENDING, ReleaseStatus.AUDITING, result.message(), result.responseLog());
+                try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record.getId())) {
+                    String token = tokenService.getValidToken(storeConfig);
+                    StoreSubmitResult result = storePublisher.submitRelease(storeConfig, version, record, token);
+                    record.setStoreReleaseId(result.storeReleaseId());
+                    record.setApiRequestLog(result.requestLog());
+                    record.setApiResponseLog(result.responseLog());
+                    record.setReleaseStatus(ReleaseStatus.AUDITING);
+                    record.setReleaseTime(LocalDateTime.now());
+                    releaseRecordRepository.updateById(record);
+                    log.info(
+                            "Submit review success, releaseId={}, storeType={}, storeReleaseId={}, status={}",
+                            record.getId(),
+                            storeType.getCode(),
+                            record.getStoreReleaseId(),
+                            record.getReleaseStatus().getCode()
+                    );
+                    releaseLogService.log(record, "SUBMIT_REVIEW", ReleaseStatus.API_PENDING, ReleaseStatus.AUDITING, result.message(), result.responseLog());
+                }
             } catch (Exception ex) {
                 record.setReleaseStatus(ReleaseStatus.REJECT);
                 record.setRejectReason(ex.getMessage());
@@ -128,8 +131,11 @@ public class ReleaseOrchestrationService {
         log.info("Start polling audit results, pendingCount={}", records.size());
         for (AppReleaseRecord record : records) {
             AppStoreConfig storeConfig = appManagementService.requireStoreConfig(record.getStoreType());
-            String token = tokenService.getValidToken(storeConfig);
-            StoreReviewResult reviewResult = storePublisher.queryReview(storeConfig, record, token);
+            StoreReviewResult reviewResult;
+            try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record.getId())) {
+                String token = tokenService.getValidToken(storeConfig);
+                reviewResult = storePublisher.queryReview(storeConfig, record, token);
+            }
             ReleaseStatus before = record.getReleaseStatus();
             record.setApiResponseLog(reviewResult.responseLog());
             if (reviewResult.releaseStatus() != before) {
