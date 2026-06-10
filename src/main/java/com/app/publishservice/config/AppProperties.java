@@ -62,9 +62,28 @@ public class AppProperties {
 
     public static class PackageRepositoryProperties {
 
+        private String apkUrl32 = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/%s_cmschina_armeabi_%s/cms_yht_32.apk";
+        private String apkUrl64 = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/%s_cmschina_arm64_%s/cms_yht_64.apk";
         private String baseUrl;
         private boolean streamUploadEnabled;
         private String authorization;
+        private long downloadTimeoutSeconds = 30L;
+
+        public String getApkUrl32() {
+            return apkUrl32;
+        }
+
+        public void setApkUrl32(String apkUrl32) {
+            this.apkUrl32 = apkUrl32;
+        }
+
+        public String getApkUrl64() {
+            return apkUrl64;
+        }
+
+        public void setApkUrl64(String apkUrl64) {
+            this.apkUrl64 = apkUrl64;
+        }
 
         public String getBaseUrl() {
             return baseUrl;
@@ -88,6 +107,14 @@ public class AppProperties {
 
         public void setAuthorization(String authorization) {
             this.authorization = authorization;
+        }
+
+        public long getDownloadTimeoutSeconds() {
+            return downloadTimeoutSeconds;
+        }
+
+        public void setDownloadTimeoutSeconds(long downloadTimeoutSeconds) {
+            this.downloadTimeoutSeconds = downloadTimeoutSeconds;
         }
     }
 }

@@ -209,7 +209,7 @@ class ConfigurableStorePublisherOppoTest {
             AppReleaseRecord record = new AppReleaseRecord();
             record.setId(11L);
             record.setPackageName("com.demo.oppo.app");
-            record.setVersionCode(101);
+            record.setVersionCode("101");
             StoreReviewResult result = publisher.queryReview(oppoStoreConfig(), record, "oppo-access-token");
 
             assertEquals(ReleaseStatus.PASS, result.releaseStatus());
@@ -255,7 +255,7 @@ class ConfigurableStorePublisherOppoTest {
         version.setAppId(1L);
         version.setAppInfo(appInfo);
         version.setVersionName("1.0.1");
-        version.setVersionCode(101);
+        version.setVersionCode("101");
         version.setUpdateLog("Oppo publish update");
         version.setPackageUrl(packagePath.toString());
         version.setCreateTime(LocalDateTime.now());

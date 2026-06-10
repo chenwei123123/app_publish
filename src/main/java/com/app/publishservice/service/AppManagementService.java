@@ -11,17 +11,12 @@ import com.app.publishservice.api.dto.StoreConfigResponse;
 import com.app.publishservice.common.exception.NotFoundException;
 import com.app.publishservice.domain.entity.AppInfo;
 import com.app.publishservice.domain.entity.AppReleaseRecord;
-import com.app.publishservice.domain.entity.AppReleaseTaskLog;
 import com.app.publishservice.domain.entity.AppStoreConfig;
 import com.app.publishservice.domain.entity.AppVersion;
 import com.app.publishservice.domain.enums.AppType;
 import com.app.publishservice.domain.enums.StoreType;
-import com.app.publishservice.repository.AppApiTokenCacheRepository;
-import com.app.publishservice.repository.AppInfoRepository;
-import com.app.publishservice.repository.AppReleaseRecordRepository;
-import com.app.publishservice.repository.AppReleaseTaskLogRepository;
-import com.app.publishservice.repository.AppStoreConfigRepository;
-import com.app.publishservice.repository.AppVersionRepository;
+import com.app.publishservice.util.VersionCodeUtil;
+import com.app.publishservice.repository.*;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -32,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -42,23 +38,23 @@ public class AppManagementService {
     private final AppStoreConfigRepository storeConfigRepository;
     private final AppVersionRepository appVersionRepository;
     private final AppReleaseRecordRepository releaseRecordRepository;
-    private final AppReleaseTaskLogRepository releaseTaskLogRepository;
     private final AppApiTokenCacheRepository tokenCacheRepository;
+    private final AppStoreRequestLogRepository appStoreRequestLogRepository;
 
     public AppManagementService(
             AppInfoRepository appInfoRepository,
             AppStoreConfigRepository storeConfigRepository,
             AppVersionRepository appVersionRepository,
             AppReleaseRecordRepository releaseRecordRepository,
-            AppReleaseTaskLogRepository releaseTaskLogRepository,
-            AppApiTokenCacheRepository tokenCacheRepository
+            AppApiTokenCacheRepository tokenCacheRepository,
+            AppStoreRequestLogRepository appStoreRequestLogRepository
     ) {
         this.appInfoRepository = appInfoRepository;
         this.storeConfigRepository = storeConfigRepository;
         this.appVersionRepository = appVersionRepository;
         this.releaseRecordRepository = releaseRecordRepository;
-        this.releaseTaskLogRepository = releaseTaskLogRepository;
         this.tokenCacheRepository = tokenCacheRepository;
+        this.appStoreRequestLogRepository = appStoreRequestLogRepository;
     }
 
     @Transactional
@@ -88,17 +84,6 @@ public class AppManagementService {
     @Transactional
     public void deleteApp(Long appId) {
         requireApp(appId);
-
-        List<Long> releaseRecordIds = releaseRecordRepository.selectList(
-                Wrappers.<AppReleaseRecord>lambdaQuery()
-                        .eq(AppReleaseRecord::getAppId, appId)
-                        .select(AppReleaseRecord::getId)
-        ).stream().map(AppReleaseRecord::getId).toList();
-        if (!releaseRecordIds.isEmpty()) {
-            releaseTaskLogRepository.delete(
-                    Wrappers.<AppReleaseTaskLog>lambdaQuery().in(AppReleaseTaskLog::getReleaseRecordId, releaseRecordIds)
-            );
-        }
         releaseRecordRepository.delete(Wrappers.<AppReleaseRecord>lambdaQuery().eq(AppReleaseRecord::getAppId, appId));
         appVersionRepository.delete(Wrappers.<AppVersion>lambdaQuery().eq(AppVersion::getAppId, appId));
         appInfoRepository.deleteById(appId);
@@ -116,15 +101,8 @@ public class AppManagementService {
     @Transactional(readOnly = true)
     public AppDetailResponse getApp(Long appId) {
         AppInfo appInfo = requireApp(appId);
-        List<AppVersionResponse> versions = appVersionRepository.selectList(
-                Wrappers.<AppVersion>lambdaQuery()
-                        .eq(AppVersion::getAppId, appId)
-                        .orderByDesc(AppVersion::getVersionCode)
-                        .orderByDesc(AppVersion::getCreateTime)
-        ).stream().map(this::toVersionResponse).toList();
-        List<ReleaseRecordResponse> releaseRecords = releaseRecordRepository.selectReleaseRecordsByAppId(appId).stream()
-                .map(this::toReleaseRecordResponse)
-                .toList();
+        List<AppVersionResponse> versions = listVersionResponses(appId);
+        List<ReleaseRecordResponse> releaseRecords = listReleaseRecordResponses(appId);
         return toDetailResponse(appInfo, versions, releaseRecords);
     }
 
@@ -230,8 +208,8 @@ public class AppManagementService {
         config.setPhone(request.getPhone());
         config.setClientId(request.getClientId());
         config.setClientSecret(request.getClientSecret());
-        config.setMiPublicKey(request.getMiPublicKey());
-        config.setMiPrivateKey(request.getMiPrivateKey());
+        config.setPublicKey(request.getPublicKey());
+        config.setPrivateKey(request.getPrivateKey());
         config.setToken(request.getToken());
         config.setIpWhitelist(request.getIpWhitelist());
         config.setApiStatus(request.getApiStatus() == null ? 1 : request.getApiStatus());
@@ -253,6 +231,8 @@ public class AppManagementService {
     @Transactional
     public void deleteStoreConfig(Long configId) {
         requireStoreConfigById(configId);
+        appStoreRequestLogRepository.delete(Wrappers.<com.app.publishservice.domain.entity.AppStoreRequestLog>lambdaQuery()
+                .eq(com.app.publishservice.domain.entity.AppStoreRequestLog::getStoreConfigId, configId));
         tokenCacheRepository.delete(
                 Wrappers.<com.app.publishservice.domain.entity.AppApiTokenCache>lambdaQuery()
                         .eq(com.app.publishservice.domain.entity.AppApiTokenCache::getStoreConfigId, configId)
@@ -272,6 +252,8 @@ public class AppManagementService {
     }
 
     private AppResponse toResponse(AppInfo appInfo) {
+        List<AppVersionResponse> versions = listVersionResponses(appInfo.getId());
+        List<ReleaseRecordResponse> releaseRecords = listReleaseRecordResponses(appInfo.getId());
         return new AppResponse(
                 appInfo.getId(),
                 appInfo.getAppName(),
@@ -287,7 +269,9 @@ public class AppManagementService {
                 appInfo.getCreateUser(),
                 appInfo.getUpdateUser(),
                 appInfo.getCreateTime(),
-                appInfo.getUpdateTime()
+                appInfo.getUpdateTime(),
+                versions,
+                releaseRecords
         );
     }
 
@@ -325,14 +309,30 @@ public class AppManagementService {
                 version.getVersionCode(),
                 version.getBuildCode(),
                 version.getPackageUrl(),
-                version.getPackageUrlLow(),
-                version.getPackageUrlHigh(),
+                version.getPackageUrl32(),
+                version.getPackageUrl64(),
                 version.getUpdateLog(),
                 version.getIsReinforce() != null && version.getIsReinforce() == 1,
                 version.getCreateUser(),
                 version.getUpdateUser(),
                 version.getCreateTime()
         );
+    }
+
+    private List<AppVersionResponse> listVersionResponses(Long appId) {
+        return appVersionRepository.selectList(
+                Wrappers.<AppVersion>lambdaQuery()
+                        .eq(AppVersion::getAppId, appId)
+        ).stream()
+                .sorted(appVersionComparator())
+                .map(this::toVersionResponse)
+                .toList();
+    }
+
+    private List<ReleaseRecordResponse> listReleaseRecordResponses(Long appId) {
+        return releaseRecordRepository.selectReleaseRecordsByAppId(appId).stream()
+                .map(this::toReleaseRecordResponse)
+                .toList();
     }
 
     private ReleaseRecordResponse toReleaseRecordResponse(AppReleaseRecord record) {
@@ -371,8 +371,8 @@ public class AppManagementService {
                 config.getPhone(),
                 config.getClientId(),
                 config.getClientSecret(),
-                config.getMiPublicKey(),
-                config.getMiPrivateKey(),
+                config.getPublicKey(),
+                config.getPrivateKey(),
                 config.getToken(),
                 config.getIpWhitelist(),
                 config.getApiStatus(),
@@ -393,35 +393,33 @@ public class AppManagementService {
         }
     }
 
-    private void initializeAppVersionIfNeeded(AppInfo appInfo, Integer versionCode, String buildCode) {
+    private void initializeAppVersionIfNeeded(AppInfo appInfo, String versionCode, String buildCode) {
         String normalizedBuildCode = normalizeBuildCode(buildCode);
-        if (versionCode == null) {
+        String normalizedVersionCode = VersionCodeUtil.normalize(versionCode);
+        if (normalizedVersionCode == null) {
             if (buildCode != null) {
                 throw new IllegalArgumentException("buildCode requires versionCode");
             }
             return;
         }
-        if (versionCode < 1) {
-            throw new IllegalArgumentException("Version code must be greater than 0");
-        }
+        normalizedVersionCode = VersionCodeUtil.requireNonBlank(normalizedVersionCode);
 
         AppVersion existingVersion = appVersionRepository.selectOne(
                 Wrappers.<AppVersion>lambdaQuery()
                         .eq(AppVersion::getAppId, appInfo.getId())
-                        .eq(AppVersion::getVersionCode, versionCode)
+                        .eq(AppVersion::getVersionCode, normalizedVersionCode)
                         .last("limit 1")
         );
         if (existingVersion != null) {
             boolean changed = false;
-            String resolvedVersionName = String.valueOf(versionCode);
-            if (!Objects.equals(existingVersion.getVersionName(), resolvedVersionName)) {
-                existingVersion.setVersionName(resolvedVersionName);
+            if (!Objects.equals(existingVersion.getVersionName(), normalizedVersionCode)) {
+                existingVersion.setVersionName(normalizedVersionCode);
                 changed = true;
             }
             if (!Objects.equals(existingVersion.getBuildCode(), normalizedBuildCode)) {
                 existingVersion.setBuildCode(normalizedBuildCode);
-                existingVersion.setPackageUrlLow(null);
-                existingVersion.setPackageUrlHigh(null);
+                existingVersion.setPackageUrl32(null);
+                existingVersion.setPackageUrl64(null);
                 changed = true;
             }
             if (changed) {
@@ -430,26 +428,21 @@ public class AppManagementService {
             return;
         }
 
-        AppVersion latestVersion = appVersionRepository.selectOne(
-                Wrappers.<AppVersion>lambdaQuery()
-                        .eq(AppVersion::getAppId, appInfo.getId())
-                        .orderByDesc(AppVersion::getVersionCode)
-                        .orderByDesc(AppVersion::getCreateTime)
-                        .last("limit 1")
-        );
-        if (latestVersion != null && versionCode <= latestVersion.getVersionCode()) {
-            throw new IllegalArgumentException("Version code must increase, latest=" + latestVersion.getVersionCode());
-        }
-
         AppVersion initialVersion = new AppVersion();
         initialVersion.setAppId(appInfo.getId());
         initialVersion.setAppInfo(appInfo);
-        initialVersion.setVersionName(String.valueOf(versionCode));
-        initialVersion.setVersionCode(versionCode);
+        initialVersion.setVersionName(normalizedVersionCode);
+        initialVersion.setVersionCode(normalizedVersionCode);
         initialVersion.setBuildCode(normalizedBuildCode);
         initialVersion.setUpdateLog("创建应用时自动初始化版本记录");
         initialVersion.setIsReinforce(0);
         appVersionRepository.insert(initialVersion);
+    }
+
+    private Comparator<AppVersion> appVersionComparator() {
+        return Comparator
+                .comparing(AppVersion::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AppVersion::getId, Comparator.nullsLast(Comparator.reverseOrder()));
     }
 
     private String normalizeBuildCode(String buildCode) {

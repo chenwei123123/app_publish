@@ -36,9 +36,29 @@ class PackageInspectorServiceTest {
 
         assertEquals("apk", metadata.packageType());
         assertEquals("1.2.3", metadata.versionName());
-        assertEquals(45, metadata.versionCode());
+        assertEquals("45", metadata.versionCode());
         assertTrue(metadata.reinforced());
         assertEquals(64, metadata.checksum().length());
     }
-}
 
+    @Test
+    void shouldReadStringVersionCodeFromArchive() throws Exception {
+        Path tempFile = Files.createTempFile("demo-1.2.3-build-release-45", ".apk");
+        try (ZipOutputStream zipOutputStream = new ZipOutputStream(Files.newOutputStream(tempFile), StandardCharsets.UTF_8)) {
+            zipOutputStream.putNextEntry(new ZipEntry("app-publish-metadata.json"));
+            zipOutputStream.write("""
+                    {
+                      "versionName": "1.2.3",
+                      "versionCode": "release-45",
+                      "reinforced": false
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
+            zipOutputStream.closeEntry();
+        }
+
+        PackageMetadata metadata = packageInspectorService.inspect(tempFile);
+
+        assertEquals("1.2.3", metadata.versionName());
+        assertEquals("release-45", metadata.versionCode());
+    }
+}

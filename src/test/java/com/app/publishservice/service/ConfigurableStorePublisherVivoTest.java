@@ -26,7 +26,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -183,8 +182,8 @@ class ConfigurableStorePublisherVivoTest {
             appProperties.getPackageRepository().setStreamUploadEnabled(true);
             ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties);
             AppVersion version = appVersion("http://127.0.0.1:" + packagePort + "/packages/demo-64.apk");
-            version.setPackageUrlLow("http://127.0.0.1:" + packagePort + "/packages/demo-32.apk");
-            version.setPackageUrlHigh("http://127.0.0.1:" + packagePort + "/packages/demo-64.apk");
+            version.setPackageUrl32("http://127.0.0.1:" + packagePort + "/packages/demo-32.apk");
+            version.setPackageUrl64("http://127.0.0.1:" + packagePort + "/packages/demo-64.apk");
 
             StoreSubmitResult result = publisher.submitRelease(vivoStoreConfig(), version, new AppReleaseRecord(), "");
 
@@ -654,22 +653,20 @@ class ConfigurableStorePublisherVivoTest {
 
     @Test
     void shouldChooseVivoSandboxOrProductionBaseUrlByConfig() throws Exception {
-        ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), new AppProperties());
-        Method method = ConfigurableStorePublisher.class.getDeclaredMethod("vivoBaseUrl", StoreApiProperties.StoreEndpointProperties.class);
-        method.setAccessible(true);
+        VivoStorePlatformPublisher publisher = new VivoStorePlatformPublisher(RestClient.create(), new ObjectMapper(), new AppProperties(), null);
 
         StoreApiProperties.StoreEndpointProperties sandboxEndpoint = new StoreApiProperties.StoreEndpointProperties();
         sandboxEndpoint.setSandboxEnabled(true);
         assertEquals(
                 "https://sandbox-developer-api.vivo.com.cn/router/rest",
-                method.invoke(publisher, sandboxEndpoint)
+                publisher.vivoBaseUrl(sandboxEndpoint)
         );
 
         StoreApiProperties.StoreEndpointProperties productionEndpoint = new StoreApiProperties.StoreEndpointProperties();
         productionEndpoint.setSandboxEnabled(false);
         assertEquals(
                 "https://developer-api.vivo.com.cn/router/rest",
-                method.invoke(publisher, productionEndpoint)
+                publisher.vivoBaseUrl(productionEndpoint)
         );
     }
 
@@ -905,7 +902,7 @@ class ConfigurableStorePublisherVivoTest {
         version.setAppId(1L);
         version.setAppInfo(appInfo);
         version.setVersionName("1.0.0");
-        version.setVersionCode(100);
+        version.setVersionCode("100");
         version.setUpdateLog("Stage publish update log");
         version.setPackageUrl(packagePath.toString());
         return version;
@@ -922,7 +919,7 @@ class ConfigurableStorePublisherVivoTest {
         version.setAppId(1L);
         version.setAppInfo(appInfo);
         version.setVersionName("1.0.0");
-        version.setVersionCode(100);
+        version.setVersionCode("100");
         version.setUpdateLog("Stage publish update log");
         version.setPackageUrl(packageUrl);
         return version;

@@ -1,23 +1,26 @@
 # App Publish Service
 
-基于 `db/mysql/数据库表设计.docx` 实现的多商店 APP 发布后端，当前使用：
+Backend service for multi-store app publishing orchestration.
 
-- Java 21
+## Stack
+
+- Java 17
 - Spring Boot 3.3.x
-- Spring Web / MyBatis-Plus / Scheduling
+- Spring Web
+- MyBatis-Plus
 - MySQL
-- H2（测试）
+- H2 for tests
 
-已覆盖的核心链路：
+## Core Capabilities
 
-1. 后台录入应用基础信息与商店 API 配置
-2. 上传安装包，自动校验版本号与加固状态，生成版本记录
-3. 自动刷新有效令牌并调用商店开放 API 提审
-4. 生成发布任务记录并持续更新状态
-5. 定时轮询审核结果，同步通过/驳回并保留完整日志
-6. 提供 CI/CD 触发入口，实现上传到提审的自动化
+1. Manage app metadata and store API configuration.
+2. Upload APK/AAB/IPA packages and validate version metadata.
+3. Refresh store tokens and submit store review requests.
+4. Persist release task records and continuously update release status.
+5. Poll review results and keep request/response logs.
+6. Expose a CI/CD trigger entry for automated publish workflows.
 
-## 主要接口
+## Main APIs
 
 `POST /api/apps`
 
@@ -38,7 +41,7 @@
 
 `POST /api/apps/{appId}/versions/upload`
 
-表单字段：
+Form fields:
 
 - `file`: APK/AAB/IPA
 - `updateLog`
@@ -58,25 +61,25 @@
 
 `POST /api/cicd/releases/trigger`
 
-表单字段：
+Form fields:
 
 - `appId`
-- `storeTypes`: 逗号分隔，例如 `huawei,oppo`
+- `storeTypes`: comma-separated, for example `huawei,oppo`
 - `file`
 - `updateLog`
 - `expectedVersionName`
 - `expectedVersionCode`
 - `expectedReinforced`
 
-## 安装包识别规则
+## Package Metadata Detection
 
-上传服务按以下优先级识别版本与加固状态：
+Upload processing detects version and reinforcement state in this order:
 
-1. 安装包内 `app-publish-metadata.json`
-2. 文件名规则，例如 `demo-1.0.1-build101-reinforced.apk`
-3. 压缩包特征扫描，例如 `jiagu`、`reinforce`
+1. `app-publish-metadata.json` inside the package
+2. File naming convention, for example `demo-1.0.1-build101-reinforced.apk`
+3. Archive keyword scanning, for example `jiagu` or `reinforce`
 
-推荐在 CI 产物中写入：
+Recommended CI metadata file:
 
 ```json
 {
@@ -86,28 +89,30 @@
 }
 ```
 
-## 商店适配
+## Store Integration
 
-当前仓库只有表设计文档，没有各商店的正式开放平台参数文档，因此接入层采用可配置适配器：
+Store adapters are configuration-driven.
 
-- `app.store-api.stores.<store>.mock-enabled=true` 时走本地模拟提审和审核流转
-- 配置 `baseUrl`、`tokenEndpoint`、`submitEndpoint`、`statusEndpoint` 后可切换为真实 HTTP 对接
+- Use `app.store-api.stores.<store>.mock-enabled=true` for local mock submit/review flows.
+- Configure `baseUrl`, `tokenEndpoint`, `submitEndpoint`, and `statusEndpoint` to switch to real HTTP integrations.
 
-## 运行与测试
+## Runtime And Packaging
 
-项目根目录新增了 [`startup`](/D:/app_publish/startup/README.md) 启动目录，统一使用 Windows `bat` 脚本，不再提供 `bash` / `.sh` 启动方式。
+Development helper scripts are documented in [`startup`](/D:/app_publish/startup/README.md).
+Packaged cross-platform start and stop scripts are documented in [`script`](/D:/app_publish/script/README.md).
 
-启动示例：
+Package example:
 
 ```cmd
-startup\start-dev.bat
-startup\start-sit.bat
-startup\start-prod.bat
-startup\stop-dev.bat
 startup\package.bat prod
 ```
 
-测试示例：
+Generated artifacts:
+
+- `target/app_publish/`
+- `target/app_publish-<profile>.zip`
+
+## Test
 
 ```cmd
 mvn -s settings.xml test

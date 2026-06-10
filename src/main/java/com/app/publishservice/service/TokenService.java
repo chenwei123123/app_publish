@@ -43,7 +43,7 @@ public class TokenService {
                         .orderByDesc(AppApiTokenCache::getUpdateTime)
                         .last("limit 1")
         );
-        AppApiTokenCache cache = caches.isEmpty() ? null : caches.getFirst();
+        AppApiTokenCache cache = caches.isEmpty() ? null : caches.get(0);
         if (cache != null && cache.getExpireTime() != null && cache.getExpireTime().isAfter(threshold)) {
             log.debug("Use cached token, storeConfigId={}, storeType={}, expireTime={}", storeConfig.getId(), storeConfig.getStoreType().getCode(), cache.getExpireTime());
             return cache.getTokenValue();

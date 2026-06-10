@@ -27,9 +27,11 @@ public class AppStoreConfig {
 
     private String clientSecret;
 
-    private String miPublicKey;
+    @TableField("public_key")
+    private String publicKey;
 
-    private String miPrivateKey;
+    @TableField("private_key")
+    private String privateKey;
 
     private String token;
 
@@ -105,20 +107,20 @@ public class AppStoreConfig {
         this.clientSecret = clientSecret;
     }
 
-    public String getMiPublicKey() {
-        return miPublicKey;
+    public String getPublicKey() {
+        return publicKey;
     }
 
-    public void setMiPublicKey(String miPublicKey) {
-        this.miPublicKey = miPublicKey;
+    public void setPublicKey(String publicKey) {
+        this.publicKey = publicKey;
     }
 
-    public String getMiPrivateKey() {
-        return miPrivateKey;
+    public String getPrivateKey() {
+        return privateKey;
     }
 
-    public void setMiPrivateKey(String miPrivateKey) {
-        this.miPrivateKey = miPrivateKey;
+    public void setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
     }
 
     public String getToken() {

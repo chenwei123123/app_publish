@@ -18,14 +18,16 @@ public class AppVersion {
 
     private String versionName;
 
-    private Integer versionCode;
+    private String versionCode;
 
     @TableField(exist = false)
     private String packageUrl;
 
-    private String packageUrlLow;
+    @TableField("package_url_32")
+    private String packageUrl32;
 
-    private String packageUrlHigh;
+    @TableField("package_url_64")
+    private String packageUrl64;
 
     private String buildCode;
 
@@ -78,11 +80,11 @@ public class AppVersion {
         this.versionName = versionName;
     }
 
-    public Integer getVersionCode() {
+    public String getVersionCode() {
         return versionCode;
     }
 
-    public void setVersionCode(Integer versionCode) {
+    public void setVersionCode(String versionCode) {
         this.versionCode = versionCode;
     }
 
@@ -90,30 +92,30 @@ public class AppVersion {
         if (hasText(packageUrl)) {
             return packageUrl;
         }
-        if (hasText(packageUrlLow)) {
-            return packageUrlLow;
+        if (hasText(packageUrl32)) {
+            return packageUrl32;
         }
-        return packageUrlHigh;
+        return packageUrl64;
     }
 
     public void setPackageUrl(String packageUrl) {
         this.packageUrl = packageUrl;
     }
 
-    public String getPackageUrlLow() {
-        return packageUrlLow;
+    public String getPackageUrl32() {
+        return packageUrl32;
     }
 
-    public void setPackageUrlLow(String packageUrlLow) {
-        this.packageUrlLow = packageUrlLow;
+    public void setPackageUrl32(String packageUrl32) {
+        this.packageUrl32 = packageUrl32;
     }
 
-    public String getPackageUrlHigh() {
-        return packageUrlHigh;
+    public String getPackageUrl64() {
+        return packageUrl64;
     }
 
-    public void setPackageUrlHigh(String packageUrlHigh) {
-        this.packageUrlHigh = packageUrlHigh;
+    public void setPackageUrl64(String packageUrl64) {
+        this.packageUrl64 = packageUrl64;
     }
 
     public String getBuildCode() {

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.EnumValue;
 
 public enum AppType {
     ANDROID(1),
-    IOS(2);
+    HarmonyOS(2);
 
     @EnumValue
     private final int code;

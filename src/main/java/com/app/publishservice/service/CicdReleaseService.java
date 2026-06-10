@@ -25,7 +25,7 @@ public class CicdReleaseService {
             List<String> storeTypes,
             String updateLog,
             String expectedVersionName,
-            Integer expectedVersionCode,
+            String expectedVersionCode,
             Boolean expectedReinforced,
             MultipartFile packageFile
     ) throws IOException {

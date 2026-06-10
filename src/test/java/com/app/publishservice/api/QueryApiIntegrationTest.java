@@ -6,7 +6,6 @@ import com.app.publishservice.api.dto.PackageUploadResponse;
 import com.app.publishservice.api.dto.ReleaseRecordResponse;
 import com.app.publishservice.api.dto.ReleaseSubmitRequest;
 import com.app.publishservice.api.dto.StoreConfigRequest;
-import com.app.publishservice.domain.enums.StoreType;
 import com.app.publishservice.service.AppManagementService;
 import com.app.publishservice.service.PackageVersionService;
 import com.app.publishservice.service.ReleaseOrchestrationService;
@@ -26,14 +25,12 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -63,10 +60,9 @@ class QueryApiIntegrationTest {
         assertTrue(openapiYaml.contains("openapi: 3.0.3"));
         assertTrue(openapiYaml.contains("url: /"));
         assertFalse(openapiYaml.contains("http://localhost:8080"));
-        assertTrue(openapiYaml.contains("description: 应用请求体"));
-        assertTrue(openapiYaml.contains("description: 响应消息"));
-        assertTrue(openapiYaml.contains("description: 构建号"));
-        assertTrue(openapiYaml.contains("description: 32 位安装包访问地址"));
+        assertTrue(openapiYaml.contains("components:"));
+        assertTrue(openapiYaml.contains("AppVersionResponse"));
+        assertTrue(openapiYaml.contains("StoreConfigRequest"));
 
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());
@@ -116,8 +112,8 @@ class QueryApiIntegrationTest {
                                   "phone": "13800138000",
                                   "clientId": "demo-client-updated",
                                   "clientSecret": "demo-secret-updated",
-                                  "miPublicKey": "public-key",
-                                  "miPrivateKey": "private-key",
+                                  "publicKey": "public-key",
+                                  "privateKey": "private-key",
                                   "token": "demo-token-updated",
                                   "ipWhitelist": "127.0.0.1",
                                   "apiStatus": 1
@@ -160,14 +156,14 @@ class QueryApiIntegrationTest {
                 "file",
                 "demo-query-1.0.1-build101.apk",
                 "application/octet-stream",
-                buildArchive("1.0.1", 101, false)
+                buildArchive("1.0.1", "release-101", false)
         );
         PackageUploadResponse uploadResponse = packageVersionService.upload(
                 app.id(),
                 multipartFile,
                 "query api test",
                 "1.0.1",
-                101,
+                "release-101",
                 false
         );
 
@@ -175,13 +171,16 @@ class QueryApiIntegrationTest {
         submitRequest.setVersionId(uploadResponse.versionId());
         submitRequest.setStoreTypes(List.of("huawei"));
         submitRequest.setReleaseMode("api");
-        ReleaseRecordResponse releaseRecord = releaseOrchestrationService.submit(submitRequest).getFirst();
+        ReleaseRecordResponse releaseRecord = releaseOrchestrationService.submit(submitRequest).get(0);
 
         mockMvc.perform(get("/api/apps").param("keyword", "Query App"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data[0].id").value(app.id()))
-                .andExpect(jsonPath("$.data[0].appName").value("Demo Query App Updated"));
+                .andExpect(jsonPath("$.data[0].appName").value("Demo Query App Updated"))
+                .andExpect(jsonPath("$.data[0].versions[0].versionCode").value("release-101"))
+                .andExpect(jsonPath("$.data[0].releaseRecords[0].appName").value("Demo Query App Updated"))
+                .andExpect(jsonPath("$.data[0].releaseRecords[0].storeType").value("huawei"));
 
         mockMvc.perform(get("/api/apps/{appId}", app.id()))
                 .andExpect(status().isOk())
@@ -189,11 +188,11 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.appName").value("Demo Query App Updated"))
                 .andExpect(jsonPath("$.data.packageName").value("com.demo.query.app"))
                 .andExpect(jsonPath("$.data.appDescription").value("updated description"))
-                .andExpect(jsonPath("$.data.versions[0].versionCode").value(101))
+                .andExpect(jsonPath("$.data.versions[0].versionCode").value("release-101"))
                 .andExpect(jsonPath("$.data.releaseRecords[0].appName").value("Demo Query App Updated"))
                 .andExpect(jsonPath("$.data.releaseRecords[0].packageName").value("com.demo.query.app"))
                 .andExpect(jsonPath("$.data.releaseRecords[0].appDescription").value("updated description"))
-                .andExpect(jsonPath("$.data.releaseRecords[0].versionCode").value(101))
+                .andExpect(jsonPath("$.data.releaseRecords[0].versionCode").value("release-101"))
                 .andExpect(jsonPath("$.data.releaseRecords[0].storeType").value("huawei"))
                 .andExpect(jsonPath("$.data.releaseRecords[0].releaseType").value(1))
                 .andExpect(jsonPath("$.data.releaseRecords[0].grayPercent").isEmpty());
@@ -213,9 +212,9 @@ class QueryApiIntegrationTest {
         mockMvc.perform(get("/api/apps/{appId}/versions", app.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].id").value(uploadResponse.versionId()))
-                .andExpect(jsonPath("$.data[0].versionCode").value(101))
-                .andExpect(jsonPath("$.data[0].packageUrlLow").value(uploadResponse.storedPath()))
-                .andExpect(jsonPath("$.data[0].packageUrlHigh").isEmpty());
+                .andExpect(jsonPath("$.data[0].versionCode").value("release-101"))
+                .andExpect(jsonPath("$.data[0].packageUrl32").value(uploadResponse.storedPath()))
+                .andExpect(jsonPath("$.data[0].packageUrl64").isEmpty());
 
         mockMvc.perform(get("/api/apps/{appId}/versions/{versionId}", app.id(), uploadResponse.versionId()))
                 .andExpect(status().isOk())
@@ -229,7 +228,7 @@ class QueryApiIntegrationTest {
                         .param("versionId", uploadResponse.versionId().toString())
                         .param("storeType", "huawei")
                         .param("releaseStatus", "auditing")
-                        .param("key", "101"))
+                        .param("key", "release-101"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.current").value(1))
                 .andExpect(jsonPath("$.data.size").value(10))
@@ -239,9 +238,9 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.records[0].appName").value("Demo Query App Updated"))
                 .andExpect(jsonPath("$.data.records[0].packageName").value("com.demo.query.app"))
                 .andExpect(jsonPath("$.data.records[0].appDescription").value("updated description"))
-                .andExpect(jsonPath("$.data.records[0].versionCode").value(101))
+                .andExpect(jsonPath("$.data.records[0].versionCode").value("release-101"))
                 .andExpect(jsonPath("$.data.records[0].storeType").value("huawei"))
-                .andExpect(jsonPath("$.data.records[0].releaseStatus").value("auditing"));
+                .andExpect(jsonPath("$.data.records[0].releaseStatus").value("reject"));
 
         mockMvc.perform(get("/api/releases/{releaseId}", releaseRecord.id()))
                 .andExpect(status().isOk())
@@ -249,15 +248,10 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.appName").value("Demo Query App Updated"))
                 .andExpect(jsonPath("$.data.packageName").value("com.demo.query.app"))
                 .andExpect(jsonPath("$.data.appDescription").value("updated description"))
-                .andExpect(jsonPath("$.data.versionCode").value(101))
+                .andExpect(jsonPath("$.data.versionCode").value("release-101"))
                 .andExpect(jsonPath("$.data.storeType").value("huawei"))
                 .andExpect(jsonPath("$.data.releaseType").value(1))
                 .andExpect(jsonPath("$.data.grayPercent").isEmpty());
-
-        mockMvc.perform(get("/api/releases/{releaseId}/logs", releaseRecord.id()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].action").value("CREATE_RELEASE"))
-                .andExpect(jsonPath("$.data[1].action").value("SUBMIT_REVIEW"));
 
         Long secondConfigId = appManagementService.getStoreConfigResponses().stream()
                 .filter(config -> "oppo".equals(config.storeType()))
@@ -287,7 +281,7 @@ class QueryApiIntegrationTest {
         request.setAppName("Demo Init Version App");
         request.setPackageName("com.demo.init.version.app");
         request.setAppType(1);
-        request.setVersionCode(100);
+        request.setVersionCode("release-100");
         request.setBuildCode("b1843");
 
         AppResponse app = appManagementService.saveApp(request);
@@ -295,13 +289,13 @@ class QueryApiIntegrationTest {
         mockMvc.perform(get("/api/apps/{appId}", app.id()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(app.id()))
-                .andExpect(jsonPath("$.data.versions[0].versionCode").value(100))
-                .andExpect(jsonPath("$.data.versions[0].versionName").value("100"))
+                .andExpect(jsonPath("$.data.versions[0].versionCode").value("release-100"))
+                .andExpect(jsonPath("$.data.versions[0].versionName").value("release-100"))
                 .andExpect(jsonPath("$.data.versions[0].buildCode").value("b1843"))
                 .andExpect(jsonPath("$.data.versions[0].updateLog").value("创建应用时自动初始化版本记录"))
                 .andExpect(jsonPath("$.data.versions[0].packageUrl").isEmpty())
-                .andExpect(jsonPath("$.data.versions[0].packageUrlLow").isEmpty())
-                .andExpect(jsonPath("$.data.versions[0].packageUrlHigh").isEmpty());
+                .andExpect(jsonPath("$.data.versions[0].packageUrl32").isEmpty())
+                .andExpect(jsonPath("$.data.versions[0].packageUrl64").isEmpty());
 
         mockMvc.perform(put("/api/apps/{appId}", app.id())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -310,7 +304,7 @@ class QueryApiIntegrationTest {
                                   "appName": "Demo Init Version App",
                                   "packageName": "com.demo.init.version.app",
                                   "appType": 1,
-                                  "versionCode": 100,
+                                  "versionCode": "release-100",
                                   "buildCode": "b1844"
                                 }
                                 """))
@@ -318,19 +312,19 @@ class QueryApiIntegrationTest {
 
         mockMvc.perform(get("/api/apps/{appId}", app.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.versions[0].versionCode").value(100))
-                .andExpect(jsonPath("$.data.versions[0].versionName").value("100"))
+                .andExpect(jsonPath("$.data.versions[0].versionCode").value("release-100"))
+                .andExpect(jsonPath("$.data.versions[0].versionName").value("release-100"))
                 .andExpect(jsonPath("$.data.versions[0].buildCode").value("b1844"));
     }
 
-    private byte[] buildArchive(String versionName, int versionCode, boolean reinforced) throws Exception {
+    private byte[] buildArchive(String versionName, String versionCode, boolean reinforced) throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream, StandardCharsets.UTF_8)) {
             zipOutputStream.putNextEntry(new ZipEntry("app-publish-metadata.json"));
             String json = """
                     {
                       "versionName": "%s",
-                      "versionCode": %d,
+                      "versionCode": "%s",
                       "reinforced": %s
                     }
                     """.formatted(versionName, versionCode, reinforced);

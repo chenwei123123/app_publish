@@ -20,6 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import com.app.publishservice.util.VersionCodeUtil;
 
 @Service
 public class PackageInspectorService {
@@ -67,7 +68,7 @@ public class PackageInspectorService {
                     try (InputStream inputStream = zipFile.getInputStream(entry)) {
                         JsonNode jsonNode = objectMapper.readTree(inputStream);
                         String versionName = textOrNull(jsonNode, "versionName");
-                        Integer versionCode = intOrNull(jsonNode, "versionCode");
+                        String versionCode = textOrNull(jsonNode, "versionCode");
                         boolean reinforced = boolOrFallback(jsonNode, "reinforced", detectReinforced(zipFile));
                         return Optional.of(new ArchiveMetadata(versionName, versionCode, reinforced));
                     }
@@ -104,11 +105,11 @@ public class PackageInspectorService {
     private ArchiveMetadata inferFromFilename(String filename) {
         Matcher matcher = VERSION_PATTERN.matcher(filename);
         String versionName = null;
-        Integer versionCode = null;
+        String versionCode = null;
         if (matcher.find()) {
             versionName = matcher.group(1);
             if (matcher.group(2) != null) {
-                versionCode = Integer.parseInt(matcher.group(2));
+                versionCode = VersionCodeUtil.normalize(matcher.group(2));
             }
         }
         boolean reinforced = filename.toLowerCase(Locale.ROOT).contains("reinforce")
@@ -153,14 +154,10 @@ public class PackageInspectorService {
         return node.hasNonNull(field) ? node.get(field).asText() : null;
     }
 
-    private Integer intOrNull(JsonNode node, String field) {
-        return node.hasNonNull(field) ? node.get(field).asInt() : null;
-    }
-
     private boolean boolOrFallback(JsonNode node, String field, boolean fallback) {
         return node.has(field) ? node.get(field).asBoolean() : fallback;
     }
 
-    private record ArchiveMetadata(String versionName, Integer versionCode, boolean reinforced) {
+    private record ArchiveMetadata(String versionName, String versionCode, boolean reinforced) {
     }
 }

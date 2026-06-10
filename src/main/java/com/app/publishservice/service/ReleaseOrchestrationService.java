@@ -3,11 +3,10 @@ package com.app.publishservice.service;
 import com.app.publishservice.api.dto.ReleaseRecordResponse;
 import com.app.publishservice.api.dto.ReleaseRecordPageResponse;
 import com.app.publishservice.api.dto.ReleaseSubmitRequest;
-import com.app.publishservice.api.dto.ReleaseTaskLogResponse;
 import com.app.publishservice.api.dto.PageResponse;
 import com.app.publishservice.common.exception.NotFoundException;
+import com.app.publishservice.common.exception.SubmitPackageDownloadException;
 import com.app.publishservice.domain.entity.AppReleaseRecord;
-import com.app.publishservice.domain.entity.AppReleaseTaskLog;
 import com.app.publishservice.domain.entity.AppStoreConfig;
 import com.app.publishservice.domain.entity.AppVersion;
 import com.app.publishservice.domain.enums.ReleaseMode;
@@ -38,33 +37,30 @@ public class ReleaseOrchestrationService {
     private final AppReleaseRecordRepository releaseRecordRepository;
     private final TokenService tokenService;
     private final StorePublisher storePublisher;
-    private final ReleaseLogService releaseLogService;
 
     public ReleaseOrchestrationService(
             PackageVersionService packageVersionService,
             AppManagementService appManagementService,
             AppReleaseRecordRepository releaseRecordRepository,
             TokenService tokenService,
-            StorePublisher storePublisher,
-            ReleaseLogService releaseLogService
+            StorePublisher storePublisher
     ) {
         this.packageVersionService = packageVersionService;
         this.appManagementService = appManagementService;
         this.releaseRecordRepository = releaseRecordRepository;
         this.tokenService = tokenService;
         this.storePublisher = storePublisher;
-        this.releaseLogService = releaseLogService;
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = SubmitPackageDownloadException.class)
     public List<ReleaseRecordResponse> submit(ReleaseSubmitRequest request) {
         log.info("Start release submit, versionId={}, releaseMode={}, stores={}", request.getVersionId(), request.getReleaseMode(), request.getStoreTypes());
         AppVersion version = packageVersionService.requireVersion(request.getVersionId());
-        version = packageVersionService.prepareVersionForSubmit(version);
         List<ReleaseRecordResponse> responses = new ArrayList<>();
         ReleaseMode releaseMode = ReleaseMode.fromCode(request.getReleaseMode());
         Long releaseType = normalizeReleaseType(request.getReleaseType());
         validateReleaseRequest(request, releaseType);
+        List<StoreSubmitContext> submitContexts = new ArrayList<>();
         for (String storeTypeCode : request.getStoreTypes()) {
             StoreType storeType = StoreType.fromCode(storeTypeCode);
             AppStoreConfig storeConfig = appManagementService.requireStoreConfig(storeType);
@@ -72,25 +68,39 @@ public class ReleaseOrchestrationService {
                 throw new IllegalArgumentException("Store config is disabled: " + storeTypeCode);
             }
 
-            AppReleaseRecord record = new AppReleaseRecord();
-            record.setAppId(version.getAppId());
-            record.setVersionId(version.getId());
-            record.setAppInfo(version.getAppInfo());
-            record.setAppVersion(version);
-            record.setAppName(version.getAppInfo() == null ? null : version.getAppInfo().getAppName());
-            record.setPackageName(version.getAppInfo() == null ? null : version.getAppInfo().getPackageName());
-            record.setAppDescription(version.getAppInfo() == null ? null : version.getAppInfo().getAppDescription());
-            record.setVersionCode(version.getVersionCode());
-            record.setStoreType(storeType);
-            record.setReleaseMode(releaseMode);
-            record.setReleaseType(releaseType);
-            record.setGrayPercent(releaseType == 2L ? request.getGrayPercent() : null);
-            record.setGrayStartTime(releaseType == 2L ? request.getGrayStartTime() : null);
-            record.setGrayEndTime(releaseType == 2L ? request.getGrayEndTime() : null);
-            record.setReleaseStatus(ReleaseStatus.API_PENDING);
+            AppReleaseRecord record = createReleaseRecord(
+                    version,
+                    storeType,
+                    releaseMode,
+                    releaseType,
+                    request,
+                     ReleaseStatus.DOWNLOADING
+            );
             releaseRecordRepository.insert(record);
             log.info("Release record created, releaseId={}, appId={}, versionId={}, storeType={}", record.getId(), record.getAppId(), record.getVersionId(), storeType.getCode());
-            releaseLogService.log(record, "CREATE_RELEASE", null, ReleaseStatus.API_PENDING, "Release task created", null);
+            submitContexts.add(new StoreSubmitContext(storeType, storeConfig, record));
+        }
+
+        try {
+            version = packageVersionService.prepareVersionForSubmit(version);
+                for (StoreSubmitContext submitContext : submitContexts) {
+                    AppReleaseRecord record = submitContext.record();
+                    record.setReleaseStatus(ReleaseStatus.DOWNLOAD_SUCCESS);
+                    releaseRecordRepository.updateById(record);
+                }
+        } catch (RuntimeException ex) {
+                handleSubmitPackageFailure(submitContexts, ex);
+            throw ex;
+        }
+
+        for (StoreSubmitContext submitContext : submitContexts) {
+            StoreType storeType = submitContext.storeType();
+            AppStoreConfig storeConfig = submitContext.storeConfig();
+            AppReleaseRecord record = submitContext.record();
+            if (record.getReleaseStatus() != ReleaseStatus.API_PENDING) {
+                record.setReleaseStatus(ReleaseStatus.API_PENDING);
+                releaseRecordRepository.updateById(record);
+            }
 
             try {
                 try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record.getId())) {
@@ -109,7 +119,6 @@ public class ReleaseOrchestrationService {
                             record.getStoreReleaseId(),
                             record.getReleaseStatus().getCode()
                     );
-                    releaseLogService.log(record, "SUBMIT_REVIEW", ReleaseStatus.API_PENDING, ReleaseStatus.AUDITING, result.message(), result.responseLog());
                 }
             } catch (Exception ex) {
                 record.setReleaseStatus(ReleaseStatus.REJECT);
@@ -118,7 +127,6 @@ public class ReleaseOrchestrationService {
                 record.setFinishTime(LocalDateTime.now());
                 releaseRecordRepository.updateById(record);
                 log.error("Submit review failed, releaseId={}, storeType={}", record.getId(), storeType.getCode(), ex);
-                releaseLogService.log(record, "SUBMIT_FAILED", ReleaseStatus.API_PENDING, ReleaseStatus.REJECT, "Submit review failed", ex.getMessage());
             }
             responses.add(toResponse(record));
         }
@@ -152,11 +160,9 @@ public class ReleaseOrchestrationService {
                         before.getCode(),
                         reviewResult.releaseStatus().getCode()
                 );
-                releaseLogService.log(record, "POLL_REVIEW", before, reviewResult.releaseStatus(), "Review status updated", reviewResult.responseLog());
             } else {
                 releaseRecordRepository.updateById(record);
                 log.debug("Review status unchanged, releaseId={}, storeType={}, status={}", record.getId(), record.getStoreType().getCode(), before.getCode());
-                releaseLogService.log(record, "POLL_REVIEW", before, before, "Review status unchanged", reviewResult.responseLog());
             }
         }
     }
@@ -213,14 +219,6 @@ public class ReleaseOrchestrationService {
         );
     }
 
-    @Transactional(readOnly = true)
-    public List<ReleaseTaskLogResponse> getReleaseTaskLogs(Long releaseId) {
-        requireReleaseRecord(releaseId);
-        return releaseLogService.listByReleaseRecordId(releaseId).stream()
-                .map(this::toLogResponse)
-                .toList();
-    }
-
     private ReleaseRecordResponse toResponse(AppReleaseRecord record) {
         return new ReleaseRecordResponse(
                 record.getId(),
@@ -267,29 +265,6 @@ public class ReleaseOrchestrationService {
         );
     }
 
-    private ReleaseTaskLogResponse toLogResponse(AppReleaseTaskLog log) {
-        return new ReleaseTaskLogResponse(
-                log.getId(),
-                log.getReleaseRecordId(),
-                log.getAction(),
-                log.getStatusBefore(),
-                log.getStatusAfter(),
-                log.getMessage(),
-                log.getPayload(),
-                log.getCreateUser(),
-                log.getUpdateUser(),
-                log.getCreateTime()
-        );
-    }
-
-    private AppReleaseRecord requireReleaseRecord(Long releaseId) {
-        AppReleaseRecord record = releaseRecordRepository.selectById(releaseId);
-        if (record == null) {
-            throw new NotFoundException("Release record not found");
-        }
-        return record;
-    }
-
     private long normalizeCurrent(Long current) {
         return current == null || current < 1 ? 1 : current;
     }
@@ -305,12 +280,62 @@ public class ReleaseOrchestrationService {
         return releaseType == null ? 1L : releaseType;
     }
 
+    private AppReleaseRecord createReleaseRecord(
+            AppVersion version,
+            StoreType storeType,
+            ReleaseMode releaseMode,
+            Long releaseType,
+            ReleaseSubmitRequest request,
+            ReleaseStatus initialStatus
+    ) {
+        AppReleaseRecord record = new AppReleaseRecord();
+        record.setAppId(version.getAppId());
+        record.setVersionId(version.getId());
+        record.setAppInfo(version.getAppInfo());
+        record.setAppVersion(version);
+        record.setAppName(version.getAppInfo() == null ? null : version.getAppInfo().getAppName());
+        record.setPackageName(version.getAppInfo() == null ? null : version.getAppInfo().getPackageName());
+        record.setAppDescription(version.getAppInfo() == null ? null : version.getAppInfo().getAppDescription());
+        record.setVersionCode(version.getVersionCode());
+        record.setStoreType(storeType);
+        record.setReleaseMode(releaseMode);
+        record.setReleaseType(releaseType);
+        record.setGrayPercent(releaseType == 2L ? request.getGrayPercent() : null);
+        record.setGrayStartTime(releaseType == 2L ? request.getGrayStartTime() : null);
+        record.setGrayEndTime(releaseType == 2L ? request.getGrayEndTime() : null);
+        record.setReleaseStatus(initialStatus);
+        return record;
+    }
+
+    private void handleSubmitPackageFailure(List<StoreSubmitContext> submitContexts, RuntimeException ex) {
+        for (StoreSubmitContext submitContext : submitContexts) {
+            AppReleaseRecord record = submitContext.record();
+            record.setReleaseStatus(ReleaseStatus.DOWNLOAD_FAIL);
+            record.setRejectReason(ex.getMessage());
+            record.setApiResponseLog(ex.getMessage());
+            record.setFinishTime(LocalDateTime.now());
+            releaseRecordRepository.updateById(record);
+            log.error(
+                    "Submit package preparation failed, releaseId={}, storeType={}",
+                    record.getId(),
+                    submitContext.storeType().getCode(),
+                    ex
+            );
+        }
+    }
+
     private void validateReleaseRequest(ReleaseSubmitRequest request, Long releaseType) {
         if (releaseType != 1L && releaseType != 2L) {
             throw new IllegalArgumentException("releaseType must be 1 or 2");
         }
         if (releaseType != 2L) {
             return;
+        }
+        for (String storeTypeCode : request.getStoreTypes()) {
+            StoreType storeType = StoreType.fromCode(storeTypeCode);
+            if ("oppo".equalsIgnoreCase(storeType.getCode()) || "xiaomi".equalsIgnoreCase(storeType.getCode())) {
+                throw new IllegalArgumentException(storeType.getCode() + " does not support staged release submit via API");
+            }
         }
         if (request.getGrayPercent() == null) {
             throw new IllegalArgumentException("grayPercent is required when releaseType=2");
@@ -324,5 +349,8 @@ public class ReleaseOrchestrationService {
         if (!request.getGrayStartTime().isBefore(request.getGrayEndTime())) {
             throw new IllegalArgumentException("grayStartTime must be before grayEndTime");
         }
+    }
+
+    private record StoreSubmitContext(StoreType storeType, AppStoreConfig storeConfig, AppReleaseRecord record) {
     }
 }

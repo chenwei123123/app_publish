@@ -25,8 +25,8 @@ CREATE TABLE IF NOT EXISTS app_store_config (
     phone VARCHAR(255),
     client_id VARCHAR(255),
     client_secret VARCHAR(255),
-    mi_public_key CLOB,
-    mi_private_key VARCHAR(255),
+    public_key CLOB,
+    private_key VARCHAR(255),
     token VARCHAR(500),
     ip_whitelist VARCHAR(500),
     api_status TINYINT NOT NULL DEFAULT 1,
@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS app_version (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     app_id BIGINT NOT NULL,
     version_name VARCHAR(30) NOT NULL,
-    version_code INT NOT NULL DEFAULT 0,
-    package_url_low VARCHAR(255),
-    package_url_high VARCHAR(255),
+    version_code VARCHAR(64) NOT NULL,
+    package_url_32 VARCHAR(255),
+    package_url_64 VARCHAR(255),
     build_code VARCHAR(64),
     update_log CLOB,
     is_reinforce TINYINT NOT NULL DEFAULT 0,
@@ -94,21 +94,6 @@ CREATE TABLE IF NOT EXISTS app_api_token_cache (
     CONSTRAINT uk_token_cache_store_type UNIQUE (store_config_id, token_type),
     CONSTRAINT fk_token_cache_store_config FOREIGN KEY (store_config_id) REFERENCES app_store_config (id)
 );
-
-CREATE TABLE IF NOT EXISTS app_release_task_log (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    release_record_id BIGINT NOT NULL,
-    action VARCHAR(50) NOT NULL,
-    status_before VARCHAR(20),
-    status_after VARCHAR(20),
-    message VARCHAR(500),
-    payload CLOB,
-    create_user VARCHAR(255),
-    update_user VARCHAR(255),
-    create_time TIMESTAMP NOT NULL,
-    CONSTRAINT fk_release_task_log_record FOREIGN KEY (release_record_id) REFERENCES app_release_record (id)
-);
-CREATE INDEX IF NOT EXISTS idx_release_task_log_record ON app_release_task_log (release_record_id);
 
 CREATE TABLE IF NOT EXISTS app_store_request_log (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,

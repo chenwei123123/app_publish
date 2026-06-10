@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.annotation.EnumValue;
 
 public enum ReleaseStatus {
     DRAFT("draft"),
+    DOWNLOADING("downloading"),
+    DOWNLOAD_SUCCESS("download_success"),
+    DOWNLOAD_FAIL("download_fail"),
     API_PENDING("api_pending"),
     AUDITING("auditing"),
-    
     PASS("pass"),
     REJECT("reject"),
     OFFLINE("offline");

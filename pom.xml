@@ -18,8 +18,9 @@
     <description>Multi-store app publishing orchestration service</description>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>17</java.version>
         <env.name>dev</env.name>
+        <dist.dir>${project.build.directory}/app_publish</dist.dir>
     </properties>
 
     <dependencies>
@@ -99,6 +100,42 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>build-app-publish-layout</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete dir="${dist.dir}"/>
+                                <delete file="${project.build.directory}/app_publish-${env.name}.zip"/>
+                                <mkdir dir="${dist.dir}"/>
+                                <mkdir dir="${dist.dir}/log"/>
+                                <mkdir dir="${dist.dir}/script"/>
+                                <mkdir dir="${dist.dir}/script/run"/>
+                                <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                      todir="${dist.dir}"/>
+                                <copy file="${project.basedir}/script/windows/start.bat"
+                                      tofile="${dist.dir}/script/start.bat"/>
+                                <copy file="${project.basedir}/script/windows/stop.bat"
+                                      tofile="${dist.dir}/script/stop.bat"/>
+                                <copy file="${project.basedir}/script/linux/start.sh"
+                                      tofile="${dist.dir}/script/start.sh"/>
+                                <copy file="${project.basedir}/script/linux/stop.sh"
+                                      tofile="${dist.dir}/script/stop.sh"/>
+                                <zip destfile="${project.build.directory}/app_publish-${env.name}.zip"
+                                     basedir="${dist.dir}"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

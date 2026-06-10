@@ -3,44 +3,44 @@ package com.app.publishservice.api.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "应用商店账号配置请求")
+@Schema(description = "Store config request")
 public class StoreConfigRequest {
 
-    @Schema(description = "用于更新请求的渠道配置 ID")
+    @Schema(description = "Config ID used for updates")
     private Long id;
 
     @NotBlank
-    @Schema(description = "应用市场名称，例如 vivo 或 xiaomi", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "Store type, such as vivo or xiaomi", requiredMode = Schema.RequiredMode.REQUIRED)
     private String storeType;
 
-    @Schema(description = "开发者账号名称")
+    @Schema(description = "Account name")
     private String accountName;
 
-    @Schema(description = "联系邮箱")
+    @Schema(description = "Contact email")
     private String email;
 
-    @Schema(description = "联系电话")
+    @Schema(description = "Contact phone")
     private String phone;
 
-    @Schema(description = "开放平台 Client ID")
+    @Schema(description = "Client ID")
     private String clientId;
 
-    @Schema(description = "开放平台 Client Secret")
+    @Schema(description = "Client secret")
     private String clientSecret;
 
-    @Schema(description = "小米公钥")
-    private String miPublicKey;
+    @Schema(description = "Xiaomi public key")
+    private String publicKey;
 
-    @Schema(description = "小米私钥")
-    private String miPrivateKey;
+    @Schema(description = "Xiaomi private key")
+    private String privateKey;
 
-    @Schema(description = "固定 Token")
+    @Schema(description = "Static token")
     private String token;
 
-    @Schema(description = "IP 白名单")
+    @Schema(description = "IP whitelist")
     private String ipWhitelist;
 
-    @Schema(description = "API 状态：1=启用，0=禁用")
+    @Schema(description = "API status: 1 enabled, 0 disabled")
     private Integer apiStatus = 1;
 
     public Long getId() {
@@ -99,20 +99,20 @@ public class StoreConfigRequest {
         this.clientSecret = clientSecret;
     }
 
-    public String getMiPublicKey() {
-        return miPublicKey;
+    public String getPublicKey() {
+        return publicKey;
     }
 
-    public void setMiPublicKey(String miPublicKey) {
-        this.miPublicKey = miPublicKey;
+    public void setPublicKey(String publicKey) {
+        this.publicKey = publicKey;
     }
 
-    public String getMiPrivateKey() {
-        return miPrivateKey;
+    public String getPrivateKey() {
+        return privateKey;
     }
 
-    public void setMiPrivateKey(String miPrivateKey) {
-        this.miPrivateKey = miPrivateKey;
+    public void setPrivateKey(String privateKey) {
+        this.privateKey = privateKey;
     }
 
     public String getToken() {

@@ -5,7 +5,6 @@ import com.app.publishservice.api.dto.PageResponse;
 import com.app.publishservice.api.dto.ReleaseRecordPageResponse;
 import com.app.publishservice.api.dto.ReleaseRecordResponse;
 import com.app.publishservice.api.dto.ReleaseSubmitRequest;
-import com.app.publishservice.api.dto.ReleaseTaskLogResponse;
 import com.app.publishservice.service.ReleaseOrchestrationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,7 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/releases")
-@Tag(name = "发版管理", description = "应用发版提审、记录查询和日志查询接口")
+@Tag(name = "发布管理", description = "应用发版提交和记录查询接口")
 public class ReleaseController {
 
     private final ReleaseOrchestrationService releaseOrchestrationService;
@@ -50,7 +49,8 @@ public class ReleaseController {
             @RequestParam(value = "size", required = false) Long size,
             @RequestParam(value = "pageNum", required = false) Long pageNum,
             @RequestParam(value = "pageSize", required = false) Long pageSize,
-            @Parameter(description = "关键字") @RequestParam(value = "key", required = false) String key
+            @Parameter(description = "关键字")
+            @RequestParam(value = "key", required = false) String key
     ) {
         return ApiResponse.success(releaseOrchestrationService.pageReleaseRecords(
                 current != null ? current : pageNum,
@@ -61,23 +61,17 @@ public class ReleaseController {
 
     @GetMapping("/{releaseId}")
     @Operation(summary = "查询发版详情", description = "根据发版记录 ID 查询发版详情")
-    public ApiResponse<ReleaseRecordResponse> get(@Parameter(description = "发版记录 ID", required = true) @PathVariable Long releaseId) {
+    public ApiResponse<ReleaseRecordResponse> get(
+            @Parameter(description = "发版记录 ID", required = true) @PathVariable Long releaseId
+    ) {
         return ApiResponse.success(releaseOrchestrationService.getReleaseRecord(releaseId));
     }
 
-    @GetMapping("/{releaseId}/logs")
-    @Operation(summary = "查询发版日志", description = "根据发版记录 ID 查询发版过程日志")
-    public ApiResponse<List<ReleaseTaskLogResponse>> logs(@Parameter(description = "发版记录 ID", required = true) @PathVariable Long releaseId) {
-        return ApiResponse.success(releaseOrchestrationService.getReleaseTaskLogs(releaseId));
-    }
-
     @GetMapping("/appId/{appId}")
-    @Operation(summary = "根据app_id查询发版记录", description = "根据app_id查询发版记录列表")
+    @Operation(summary = "根据 appId 查询发版记录", description = "根据 appId 查询发版记录列表")
     public ApiResponse<PageResponse<ReleaseRecordPageResponse>> queryReleaseByAppId(
-            @Parameter(description = "应用ID", required = true) @PathVariable Long appId
+            @Parameter(description = "应用 ID", required = true) @PathVariable Long appId
     ) {
-        return ApiResponse.success(releaseOrchestrationService.queryReleaseByAppId(
-                appId
-        ));
+        return ApiResponse.success(releaseOrchestrationService.queryReleaseByAppId(appId));
     }
 }

@@ -15,7 +15,7 @@ public class CicdReleaseRequest {
 
     private String updateLog;
     private String expectedVersionName;
-    private Integer expectedVersionCode;
+    private String expectedVersionCode;
     private Boolean expectedReinforced;
 
     public Long getAppId() {
@@ -50,11 +50,11 @@ public class CicdReleaseRequest {
         this.expectedVersionName = expectedVersionName;
     }
 
-    public Integer getExpectedVersionCode() {
+    public String getExpectedVersionCode() {
         return expectedVersionCode;
     }
 
-    public void setExpectedVersionCode(Integer expectedVersionCode) {
+    public void setExpectedVersionCode(String expectedVersionCode) {
         this.expectedVersionCode = expectedVersionCode;
     }
 

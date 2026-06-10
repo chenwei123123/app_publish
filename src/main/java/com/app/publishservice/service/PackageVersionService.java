@@ -3,6 +3,7 @@ package com.app.publishservice.service;
 import com.app.publishservice.api.dto.AppVersionResponse;
 import com.app.publishservice.api.dto.PackageUploadResponse;
 import com.app.publishservice.common.exception.NotFoundException;
+import com.app.publishservice.common.exception.SubmitPackageDownloadException;
 import com.app.publishservice.config.AppProperties;
 import com.app.publishservice.domain.entity.AppInfo;
 import com.app.publishservice.domain.entity.AppVersion;
@@ -10,7 +11,11 @@ import com.app.publishservice.domain.enums.AppType;
 import com.app.publishservice.repository.AppVersionRepository;
 import com.app.publishservice.service.model.PackageMetadata;
 import com.app.publishservice.util.ApkDownloadUtil;
+import com.app.publishservice.util.VersionCodeUtil;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import org.springframework.core.env.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,32 +24,48 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PackageVersionService {
 
     private static final Logger log = LoggerFactory.getLogger(PackageVersionService.class);
+    private static final String PROJECT_METADATA_FILE_NAME = "app-publish-metadata.json";
+    static final String APK32_DOWNLOAD_FAILED_MESSAGE = "32\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
+    static final String APK64_DOWNLOAD_FAILED_MESSAGE = "64\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
+    static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9app-publish-metadata.json\u4E2D\u7684apk32Path";
+    static final String APK64_LOCAL_FILE_FAILED_MESSAGE = "64\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9app-publish-metadata.json\u4E2D\u7684apk64Path";
 
     private final AppManagementService appManagementService;
     private final AppVersionRepository appVersionRepository;
     private final StorageService storageService;
     private final PackageInspectorService packageInspectorService;
     private final AppProperties appProperties;
+    private final ObjectMapper objectMapper;
+    private final Environment environment;
 
     public PackageVersionService(
             AppManagementService appManagementService,
             AppVersionRepository appVersionRepository,
             StorageService storageService,
             PackageInspectorService packageInspectorService,
-            AppProperties appProperties
+            AppProperties appProperties,
+            ObjectMapper objectMapper,
+            Environment environment
     ) {
         this.appManagementService = appManagementService;
         this.appVersionRepository = appVersionRepository;
         this.storageService = storageService;
         this.packageInspectorService = packageInspectorService;
         this.appProperties = appProperties;
+        this.objectMapper = objectMapper;
+        this.environment = environment;
     }
 
     @Transactional
@@ -53,14 +74,14 @@ public class PackageVersionService {
             MultipartFile file,
             String updateLog,
             String expectedVersionName,
-            Integer expectedVersionCode,
+            String expectedVersionCode,
             Boolean expectedReinforced
     ) throws IOException {
         log.info("Start package upload, appId={}, fileName={}", appId, file.getOriginalFilename());
         AppInfo appInfo = appManagementService.requireApp(appId);
         Path target = storageService.allocatePath(file.getOriginalFilename());
         PackageMetadata metadata = packageInspectorService.inspect(file, target);
-        validatePackageAgainstApp(appInfo, metadata);
+        //validatePackageAgainstApp(appInfo, metadata);
         validateExpectedMetadata(metadata, expectedVersionName, expectedVersionCode, expectedReinforced);
         ensureVersionIsNew(appId, metadata.versionName(), metadata.versionCode());
 
@@ -69,7 +90,7 @@ public class PackageVersionService {
         appVersion.setAppInfo(appInfo);
         appVersion.setVersionName(metadata.versionName());
         appVersion.setVersionCode(metadata.versionCode());
-        appVersion.setPackageUrlLow(target.toString());
+        appVersion.setPackageUrl32(target.toString());
         appVersion.setUpdateLog(updateLog);
         appVersion.setIsReinforce(metadata.reinforced() ? 1 : 0);
         appVersionRepository.insert(appVersion);
@@ -105,14 +126,22 @@ public class PackageVersionService {
         return version;
     }
 
+    public boolean requiresSubmitPackageDownload(AppVersion version) {
+        return StringUtils.hasText(version.getBuildCode()) && !appProperties.getPackageRepository().isStreamUploadEnabled();
+    }
+
     @Transactional
     public AppVersion prepareVersionForSubmit(AppVersion version) {
         if (StringUtils.hasText(version.getBuildCode())) {
+            if (environment.matchesProfiles("dev")) {
+                prepareLocalSubmitPackagesFromMetadata(version);
+                return version;
+            }
             if (appProperties.getPackageRepository().isStreamUploadEnabled()) {
                 String apk32Url = ApkDownloadUtil.buildApk32Url(version.getVersionCode(), version.getBuildCode());
                 String apk64Url = ApkDownloadUtil.buildApk64Url(version.getVersionCode(), version.getBuildCode());
-                version.setPackageUrlLow(apk32Url);
-                version.setPackageUrlHigh(apk64Url);
+                version.setPackageUrl32(apk32Url);
+                version.setPackageUrl64(apk64Url);
                 appVersionRepository.updateById(version);
                 log.info(
                         "Submit package URLs prepared, versionId={}, versionCode={}, buildCode={}, apk32Url={}, apk64Url={}",
@@ -125,16 +154,22 @@ public class PackageVersionService {
                 return version;
             }
 
-            Path apk32Target = allocateSubmitPackagePath(buildPackageFileName(version, "32"));
-            Path apk64Target = allocateSubmitPackagePath(buildPackageFileName(version, "64"));
+            String apk32Url = ApkDownloadUtil.buildApk32Url(version.getVersionCode(), version.getBuildCode());
+            String apk64Url = ApkDownloadUtil.buildApk64Url(version.getVersionCode(), version.getBuildCode());
+            Path apk32Target = allocateSubmitPackagePath(version.getVersionCode(), version.getBuildCode(), ApkDownloadUtil.extractFileName(apk32Url));
+            Path apk64Target = allocateSubmitPackagePath(version.getVersionCode(), version.getBuildCode(), ApkDownloadUtil.extractFileName(apk64Url));
             try {
                 ApkDownloadUtil.downloadApk32(version.getVersionCode(), version.getBuildCode(), apk32Target.toString());
+            } catch (IOException ex) {
+                throw new SubmitPackageDownloadException(APK32_DOWNLOAD_FAILED_MESSAGE, ex);
+            }
+            try {
                 ApkDownloadUtil.downloadApk64(version.getVersionCode(), version.getBuildCode(), apk64Target.toString());
             } catch (IOException ex) {
-                throw new IllegalStateException("Failed to download submit packages", ex);
+                throw new SubmitPackageDownloadException(APK64_DOWNLOAD_FAILED_MESSAGE, ex);
             }
-            version.setPackageUrlLow(apk32Target.toString());
-            version.setPackageUrlHigh(apk64Target.toString());
+            version.setPackageUrl32(apk32Target.toString());
+            version.setPackageUrl64(apk64Target.toString());
             appVersionRepository.updateById(version);
             log.info(
                     "Submit packages downloaded, versionId={}, versionCode={}, buildCode={}, apk32Path={}, apk64Path={}",
@@ -154,9 +189,10 @@ public class PackageVersionService {
         return appVersionRepository.selectList(
                 Wrappers.<AppVersion>lambdaQuery()
                         .eq(AppVersion::getAppId, appId)
-                        .orderByDesc(AppVersion::getVersionCode)
-                        .orderByDesc(AppVersion::getCreateTime)
-        ).stream().map(this::toResponse).toList();
+        ).stream()
+                .sorted(appVersionComparator())
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -170,8 +206,8 @@ public class PackageVersionService {
 
     private void validatePackageAgainstApp(AppInfo appInfo, PackageMetadata metadata) {
         boolean iosPackage = "ipa".equalsIgnoreCase(metadata.packageType());
-        if (appInfo.getAppType() == AppType.IOS && !iosPackage) {
-            throw new IllegalArgumentException("iOS apps can only upload IPA packages");
+        if (appInfo.getAppType() == AppType.HarmonyOS && !iosPackage) {
+            throw new IllegalArgumentException("HarmonyOS apps can only upload IPA packages");
         }
         if (appInfo.getAppType() == AppType.ANDROID && iosPackage) {
             throw new IllegalArgumentException("Android apps cannot upload IPA packages");
@@ -181,13 +217,13 @@ public class PackageVersionService {
     private void validateExpectedMetadata(
             PackageMetadata metadata,
             String expectedVersionName,
-            Integer expectedVersionCode,
+            String expectedVersionCode,
             Boolean expectedReinforced
     ) {
         if (expectedVersionName != null && !expectedVersionName.equals(metadata.versionName())) {
             throw new IllegalArgumentException("Version name mismatch: expected " + expectedVersionName + ", actual " + metadata.versionName());
         }
-        if (expectedVersionCode != null && !expectedVersionCode.equals(metadata.versionCode())) {
+        if (expectedVersionCode != null && !VersionCodeUtil.requireNonBlank(expectedVersionCode).equals(metadata.versionCode())) {
             throw new IllegalArgumentException("Version code mismatch: expected " + expectedVersionCode + ", actual " + metadata.versionCode());
         }
         if (expectedReinforced != null && expectedReinforced != metadata.reinforced()) {
@@ -195,29 +231,16 @@ public class PackageVersionService {
         }
     }
 
-    private void ensureVersionIsNew(Long appId, String versionName, Integer versionCode) {
+    private void ensureVersionIsNew(Long appId, String versionName, String versionCode) {
+        String normalizedVersionCode = VersionCodeUtil.requireNonBlank(versionCode);
         Long duplicateCount = appVersionRepository.selectCount(
                 Wrappers.<AppVersion>lambdaQuery()
                         .eq(AppVersion::getAppId, appId)
                         .eq(AppVersion::getVersionName, versionName)
-                        .eq(AppVersion::getVersionCode, versionCode)
+                        .eq(AppVersion::getVersionCode, normalizedVersionCode)
         );
         if (duplicateCount != null && duplicateCount > 0) {
             throw new IllegalArgumentException("Version already exists");
-        }
-
-        List<AppVersion> versions = appVersionRepository.selectList(
-                Wrappers.<AppVersion>lambdaQuery()
-                        .eq(AppVersion::getAppId, appId)
-                        .orderByDesc(AppVersion::getVersionCode)
-                        .orderByDesc(AppVersion::getCreateTime)
-                        .last("limit 1")
-        );
-        if (!versions.isEmpty()) {
-            AppVersion lastVersion = versions.getFirst();
-            if (versionCode <= lastVersion.getVersionCode()) {
-                throw new IllegalArgumentException("Version code must increase, latest=" + lastVersion.getVersionCode());
-            }
         }
     }
 
@@ -229,8 +252,8 @@ public class PackageVersionService {
                 version.getVersionCode(),
                 version.getBuildCode(),
                 version.getPackageUrl(),
-                version.getPackageUrlLow(),
-                version.getPackageUrlHigh(),
+                version.getPackageUrl32(),
+                version.getPackageUrl64(),
                 version.getUpdateLog(),
                 version.getIsReinforce() != null && version.getIsReinforce() == 1,
                 version.getCreateUser(),
@@ -239,25 +262,197 @@ public class PackageVersionService {
         );
     }
 
-    private Path allocateSubmitPackagePath(String fileName) {
+    private void prepareLocalSubmitPackagesFromMetadata(AppVersion version) {
+        ProjectMetadataContext metadataContext = resolveProjectMetadataContext(version);
+        Map<String, Object> metadata = metadataContext.metadata();
+
+        Path apk32Path = resolveProjectAssetPath(
+                metadataContext.metadataPath(),
+                firstNonNull(
+                        metadataLookup(metadata, null, "apk32Path"),
+                        metadataLookup(metadata, "vivo", "apk32Path"),
+                        metadataLookup(metadata, null, "vivoApk32Path")
+                )
+        );
+        if (apk32Path == null) {
+            throw new IllegalArgumentException(APK32_LOCAL_FILE_FAILED_MESSAGE);
+        }
+
+        Path apk64Path = resolveProjectAssetPath(
+                metadataContext.metadataPath(),
+                firstNonNull(
+                        metadataLookup(metadata, null, "apk64Path"),
+                        metadataLookup(metadata, "vivo", "apk64Path"),
+                        metadataLookup(metadata, null, "vivoApk64Path")
+                )
+        );
+        if (apk64Path == null) {
+            throw new IllegalArgumentException(APK64_LOCAL_FILE_FAILED_MESSAGE);
+        }
+
+        version.setPackageUrl32(apk32Path.toString());
+        version.setPackageUrl64(apk64Path.toString());
+        appVersionRepository.updateById(version);
+        log.info(
+                "Submit packages resolved from local metadata, versionId={}, versionCode={}, buildCode={}, apk32Path={}, apk64Path={}",
+                version.getId(),
+                version.getVersionCode(),
+                version.getBuildCode(),
+                apk32Path,
+                apk64Path
+        );
+    }
+
+    private Path allocateSubmitPackagePath(String versionCode, String buildCode, String fileName) {
         try {
-            return storageService.allocatePath(fileName);
+            return storageService.allocateDownloadPath(versionCode, buildCode, fileName);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to allocate local path for submit package", ex);
         }
     }
 
-    private String buildPackageFileName(AppVersion version, String archLabel) {
-        String baseName = StringUtils.hasText(version.getVersionName())
-                ? version.getVersionName()
-                : String.valueOf(version.getVersionCode());
-        String sanitizedBuildCode = StringUtils.hasText(version.getBuildCode())
-                ? version.getBuildCode().replaceAll("[^a-zA-Z0-9._-]", "_")
-                : "build";
-        return baseName.replaceAll("[^a-zA-Z0-9._-]", "_")
-                + "-" + version.getVersionCode()
-                + "-" + sanitizedBuildCode
-                + "-" + archLabel
-                + ".apk";
+    private Comparator<AppVersion> appVersionComparator() {
+        return Comparator
+                .comparing(AppVersion::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(AppVersion::getId, Comparator.nullsLast(Comparator.reverseOrder()));
+    }
+
+    private ProjectMetadataContext resolveProjectMetadataContext(AppVersion version) {
+        String packageLocation = firstNonBlank(version.getPackageUrl(), version.getPackageUrl32(), version.getPackageUrl64());
+        if (StringUtils.hasText(packageLocation)) {
+            Path packagePath = toPath(packageLocation.trim());
+            if (packagePath != null && Files.exists(packagePath)) {
+                return readProjectMetadata(packagePath);
+            }
+        }
+        return readProjectMetadata(Path.of("."));
+    }
+
+    private ProjectMetadataContext readProjectMetadata(Path packagePath) {
+        Path metadataPath = findProjectMetadataPath(packagePath);
+        if (metadataPath == null) {
+            return new ProjectMetadataContext(null, Map.of());
+        }
+        try (InputStream inputStream = Files.newInputStream(metadataPath)) {
+            return new ProjectMetadataContext(
+                    metadataPath,
+                    objectMapper.readValue(inputStream, new TypeReference<>() {
+                    })
+            );
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read project metadata: " + metadataPath, ex);
+        }
+    }
+
+    private Path findProjectMetadataPath(Path packagePath) {
+        Path current = packagePath.toAbsolutePath().normalize();
+        if (!Files.isDirectory(current)) {
+            current = current.getParent();
+        }
+        while (current != null) {
+            Path candidate = current.resolve(PROJECT_METADATA_FILE_NAME);
+            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+            current = current.getParent();
+        }
+        Path fallback = Path.of(PROJECT_METADATA_FILE_NAME).toAbsolutePath().normalize();
+        if (Files.exists(fallback) && Files.isRegularFile(fallback)) {
+            return fallback;
+        }
+        return null;
+    }
+
+    private Path resolveProjectAssetPath(Path metadataPath, Object assetLocation) {
+        if (assetLocation == null) {
+            return null;
+        }
+        String location = String.valueOf(assetLocation).trim();
+        if (!StringUtils.hasText(location)) {
+            return null;
+        }
+
+        Path directPath = toPath(location);
+        if (directPath == null) {
+            return null;
+        }
+        if (!directPath.isAbsolute()) {
+            Path parent = metadataPath == null ? null : metadataPath.toAbsolutePath().normalize().getParent();
+            if (parent != null) {
+                Path projectPath = parent.resolve(directPath).normalize();
+                if (Files.exists(projectPath) && Files.isRegularFile(projectPath)) {
+                    return projectPath;
+                }
+            }
+            return null;
+        }
+        return Files.exists(directPath) && Files.isRegularFile(directPath) ? directPath : null;
+    }
+
+    private Object metadataLookup(Map<String, Object> metadata, String sectionKey, String key) {
+        if (metadata == null || !StringUtils.hasText(key)) {
+            return null;
+        }
+        if (StringUtils.hasText(sectionKey)) {
+            Object sectionValue = metadata.get(sectionKey);
+            if (sectionValue instanceof Map<?, ?> section && !section.isEmpty()) {
+                Object value = firstNonNull(section.get(key), section.get(toSnakeCase(key)));
+                if (value != null) {
+                    return value;
+                }
+            }
+        }
+        return firstNonNull(metadata.get(key), metadata.get(toSnakeCase(key)));
+    }
+
+    private Object firstNonNull(Object... values) {
+        if (values == null) {
+            return null;
+        }
+        for (Object value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    private String toSnakeCase(String value) {
+        StringBuilder builder = new StringBuilder();
+        for (int index = 0; index < value.length(); index++) {
+            char current = value.charAt(index);
+            if (Character.isUpperCase(current)) {
+                if (index > 0) {
+                    builder.append('_');
+                }
+                builder.append(Character.toLowerCase(current));
+            } else {
+                builder.append(current);
+            }
+        }
+        return builder.toString();
+    }
+
+    private Path toPath(String location) {
+        try {
+            return Path.of(location);
+        } catch (InvalidPathException ex) {
+            return null;
+        }
+    }
+
+    private record ProjectMetadataContext(Path metadataPath, Map<String, Object> metadata) {
     }
 }

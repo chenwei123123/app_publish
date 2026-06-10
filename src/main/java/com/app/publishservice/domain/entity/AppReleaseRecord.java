@@ -69,7 +69,7 @@ public class AppReleaseRecord {
     private String appDescription;
 
     @TableField(exist = false)
-    private Integer versionCode;
+    private String versionCode;
 
     public Long getId() {
         return id;
@@ -257,11 +257,11 @@ public class AppReleaseRecord {
         this.appDescription = appDescription;
     }
 
-    public Integer getVersionCode() {
+    public String getVersionCode() {
         return versionCode;
     }
 
-    public void setVersionCode(Integer versionCode) {
+    public void setVersionCode(String versionCode) {
         this.versionCode = versionCode;
     }
 }

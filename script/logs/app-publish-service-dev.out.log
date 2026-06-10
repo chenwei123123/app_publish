@@ -1,0 +1,43 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.5)
+
+2026-06-05 16:02:23.825 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
+2026-06-05 16:02:23.933 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication v0.0.1-SNAPSHOT using Java 21.0.10 with PID 36092 (D:\app_publish\target\app-publish-service-0.0.1-SNAPSHOT-dev.jar started by 86159 in D:\app_publish)
+2026-06-05 16:02:23.937 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
+2026-06-05 16:02:23.940 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
+2026-06-05 16:02:27.375 [main] DEBUG [] o.apache.ibatis.logging.LogFactory - Logging initialized using 'class org.apache.ibatis.logging.slf4j.Slf4jImpl' adapter.
+2026-06-05 16:02:28.710 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-06-05 16:02:28.744 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8080"]
+2026-06-05 16:02:28.756 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-06-05 16:02:28.758 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-06-05 16:02:28.908 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-06-05 16:02:28.911 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 4752 ms
+2026-06-05 16:02:29.194 [main] DEBUG [] c.a.p.api.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
+2026-06-05 16:02:30.160 [main] DEBUG [] o.apache.ibatis.logging.LogFactory - Logging initialized using 'class org.apache.ibatis.logging.slf4j.Slf4jImpl' adapter.
+2026-06-05 16:02:31.414 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-06-05 16:02:32.866 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@368424db
+2026-06-05 16:02:32.877 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-06-05 16:02:37.747 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8080"]
+2026-06-05 16:02:37.978 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-06-05 16:02:38.061 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 15.659 seconds (process running for 16.891)
+2026-06-05 16:02:38.131 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-06-05 16:02:38.284 [scheduling-1] DEBUG [] c.a.p.r.A.selectReviewingReleaseRecords - ==>  Preparing: SELECT r.id, r.app_id, r.version_id, r.store_type, r.release_mode, r.release_type, r.gray_percent, r.gray_start_time, r.gray_end_time, r.release_status, r.store_release_id, r.reject_reason, r.api_request_log, r.api_response_log, r.release_time, r.finish_time, r.create_user, r.update_user, ai.app_name, ai.package_name, ai.app_description, av.version_code FROM app_release_record r LEFT JOIN app_info ai ON ai.id = r.app_id LEFT JOIN app_version av ON av.id = r.version_id AND av.app_id = r.app_id WHERE r.release_status = ? ORDER BY r.id ASC
+2026-06-05 16:02:38.382 [scheduling-1] DEBUG [] c.a.p.r.A.selectReviewingReleaseRecords - ==> Parameters: auditing(String)
+2026-06-05 16:02:38.494 [scheduling-1] DEBUG [] c.a.p.r.A.selectReviewingReleaseRecords - <==      Total: 0
+2026-06-05 16:02:38.503 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-06-05 16:02:43.676 [http-nio-8080-exec-2] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-05 16:02:43.679 [http-nio-8080-exec-2] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-06-05 16:02:43.681 [http-nio-8080-exec-2] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2026-06-05 16:02:43.699 [http-nio-8080-exec-2] INFO  [292d189f47f642b38cba066f58eac7ae] c.a.p.api.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/swagger-initializer.js, clientIp=172.254.244.8
+2026-06-05 16:02:43.854 [http-nio-8080-exec-2] INFO  [292d189f47f642b38cba066f58eac7ae] c.a.p.api.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/swagger-initializer.js, status=200, durationMs=158
+2026-06-05 16:02:43.919 [http-nio-8080-exec-3] INFO  [ac16c805fe8a45358be684100e7e3593] c.a.p.api.RequestLoggingFilter - HTTP request start, method=GET, uri=/v3/api-docs/swagger-config, clientIp=172.254.244.8
+2026-06-05 16:02:43.985 [http-nio-8080-exec-3] INFO  [ac16c805fe8a45358be684100e7e3593] c.a.p.api.RequestLoggingFilter - HTTP request end, method=GET, uri=/v3/api-docs/swagger-config, status=200, durationMs=66
+2026-06-05 16:02:44.003 [http-nio-8080-exec-4] INFO  [d52e571da0c647bb9bdea187098d5a98] c.a.p.api.RequestLoggingFilter - HTTP request start, method=GET, uri=/openapi.yaml, clientIp=172.254.244.8
+2026-06-05 16:02:44.011 [http-nio-8080-exec-4] INFO  [d52e571da0c647bb9bdea187098d5a98] c.a.p.api.RequestLoggingFilter - HTTP request end, method=GET, uri=/openapi.yaml, status=304, durationMs=9

@@ -4,21 +4,21 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "发版记录分页响应")
+@Schema(description = "Release record page response")
 public record ReleaseRecordPageResponse(
-        @Schema(description = "发版记录 ID") Long id,
-        @Schema(description = "应用 ID") Long appId,
-        @Schema(description = "应用名称") String appName,
-        @Schema(description = "包名") String packageName,
-        @Schema(description = "应用描述") String appDescription,
-        @Schema(description = "版本 ID") Long versionId,
-        @Schema(description = "版本号") Integer versionCode,
-        @Schema(description = "商店类型") String storeType,
-        @Schema(description = "发布方式") String releaseMode,
-        @Schema(description = "发布状态") String releaseStatus,
-        @Schema(description = "提审时间") LocalDateTime releaseTime,
-        @Schema(description = "完成时间") LocalDateTime finishTime,
-        @Schema(description = "创建人") String createUser,
-        @Schema(description = "更新人") String updateUser
+        @Schema(description = "Release record ID") Long id,
+        @Schema(description = "App ID") Long appId,
+        @Schema(description = "App name") String appName,
+        @Schema(description = "Package name") String packageName,
+        @Schema(description = "App description") String appDescription,
+        @Schema(description = "Version ID") Long versionId,
+        @Schema(description = "Version code") String versionCode,
+        @Schema(description = "Store type") String storeType,
+        @Schema(description = "Release mode") String releaseMode,
+        @Schema(description = "Release status") String releaseStatus,
+        @Schema(description = "Release time") LocalDateTime releaseTime,
+        @Schema(description = "Finish time") LocalDateTime finishTime,
+        @Schema(description = "Created by") String createUser,
+        @Schema(description = "Updated by") String updateUser
 ) {
 }

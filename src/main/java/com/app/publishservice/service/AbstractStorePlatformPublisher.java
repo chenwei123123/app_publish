@@ -1,0 +1,1094 @@
+package com.app.publishservice.service;
+
+import com.app.publishservice.config.AppProperties;
+import com.app.publishservice.config.StoreApiProperties;
+import com.app.publishservice.common.exception.StoreApiException;
+import com.app.publishservice.domain.entity.AppReleaseRecord;
+import com.app.publishservice.domain.entity.AppStoreConfig;
+import com.app.publishservice.domain.entity.AppVersion;
+import com.app.publishservice.domain.enums.ReleaseStatus;
+import com.app.publishservice.domain.enums.TokenType;
+import com.app.publishservice.service.model.StoreReviewResult;
+import com.app.publishservice.service.model.StoreSubmitResult;
+import com.app.publishservice.service.model.TokenPayload;
+import com.app.publishservice.util.ApkDownloadUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.AbstractResource;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
+
+import java.io.InterruptedIOException;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.SocketTimeoutException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Supplier;
+
+abstract class AbstractStorePlatformPublisher implements StorePublisher {
+
+    protected static final Logger log = LoggerFactory.getLogger(AbstractStorePlatformPublisher.class);
+    private static final String PROJECT_METADATA_FILE_NAME = "app-publish-metadata.json";
+    private static final DateTimeFormatter PACKAGE_CACHE_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final String CMS_ARTIFACT_HOST = "artifacts.cmschina.com.cn";
+
+    protected final RestClient restClient;
+    protected final ObjectMapper objectMapper;
+    protected final AppProperties appProperties;
+    protected final StoreRequestLogService storeRequestLogService;
+    protected final HttpClient packageHttpClient;
+
+    protected AbstractStorePlatformPublisher(RestClient restClient, ObjectMapper objectMapper, AppProperties appProperties) {
+        this(restClient, objectMapper, appProperties, null);
+    }
+
+    @Autowired
+    protected AbstractStorePlatformPublisher(
+            RestClient restClient,
+            ObjectMapper objectMapper,
+            AppProperties appProperties,
+            StoreRequestLogService storeRequestLogService
+    ) {
+        this.restClient = restClient;
+        this.objectMapper = objectMapper;
+        this.appProperties = appProperties;
+        this.storeRequestLogService = storeRequestLogService;
+        this.packageHttpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(Math.max(appProperties.getStoreApi().getDefaultTimeoutSeconds(), 1)))
+                .build();
+    }
+
+    @Override
+    public TokenPayload refreshToken(AppStoreConfig storeConfig) {
+        log.debug("Start refresh token, storeConfigId={}, storeType={}", storeConfig.getId(), storeConfig.getStoreType().getCode());
+        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+        if (StringUtils.hasText(storeConfig.getToken())) {
+            log.debug("Use configured static token, storeConfigId={}, storeType={}", storeConfig.getId(), storeConfig.getStoreType().getCode());
+            return new TokenPayload(TokenType.STATIC.getCode(), storeConfig.getToken(), LocalDateTime.now().plusYears(10));
+        }
+        if (endpoint.isMockEnabled() || !StringUtils.hasText(endpoint.getBaseUrl()) || !StringUtils.hasText(endpoint.getTokenEndpoint())) {
+            log.info("Use mock token refresh, storeConfigId={}, storeType={}", storeConfig.getId(), storeConfig.getStoreType().getCode());
+            return new TokenPayload(
+                    TokenType.ACCESS_TOKEN.getCode(),
+                    "mock-" + storeConfig.getStoreType().getCode() + "-" + UUID.randomUUID(),
+                    LocalDateTime.now().plusHours(1)
+            );
+        }
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("accountName", storeConfig.getAccountName());
+        body.put("email", storeConfig.getEmail());
+        body.put("phone", storeConfig.getPhone());
+        body.put("clientId", storeConfig.getClientId());
+        body.put("clientSecret", storeConfig.getClientSecret());
+        body.put("publicKey", storeConfig.getPublicKey());
+        body.put("privateKey", storeConfig.getPrivateKey());
+        body.put("ipWhitelist", storeConfig.getIpWhitelist());
+
+        String tokenUrl = endpoint.getBaseUrl() + endpoint.getTokenEndpoint();
+        log.info("Request store token, storeConfigId={}, storeType={}", storeConfig.getId(), storeConfig.getStoreType().getCode());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> response = executeStoreRequest(
+                trace(storeConfig, "request token for " + storeConfig.getStoreType().getCode(), "POST", tokenUrl, null, body),
+                () -> restClient.post()
+                        .uri(tokenUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(body)
+                        .retrieve()
+                        .body(Map.class)
+        );
+
+        String token = firstString(response, "accessToken", "token");
+        Number expiresIn = response.get("expiresIn") instanceof Number number ? number : 3600;
+        return new TokenPayload(TokenType.ACCESS_TOKEN.getCode(), token, LocalDateTime.now().plusSeconds(expiresIn.longValue()));
+    }
+
+    @Override
+    public StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
+        log.info(
+                "Start submit release, storeType={}, versionId={}, appId={}, releaseType={}",
+                storeConfig.getStoreType().getCode(),
+                version.getId(),
+                version.getAppId(),
+                record == null ? null : record.getReleaseType()
+        );
+        try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
+            Map<String, Object> payload = new LinkedHashMap<>();
+            payload.put("appId", version.getAppInfo().getId());
+            payload.put("packageName", version.getAppInfo().getPackageName());
+            payload.put("versionName", version.getVersionName());
+            payload.put("versionCode", version.getVersionCode());
+            payload.put("packageUrl", version.getPackageUrl());
+            payload.put("updateLog", version.getUpdateLog());
+            payload.put("reinforced", version.getIsReinforce() == 1);
+
+            StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+            if (endpoint.isMockEnabled() || !StringUtils.hasText(endpoint.getBaseUrl()) || !StringUtils.hasText(endpoint.getSubmitEndpoint())) {
+                log.info("Use mock submit release, storeType={}, versionId={}", storeConfig.getStoreType().getCode(), version.getId());
+                String storeReleaseId = storeConfig.getStoreType().getCode() + "-" + UUID.randomUUID();
+                return new StoreSubmitResult(
+                        storeReleaseId,
+                        writeJson(payload),
+                        "{\"accepted\":true,\"storeReleaseId\":\"" + storeReleaseId + "\"}",
+                        "mock submit success"
+                );
+            }
+
+            String submitUrl = endpoint.getBaseUrl() + endpoint.getSubmitEndpoint();
+            log.info("Submit release to store endpoint, storeType={}, versionId={}", storeConfig.getStoreType().getCode(), version.getId());
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = executeStoreRequest(
+                    trace(
+                            storeConfig,
+                            "submit release to " + storeConfig.getStoreType().getCode(),
+                            "POST",
+                            submitUrl,
+                            null,
+                            requestPayload(payload, Map.of("Authorization", "Bearer " + token))
+                    ),
+                    () -> restClient.post()
+                            .uri(submitUrl)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .header("Authorization", "Bearer " + token)
+                            .body(payload)
+                            .retrieve()
+                            .body(Map.class)
+            );
+
+            String storeReleaseId = firstString(response, "storeReleaseId", "id");
+            return new StoreSubmitResult(storeReleaseId, writeJson(payload), writeJson(response), "submit success");
+        }
+    }
+
+    @Override
+    public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
+        log.debug("Start query review, releaseId={}, storeType={}, releaseType={}", record.getId(), record.getStoreType(), record.getReleaseType());
+        try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
+            StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+            if (endpoint.isMockEnabled() || !StringUtils.hasText(endpoint.getBaseUrl()) || !StringUtils.hasText(endpoint.getStatusEndpoint())) {
+                ReleaseStatus status = record.getReleaseTime() != null
+                        && record.getReleaseTime().isBefore(LocalDateTime.now().minusSeconds(appProperties.getReviewAutoPassSeconds()))
+                        ? ReleaseStatus.PASS
+                        : ReleaseStatus.AUDITING;
+                log.debug("Use mock review query, releaseId={}, storeType={}, status={}", record.getId(), record.getStoreType(), status.getCode());
+                return new StoreReviewResult(status, "{\"mockStatus\":\"" + status.getCode() + "\"}", null);
+            }
+
+            String statusUrl = endpoint.getBaseUrl() + endpoint.getStatusEndpoint().replace("{id}", record.getStoreReleaseId());
+            log.debug("Query review status, releaseId={}, storeType={}, statusUrl={}", record.getId(), record.getStoreType(), statusUrl);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> response = executeStoreRequest(
+                    trace(
+                            storeConfig,
+                            "query review for " + storeConfig.getStoreType().getCode(),
+                            "GET",
+                            statusUrl,
+                            Map.of("id", record.getStoreReleaseId()),
+                            Map.of("Authorization", "Bearer " + token)
+                    ),
+                    () -> restClient.get()
+                            .uri(statusUrl)
+                            .header("Authorization", "Bearer " + token)
+                            .retrieve()
+                            .body(Map.class)
+            );
+
+            Object statusCode = response.get("status");
+            ReleaseStatus releaseStatus = mapStatus(statusCode == null ? "auditing" : statusCode.toString());
+            String rejectReason = response.get("rejectReason") == null ? null : response.get("rejectReason").toString();
+            return new StoreReviewResult(releaseStatus, writeJson(response), rejectReason);
+        }
+    }
+
+    protected StoreApiProperties.StoreEndpointProperties endpoint(AppStoreConfig storeConfig) {
+        return appProperties.getStoreApi().getStore(storeConfig.getStoreType().getCode());
+    }
+
+    protected <T> T executeStoreRequest(String action, Supplier<T> request) {
+        return executeStoreRequest(null, action, request);
+    }
+
+    protected <T> T executeStoreRequest(StoreRequestTrace trace, Supplier<T> request) {
+        return executeStoreRequest(trace, trace == null ? null : trace.action(), request);
+    }
+
+    protected <T> T executeStoreRequest(StoreRequestTrace trace, String action, Supplier<T> request) {
+        long startTime = System.currentTimeMillis();
+        try {
+            T response = request.get();
+            logStoreRequestSuccess(trace, response, System.currentTimeMillis() - startTime);
+            return response;
+        } catch (StoreApiException ex) {
+            logStoreRequestFailure(trace, ex.getStatus().value(), ex.getMessage(), null, System.currentTimeMillis() - startTime);
+            throw ex;
+        } catch (ResourceAccessException ex) {
+            StoreApiException translated = translateResourceAccessException(action, ex);
+            logStoreRequestFailure(trace, translated.getStatus().value(), translated.getMessage(), null, System.currentTimeMillis() - startTime);
+            throw translated;
+        } catch (RestClientResponseException ex) {
+            String responseBody = decodeStoreResponseBody(action, ex.getResponseBodyAsByteArray());
+            String message = "Store API request failed during " + action + ": status=" + ex.getStatusCode()
+                    + buildResponseBodySuffix(responseBody);
+            log.warn("Store API returned HTTP error during {}, status={}", action, ex.getStatusCode(), ex);
+            logStoreRequestFailure(trace, ex.getStatusCode().value(), message, responseBody, System.currentTimeMillis() - startTime);
+            throw new StoreApiException(HttpStatus.BAD_GATEWAY, message, ex);
+        } catch (RestClientException ex) {
+            String message = "Store API request failed during " + action + ": " + ex.getMessage();
+            log.warn("Store API call failed during {}", action, ex);
+            logStoreRequestFailure(trace, HttpStatus.BAD_GATEWAY.value(), message, null, System.currentTimeMillis() - startTime);
+            throw new StoreApiException(HttpStatus.BAD_GATEWAY, message, ex);
+        }
+    }
+
+    protected StoreRequestTrace trace(
+            AppStoreConfig storeConfig,
+            String action,
+            String requestMethod,
+            String requestUrl,
+            Object requestParams,
+            Object requestBody
+    ) {
+        return new StoreRequestTrace(storeConfig, action, requestMethod, requestUrl, requestParams, requestBody);
+    }
+
+    protected Map<String, Object> requestPayload(Object body, Map<String, Object> extras) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        if (body instanceof Map<?, ?> map) {
+            map.forEach((key, value) -> payload.put(String.valueOf(key), value));
+        } else if (body != null) {
+            payload.put("body", body);
+        }
+        if (extras != null && !extras.isEmpty()) {
+            payload.putAll(extras);
+        }
+        return payload;
+    }
+
+    private void logStoreRequestSuccess(StoreRequestTrace trace, Object response, long durationMs) {
+        if (trace == null || storeRequestLogService == null) {
+            return;
+        }
+        storeRequestLogService.logSuccess(
+                trace.storeConfig(),
+                trace.action(),
+                trace.requestMethod(),
+                trace.requestUrl(),
+                trace.requestParams(),
+                trace.requestBody(),
+                HttpStatus.OK.value(),
+                stringifyResponse(trace.action(), response),
+                durationMs
+        );
+    }
+
+    private void logStoreRequestFailure(
+            StoreRequestTrace trace,
+            Integer responseStatusCode,
+            String errorMessage,
+            Object responseBody,
+            long durationMs
+    ) {
+        if (trace == null || storeRequestLogService == null) {
+            return;
+        }
+        storeRequestLogService.logFailure(
+                trace.storeConfig(),
+                trace.action(),
+                trace.requestMethod(),
+                trace.requestUrl(),
+                trace.requestParams(),
+                trace.requestBody(),
+                responseStatusCode,
+                responseBody,
+                errorMessage,
+                durationMs
+        );
+    }
+
+    private String stringifyResponse(String action, Object response) {
+        if (response == null) {
+            return null;
+        }
+        if (response instanceof byte[] bytes) {
+            return decodeStoreResponseBody(action, bytes);
+        }
+        if (response instanceof Map<?, ?> map) {
+            return writeJson(map);
+        }
+        if (response instanceof Path path) {
+            return path.toString();
+        }
+        return String.valueOf(response);
+    }
+
+    private StoreApiException translateResourceAccessException(String action, ResourceAccessException ex) {
+        boolean timeout = isTimeoutException(ex);
+        HttpStatus status = timeout ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY;
+        String message = timeout
+                ? "Store API request timed out during " + action
+                : "Store API is unavailable during " + action + ": " + ex.getMessage();
+        log.warn("Store API resource access failed during {}, timeout={}", action, timeout, ex);
+        return new StoreApiException(status, message, ex);
+    }
+
+    private boolean isTimeoutException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof SocketTimeoutException
+                    || current instanceof HttpTimeoutException
+                    || current instanceof InterruptedIOException) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null) {
+                String normalized = message.toLowerCase();
+                if (normalized.contains("timed out") || normalized.contains("interrupted")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private String buildResponseBodySuffix(String responseBody) {
+        if (!StringUtils.hasText(responseBody)) {
+            return "";
+        }
+        String normalized = responseBody.replaceAll("\\s+", " ").trim();
+        if (normalized.length() > 300) {
+            normalized = normalized.substring(0, 300) + "...";
+        }
+        return ", body=" + normalized;
+    }
+
+    protected ReleaseStatus mapStatus(String value) {
+        return switch (value.toLowerCase()) {
+            case "pass", "approved", "online" -> ReleaseStatus.PASS;
+            case "reject", "rejected", "failed" -> ReleaseStatus.REJECT;
+            case "offline" -> ReleaseStatus.OFFLINE;
+            default -> ReleaseStatus.AUDITING;
+        };
+    }
+
+    protected String firstString(Map<String, Object> source, String... keys) {
+        if (source == null || keys == null) {
+            return "";
+        }
+        for (String key : keys) {
+            Object value = source.get(key);
+            if (value != null) {
+                return value.toString();
+            }
+        }
+        return "";
+    }
+
+    protected String writeJson(Object object) {
+        try {
+            return objectMapper.writeValueAsString(object);
+        } catch (JsonProcessingException ex) {
+            return String.valueOf(object);
+        }
+    }
+
+    protected Path requireLocalPackage(AppVersion version) {
+        return requireLocalPackage(version.getPackageUrl(), "Package path is empty");
+    }
+
+    protected Path requireLocalPackage(String packageLocation, String emptyMessage) {
+        if (!StringUtils.hasText(packageLocation)) {
+            throw new IllegalArgumentException(emptyMessage);
+        }
+        String normalizedLocation = packageLocation.trim();
+        Path packagePath = toPath(normalizedLocation);
+        if (packagePath != null && Files.exists(packagePath) && Files.isRegularFile(packagePath)) {
+            return packagePath;
+        }
+
+        String downloadUrl = resolvePackageDownloadUrl(normalizedLocation, packagePath);
+        if (!StringUtils.hasText(downloadUrl)) {
+            throw new IllegalArgumentException("Package file not found: " + normalizedLocation);
+        }
+        return downloadPackageToLocal(downloadUrl, inferFileName(normalizedLocation));
+    }
+
+    private String md5Hex(Path path) {
+        return md5Hex(new PackageContentSource(path.getFileName().toString(), path, null));
+    }
+
+    protected String sha256Hex(Path path) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+            try (InputStream inputStream = Files.newInputStream(path)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = inputStream.read(buffer)) != -1) {
+                    messageDigest.update(buffer, 0, read);
+                }
+            }
+            return toHex(messageDigest.digest());
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read package file: " + path, ex);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("SHA-256 algorithm is not available", ex);
+        }
+    }
+
+    private String md5Hex(byte[] content) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            messageDigest.update(content);
+            return toHex(messageDigest.digest());
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("MD5 algorithm is not available", ex);
+        }
+    }
+
+    protected String md5Hex(PackageContentSource packageSource) {
+        try {
+            MessageDigest messageDigest = MessageDigest.getInstance("MD5");
+            try (InputStream inputStream = openPackageStream(packageSource)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = inputStream.read(buffer)) != -1) {
+                    messageDigest.update(buffer, 0, read);
+                }
+            }
+            return toHex(messageDigest.digest());
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read package file: " + packageSource.fileName(), ex);
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("MD5 algorithm is not available", ex);
+        }
+    }
+
+    protected String hmacSha256Hex(String data, String key) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            return toHex(mac.doFinal(data.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to sign request", ex);
+        }
+    }
+
+    protected String toHex(byte[] bytes) {
+        StringBuilder builder = new StringBuilder(bytes.length * 2);
+        for (byte value : bytes) {
+            String hex = Integer.toHexString(value & 0xFF);
+            if (hex.length() == 1) {
+                builder.append('0');
+            }
+            builder.append(hex);
+        }
+        return builder.toString();
+    }
+
+    protected long fileSize(Path path) {
+        try {
+            return Files.size(path);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read file size: " + path, ex);
+        }
+    }
+
+    protected String decodeStoreResponseBody(String action, byte[] body) {
+        if (body == null || body.length == 0) {
+            return "";
+        }
+        return new String(body, StandardCharsets.UTF_8);
+    }
+
+    private ProjectMetadataContext readProjectMetadata(Path packagePath) {
+        return readProjectMetadata(packagePath, true);
+    }
+
+    private ProjectMetadataContext readProjectMetadata(Path packagePath, boolean allowWorkspaceFallback) {
+        Path metadataPath = findProjectMetadataPath(packagePath, allowWorkspaceFallback);
+        if (metadataPath == null) {
+            return new ProjectMetadataContext(null, Map.of());
+        }
+        try (InputStream inputStream = Files.newInputStream(metadataPath)) {
+            return new ProjectMetadataContext(
+                    metadataPath,
+                    objectMapper.readValue(inputStream, new TypeReference<>() {
+                    })
+            );
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to read project metadata: " + metadataPath, ex);
+        }
+    }
+
+    protected ProjectMetadataContext resolveProjectMetadataContext(String packageLocation) {
+        if (!StringUtils.hasText(packageLocation)) {
+            return readProjectMetadata(Path.of("."));
+        }
+
+        String normalizedPackageLocation = packageLocation.trim();
+        if (isHttpUrl(normalizedPackageLocation)) {
+            return new ProjectMetadataContext(null, Map.of());
+        }
+
+        Path packagePath = toPath(normalizedPackageLocation);
+        if (packagePath != null) {
+            if (packagePath.isAbsolute()) {
+                return Files.exists(packagePath)
+                        ? readProjectMetadata(packagePath, false)
+                        : new ProjectMetadataContext(null, Map.of());
+            }
+            if (Files.exists(packagePath)) {
+                return readProjectMetadata(packagePath);
+            }
+        }
+        return readProjectMetadata(Path.of("."));
+    }
+
+    private Path findProjectMetadataPath(Path packagePath) {
+        return findProjectMetadataPath(packagePath, true);
+    }
+
+    private Path findProjectMetadataPath(Path packagePath, boolean allowWorkspaceFallback) {
+        Path current = packagePath.toAbsolutePath().normalize();
+        if (!Files.isDirectory(current)) {
+            current = current.getParent();
+        }
+        while (current != null) {
+            Path candidate = current.resolve(PROJECT_METADATA_FILE_NAME);
+            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                return candidate;
+            }
+            current = current.getParent();
+        }
+        if (!allowWorkspaceFallback) {
+            return null;
+        }
+        Path fallback = Path.of(PROJECT_METADATA_FILE_NAME).toAbsolutePath().normalize();
+        if (Files.exists(fallback) && Files.isRegularFile(fallback)) {
+            return fallback;
+        }
+        return null;
+    }
+
+    protected Path resolveProjectAssetPath(Path metadataPath, Object assetLocation) {
+        if (assetLocation == null) {
+            return null;
+        }
+        String location = String.valueOf(assetLocation).trim();
+        if (!StringUtils.hasText(location)) {
+            return null;
+        }
+
+        Path directPath = toPath(location);
+        if (directPath != null) {
+            if (!directPath.isAbsolute()) {
+                Path parent = metadataPath == null ? null : metadataPath.toAbsolutePath().normalize().getParent();
+                if (parent != null) {
+                    Path projectPath = parent.resolve(directPath).normalize();
+                    if (Files.exists(projectPath) && Files.isRegularFile(projectPath)) {
+                        return projectPath;
+                    }
+                }
+            } else if (Files.exists(directPath) && Files.isRegularFile(directPath)) {
+                return directPath;
+            }
+        }
+        return null;
+    }
+
+    protected List<Path> resolveProjectAssetPaths(Path metadataPath, List<String> assetLocations) {
+        return resolveProjectAssetPaths(metadataPath, assetLocations, "Asset file not found in project: ");
+    }
+
+    protected List<Path> resolveProjectAssetPaths(Path metadataPath, List<String> assetLocations, String assetNotFoundMessagePrefix) {
+        if (assetLocations == null || assetLocations.isEmpty()) {
+            return List.of();
+        }
+        List<Path> resolved = new ArrayList<>();
+        for (String assetLocation : assetLocations) {
+            Path path = resolveProjectAssetPath(metadataPath, assetLocation);
+            if (path == null) {
+                throw new IllegalStateException(assetNotFoundMessagePrefix + assetLocation);
+            }
+            resolved.add(path);
+        }
+        return resolved;
+    }
+
+    protected Object metadataLookup(Map<String, Object> metadata, String sectionKey, String key) {
+        if (metadata == null || !StringUtils.hasText(key)) {
+            return null;
+        }
+        if (StringUtils.hasText(sectionKey)) {
+            Map<String, Object> section = asMap(metadata.get(sectionKey));
+            if (!section.isEmpty()) {
+                Object value = firstNonNull(
+                        section.get(key),
+                        section.get(toSnakeCase(key))
+                );
+                if (value != null) {
+                    return value;
+                }
+            }
+        }
+        return firstNonNull(metadata.get(key), metadata.get(toSnakeCase(key)));
+    }
+
+    protected List<String> firstList(Object... values) {
+        if (values == null) {
+            return List.of();
+        }
+        for (Object value : values) {
+            if (value instanceof List<?> list && !list.isEmpty()) {
+                List<String> result = new ArrayList<>();
+                for (Object item : list) {
+                    if (item != null && StringUtils.hasText(String.valueOf(item))) {
+                        result.add(String.valueOf(item));
+                    }
+                }
+                if (!result.isEmpty()) {
+                    return result;
+                }
+            }
+        }
+        return List.of();
+    }
+
+    protected Integer firstInteger(Object... values) {
+        if (values == null) {
+            return null;
+        }
+        for (Object value : values) {
+            if (value == null) {
+                continue;
+            }
+            int parsed = intValue(value);
+            if (parsed >= 0) {
+                return parsed;
+            }
+        }
+        return null;
+    }
+
+    private String stripFileExtension(String fileName) {
+        int index = fileName.lastIndexOf('.');
+        return index > 0 ? fileName.substring(0, index) : fileName;
+    }
+
+    private String toSnakeCase(String value) {
+        if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        return value.replaceAll("([a-z0-9])([A-Z])", "$1_$2").toLowerCase();
+    }
+
+    protected Map<String, Object> readJson(String body) {
+        if (!StringUtils.hasText(body)) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(body, new TypeReference<>() {
+            });
+        } catch (JsonProcessingException ex) {
+            throw new StoreApiException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Store API returned unexpected response" + buildResponseBodySuffix(body),
+                    ex
+            );
+        }
+    }
+
+    protected Map<String, Object> readJsonIfPossible(String body) {
+        if (!StringUtils.hasText(body)) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(body, new TypeReference<>() {
+            });
+        } catch (JsonProcessingException ex) {
+            return Map.of();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Map<String, Object> asMap(Object value) {
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        return Map.of();
+    }
+
+    protected int intValue(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value == null) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException ex) {
+            return -1;
+        }
+    }
+
+    protected long longValue(Object value, long defaultValue) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(value.toString());
+        } catch (NumberFormatException ex) {
+            return defaultValue;
+        }
+    }
+
+    protected boolean isStagedRelease(AppReleaseRecord record) {
+        return record != null && record.getReleaseType() != null && record.getReleaseType() == 2L;
+    }
+
+    protected String resolvePackageDownloadUrl(String packageLocation, Path packagePath) {
+        if (isHttpUrl(packageLocation)) {
+            return packageLocation;
+        }
+
+        String baseUrl = appProperties.getPackageRepository().getBaseUrl();
+        if (!StringUtils.hasText(baseUrl)) {
+            return null;
+        }
+
+        String relativePath = resolveRepositoryRelativePath(packageLocation, packagePath);
+        if (!StringUtils.hasText(relativePath)) {
+            return null;
+        }
+        return joinUrl(baseUrl, relativePath);
+    }
+
+    private String resolveRepositoryRelativePath(String packageLocation, Path packagePath) {
+        if (packagePath != null) {
+            if (!packagePath.isAbsolute()) {
+                return normalizeRepositoryPath(packagePath.toString());
+            }
+
+            try {
+                Path storageRoot = Path.of(appProperties.getStorageRoot()).toAbsolutePath().normalize();
+                Path normalizedPackagePath = packagePath.toAbsolutePath().normalize();
+                if (normalizedPackagePath.startsWith(storageRoot)) {
+                    return normalizeRepositoryPath(storageRoot.relativize(normalizedPackagePath).toString());
+                }
+            } catch (InvalidPathException ex) {
+                log.debug("Skip storage root relative path resolution, packageLocation={}", packageLocation, ex);
+            }
+
+            Path fileName = packagePath.getFileName();
+            return fileName == null ? null : normalizeRepositoryPath(fileName.toString());
+        }
+        return normalizeRepositoryPath(packageLocation);
+    }
+
+    protected Path downloadPackageToLocal(String downloadUrl, String fileName) {
+        String normalizedFileName = StringUtils.hasText(fileName) ? fileName : "package.apk";
+        Path target = allocateDownloadedPackagePath(normalizedFileName);
+        log.info("Download package from repository, url={}, target={}", downloadUrl, target);
+        return executeStoreRequest(
+                "download package from repository",
+                () -> restClient.get()
+                        .uri(downloadUrl)
+                        .headers(headers -> applyPackageAuthorization(headers, downloadUrl))
+                        .exchange((request, response) -> {
+                            if (!response.getStatusCode().is2xxSuccessful()) {
+                                throw new StoreApiException(
+                                        HttpStatus.BAD_GATEWAY,
+                                        "Failed to download package from repository: status=" + response.getStatusCode()
+                                );
+                            }
+                            try (InputStream inputStream = response.getBody()) {
+                                Files.copy(inputStream, target, StandardCopyOption.REPLACE_EXISTING);
+                                return target;
+                            } catch (IOException ex) {
+                                throw new IllegalStateException("Failed to save downloaded package: " + target, ex);
+                            }
+                        })
+        );
+    }
+
+    private InputStream openPackageStream(PackageContentSource packageSource) throws IOException {
+        if (packageSource.localPath() != null) {
+            return Files.newInputStream(packageSource.localPath());
+        }
+        return openRemotePackageStream(packageSource.remoteUrl());
+    }
+
+    protected Object uploadResource(PackageContentSource packageSource) {
+        if (packageSource.localPath() != null) {
+            return new FileSystemResource(packageSource.localPath());
+        }
+        return new RemotePackageResource(packageSource.fileName(), packageSource.remoteUrl());
+    }
+
+    private InputStream openRemotePackageStream(String downloadUrl) throws IOException {
+        if (!StringUtils.hasText(downloadUrl)) {
+            throw new IllegalArgumentException("Remote package url is empty");
+        }
+        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(downloadUrl))
+                .timeout(Duration.ofSeconds(Math.max(appProperties.getStoreApi().getDefaultTimeoutSeconds(), 1)))
+                .GET();
+        String authorization = resolvePackageAuthorization(downloadUrl);
+        if (StringUtils.hasText(authorization)) {
+            requestBuilder.header(HttpHeaders.AUTHORIZATION, authorization);
+        }
+
+        HttpResponse<InputStream> response;
+        try {
+            response = packageHttpClient.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream());
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            InterruptedIOException interrupted = new InterruptedIOException("Package stream request interrupted");
+            interrupted.initCause(ex);
+            throw interrupted;
+        }
+
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            try (InputStream ignored = response.body()) {
+                // close response body before surfacing the error
+            }
+            throw new StoreApiException(
+                    HttpStatus.BAD_GATEWAY,
+                    "Failed to open remote package stream: status=" + response.statusCode()
+            );
+        }
+        return response.body();
+    }
+
+    private void applyPackageAuthorization(HttpHeaders headers, String downloadUrl) {
+        String authorization = resolvePackageAuthorization(downloadUrl);
+        if (StringUtils.hasText(authorization)) {
+            headers.set(HttpHeaders.AUTHORIZATION, authorization);
+        }
+    }
+
+    private String resolvePackageAuthorization(String downloadUrl) {
+        if (!StringUtils.hasText(downloadUrl)) {
+            return null;
+        }
+        if (!isPackageRepositoryUrl(downloadUrl) && !isCmsArtifactUrl(downloadUrl)) {
+            return null;
+        }
+        String configuredAuthorization = appProperties.getPackageRepository().getAuthorization();
+        if (StringUtils.hasText(configuredAuthorization)) {
+            return configuredAuthorization.trim();
+        }
+        return isCmsArtifactUrl(downloadUrl) ? ApkDownloadUtil.defaultAuthorizationValue() : null;
+    }
+
+    private boolean isPackageRepositoryUrl(String downloadUrl) {
+        String baseUrl = appProperties.getPackageRepository().getBaseUrl();
+        return StringUtils.hasText(baseUrl) && downloadUrl.startsWith(baseUrl.trim());
+    }
+
+    private boolean isCmsArtifactUrl(String downloadUrl) {
+        try {
+            return CMS_ARTIFACT_HOST.equalsIgnoreCase(URI.create(downloadUrl).getHost());
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+    }
+
+    private Path allocateDownloadedPackagePath(String fileName) {
+        try {
+            Path targetDir = Path.of(appProperties.getStorageRoot())
+                    .toAbsolutePath()
+                    .normalize()
+                    .resolve("remote-cache")
+                    .resolve(LocalDate.now().format(PACKAGE_CACHE_DATE_FORMATTER));
+            Path requestDir = targetDir.resolve(UUID.randomUUID().toString());
+            Files.createDirectories(requestDir);
+            return requestDir.resolve(fileName);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to create package cache directory", ex);
+        }
+    }
+
+    protected Path toPath(String value) {
+        try {
+            return Path.of(value);
+        } catch (InvalidPathException ex) {
+            return null;
+        }
+    }
+
+    private boolean isHttpUrl(String value) {
+        return value.startsWith("http://") || value.startsWith("https://");
+    }
+
+    protected String inferFileName(String packageLocation) {
+        String normalized = packageLocation.replace('\\', '/');
+        int slashIndex = normalized.lastIndexOf('/');
+        return slashIndex >= 0 ? normalized.substring(slashIndex + 1) : normalized;
+    }
+
+    private String normalizeRepositoryPath(String value) {
+        return value.replace('\\', '/').replaceFirst("^/+", "");
+    }
+
+    protected String buildQueryString(Map<String, ?> params) {
+        List<String> pairs = new ArrayList<>();
+        params.forEach((key, value) -> {
+            if (value != null) {
+                pairs.add(encodeQueryParam(key) + "=" + encodeQueryParam(String.valueOf(value)));
+            }
+        });
+        return String.join("&", pairs);
+    }
+
+    private String encodeQueryParam(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+    }
+
+    private String joinUrl(String baseUrl, String relativePath) {
+        String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        String normalizedRelativePath = normalizeRepositoryPath(relativePath);
+        return normalizedBaseUrl + "/" + normalizedRelativePath;
+    }
+
+    protected String normalizeTitle(String appName, String packageName) {
+        String title = firstNonBlank(appName, packageName, "应用发布");
+        title = title.replaceAll("[\\r\\n\\t]", " ").trim();
+        return title.length() <= 20 ? title : title.substring(0, 20);
+    }
+
+    protected String normalizeStageText(int minLength, int maxLength, String... candidates) {
+        String text = firstNonBlank(candidates);
+        text = text.replaceAll("[\\r\\n\\t]+", " ").replaceAll("\\s{2,}", " ").trim();
+        if (!StringUtils.hasText(text)) {
+            text = "应用发布说明";
+        }
+        while (text.length() < minLength) {
+            text = text + "，请关注更新内容";
+        }
+        if (text.length() > maxLength) {
+            text = text.substring(0, maxLength);
+        }
+        return text;
+    }
+
+    protected String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value;
+            }
+        }
+        return "";
+    }
+
+    protected Object firstNonNull(Object... values) {
+        if (values == null) {
+            return null;
+        }
+        for (Object value : values) {
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    protected record ProjectMetadataContext(
+            Path metadataPath,
+            Map<String, Object> metadata
+    ) {
+    }
+
+    protected record PackageContentSource(
+            String fileName,
+            Path localPath,
+            String remoteUrl
+    ) {
+        String sourceType() {
+            return localPath != null ? "local" : "remote";
+        }
+    }
+
+    protected record StoreRequestTrace(
+            AppStoreConfig storeConfig,
+            String action,
+            String requestMethod,
+            String requestUrl,
+            Object requestParams,
+            Object requestBody
+    ) {
+    }
+
+    private final class RemotePackageResource extends AbstractResource {
+
+        private final String fileName;
+        private final String downloadUrl;
+
+        private RemotePackageResource(String fileName, String downloadUrl) {
+            this.fileName = fileName;
+            this.downloadUrl = downloadUrl;
+        }
+
+        @Override
+        public String getDescription() {
+            return "remote package " + downloadUrl;
+        }
+
+        @Override
+        public String getFilename() {
+            return fileName;
+        }
+
+        @Override
+        public long contentLength() {
+            return -1;
+        }
+
+        @Override
+        public InputStream getInputStream() throws IOException {
+            return openRemotePackageStream(downloadUrl);
+        }
+    }
+}
+

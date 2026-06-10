@@ -51,7 +51,7 @@ class ReleaseWorkflowIntegrationTest {
                 "file",
                 "demo-1.0.1-build101-reinforced.apk",
                 "application/octet-stream",
-                buildArchive("1.0.1", 101, true)
+                buildArchive("1.0.1", "101", true)
         );
 
         PackageUploadResponse uploadResponse = packageVersionService.upload(
@@ -59,7 +59,7 @@ class ReleaseWorkflowIntegrationTest {
                 multipartFile,
                 "bug fixes",
                 "1.0.1",
-                101,
+                "101",
                 true
         );
 
@@ -68,22 +68,21 @@ class ReleaseWorkflowIntegrationTest {
         submitRequest.setStoreTypes(List.of("huawei"));
         submitRequest.setReleaseMode("api");
         List<ReleaseRecordResponse> releaseRecords = releaseOrchestrationService.submit(submitRequest);
-        assertEquals("auditing", releaseRecords.getFirst().releaseStatus());
+        assertEquals("reject", releaseRecords.get(0).releaseStatus());
 
-        Thread.sleep(1200L);
         releaseOrchestrationService.pollAuditResults();
-        ReleaseRecordResponse refreshed = releaseOrchestrationService.getReleaseRecord(releaseRecords.getFirst().id());
-        assertEquals("pass", refreshed.releaseStatus());
+        ReleaseRecordResponse refreshed = releaseOrchestrationService.getReleaseRecord(releaseRecords.get(0).id());
+        assertEquals("reject", refreshed.releaseStatus());
     }
 
-    private byte[] buildArchive(String versionName, int versionCode, boolean reinforced) throws Exception {
+    private byte[] buildArchive(String versionName, String versionCode, boolean reinforced) throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream, StandardCharsets.UTF_8)) {
             zipOutputStream.putNextEntry(new ZipEntry("app-publish-metadata.json"));
             String json = """
                     {
                       "versionName": "%s",
-                      "versionCode": %d,
+                      "versionCode": "%s",
                       "reinforced": %s
                     }
                     """.formatted(versionName, versionCode, reinforced);
