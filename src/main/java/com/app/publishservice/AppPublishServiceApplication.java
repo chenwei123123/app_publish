@@ -12,6 +12,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @MapperScan("com.app.publishservice.repository")
 public class AppPublishServiceApplication {
 
+    /**
+     * 启动应用入口。
+     */
     public static void main(String[] args) {
         SpringApplication.run(AppPublishServiceApplication.class, args);
     }

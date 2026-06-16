@@ -26,12 +26,18 @@ public class TokenService {
     private final AppApiTokenCacheRepository tokenCacheRepository;
     private final StorePublisher storePublisher;
 
+    /**
+     * 初始化TokenService。
+     */
     public TokenService(AppProperties appProperties, AppApiTokenCacheRepository tokenCacheRepository, StorePublisher storePublisher) {
         this.appProperties = appProperties;
         this.tokenCacheRepository = tokenCacheRepository;
         this.storePublisher = storePublisher;
     }
 
+    /**
+     * 获取Valid 令牌。
+     */
     @Transactional
     public String getValidToken(AppStoreConfig storeConfig) {
         LocalDateTime threshold = LocalDateTime.now().plusSeconds(appProperties.getTokenRefreshAheadSeconds());
@@ -66,6 +72,9 @@ public class TokenService {
         return payload.tokenValue();
     }
 
+    /**
+     * 获取预期令牌类型。
+     */
     private String expectedTokenType(AppStoreConfig storeConfig) {
         if (storeConfig.getStoreType() == StoreType.VIVO应用商店
                 || storeConfig.getStoreType() == StoreType.应用宝

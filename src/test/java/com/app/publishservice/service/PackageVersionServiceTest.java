@@ -32,6 +32,9 @@ class PackageVersionServiceTest {
     private static final String APK64_DOWNLOAD_FAILED_MESSAGE = "64\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
     private static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk32Path";
 
+    /**
+     * 测试Prepare Remote 提交包 Urls When 流上传 Enabled场景。
+     */
     @Test
     void shouldPrepareRemoteSubmitPackageUrlsWhenStreamUploadEnabled() {
         AppProperties appProperties = new AppProperties();
@@ -62,6 +65,9 @@ class PackageVersionServiceTest {
         verify(repository).updateById(version);
     }
 
+    /**
+     * 测试Throw Exact 消息 When Download32 Fails场景。
+     */
     @Test
     void shouldThrowExactMessageWhenDownload32Fails() throws IOException {
         AppProperties appProperties = new AppProperties();
@@ -107,6 +113,9 @@ class PackageVersionServiceTest {
         verify(repository, never()).updateById(any(AppVersion.class));
     }
 
+    /**
+     * 测试Throw Exact 消息 When Download64 Fails场景。
+     */
     @Test
     void shouldThrowExactMessageWhenDownload64Fails() throws IOException {
         AppProperties appProperties = new AppProperties();
@@ -154,6 +163,9 @@ class PackageVersionServiceTest {
         verify(repository, never()).updateById(any(AppVersion.class));
     }
 
+    /**
+     * 测试Resolve Local 提交包元数据 Dev场景。
+     */
     @Test
     void shouldResolveLocalSubmitPackagesFromMetadataInDev(@TempDir Path tempDir) throws IOException {
         AppProperties appProperties = new AppProperties();
@@ -195,6 +207,9 @@ class PackageVersionServiceTest {
         verify(repository).updateById(version);
     }
 
+    /**
+     * 测试Throw When Dev 元数据 Missing Apk32 路径场景。
+     */
     @Test
     void shouldThrowWhenDevMetadataMissingApk32Path(@TempDir Path tempDir) throws IOException {
         AppProperties appProperties = new AppProperties();

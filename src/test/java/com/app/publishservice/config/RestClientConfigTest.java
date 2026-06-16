@@ -14,6 +14,9 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 class RestClientConfigTest {
 
+    /**
+     * 测试Apply 请求超时 Whole Call场景。
+     */
     @Test
     void shouldApplyRequestTimeoutToWholeCall() throws IOException {
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);

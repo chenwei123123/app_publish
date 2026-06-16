@@ -44,6 +44,9 @@ public class ReleaseOrchestrationService {
     private final Executor releaseSubmitExecutor;
     private final TransactionOperations transactionOperations;
 
+    /**
+     * 初始化ReleaseOrchestrationService。
+     */
     public ReleaseOrchestrationService(
             PackageVersionService packageVersionService,
             AppManagementService appManagementService,
@@ -62,6 +65,9 @@ public class ReleaseOrchestrationService {
         this.transactionOperations = transactionOperations;
     }
 
+    /**
+     * 提交相关数据。
+     */
     public List<ReleaseRecordResponse> submit(ReleaseSubmitRequest request) {
         log.info("Start release submit, versionId={}, releaseMode={}, stores={}", request.getVersionId(), request.getReleaseMode(), request.getStoreTypes());
         SubmitPreparation preparation = transactionOperations.execute(status -> prepareSubmit(request));
@@ -74,6 +80,9 @@ public class ReleaseOrchestrationService {
         return submitToStores(preparation.version(), preparation.submitContexts());
     }
 
+    /**
+     * 处理poll 审核 Results相关逻辑。
+     */
     @Transactional
     public void pollAuditResults() {
         List<AppReleaseRecord> records = releaseRecordRepository.selectReviewingReleaseRecords(ReleaseStatus.AUDITING.getCode());
@@ -108,6 +117,9 @@ public class ReleaseOrchestrationService {
         }
     }
 
+    /**
+     * 处理prepare 提交相关逻辑。
+     */
     private SubmitPreparation prepareSubmit(ReleaseSubmitRequest request) {
         AppVersion version = packageVersionService.requireVersion(request.getVersionId());
         ReleaseMode releaseMode = ReleaseMode.fromCode(request.getReleaseMode());
@@ -153,6 +165,9 @@ public class ReleaseOrchestrationService {
         }
     }
 
+    /**
+     * 提交商店。
+     */
     private List<ReleaseRecordResponse> submitToStores(AppVersion version, List<StoreSubmitContext> submitContexts) {
         List<CompletableFuture<ReleaseRecordResponse>> futures = new ArrayList<>(submitContexts.size());
         for (StoreSubmitContext submitContext : submitContexts) {
@@ -162,6 +177,9 @@ public class ReleaseOrchestrationService {
         return futures.stream().map(CompletableFuture::join).toList();
     }
 
+    /**
+     * 处理schedule 商店提交相关逻辑。
+     */
     private CompletableFuture<ReleaseRecordResponse> scheduleStoreSubmit(AppVersion version, StoreSubmitContext submitContext) {
         try {
             return CompletableFuture.supplyAsync(() -> submitToStore(version, submitContext), releaseSubmitExecutor)
@@ -171,6 +189,9 @@ public class ReleaseOrchestrationService {
         }
     }
 
+    /**
+     * 提交商店。
+     */
     private ReleaseRecordResponse submitToStore(AppVersion version, StoreSubmitContext submitContext) {
         StoreType storeType = submitContext.storeType();
         AppStoreConfig storeConfig = submitContext.storeConfig();
@@ -204,6 +225,9 @@ public class ReleaseOrchestrationService {
         return toResponse(record);
     }
 
+    /**
+     * 处理Unexpected 提交 Failure。
+     */
     private ReleaseRecordResponse handleUnexpectedSubmitFailure(StoreSubmitContext submitContext, Throwable ex) {
         AppReleaseRecord record = submitContext.record();
         record.setReleaseStatus(ReleaseStatus.REJECT);
@@ -215,6 +239,9 @@ public class ReleaseOrchestrationService {
         return toResponse(record);
     }
 
+    /**
+     * 处理unwrap Completion 异常相关逻辑。
+     */
     private Throwable unwrapCompletionException(Throwable ex) {
         if (ex instanceof CompletionException completionException && completionException.getCause() != null) {
             return completionException.getCause();
@@ -222,6 +249,9 @@ public class ReleaseOrchestrationService {
         return ex;
     }
 
+    /**
+     * 获取发布记录。
+     */
     @Transactional(readOnly = true)
     public ReleaseRecordResponse getReleaseRecord(Long releaseId) {
         AppReleaseRecord record = releaseRecordRepository.selectReleaseRecordDetail(releaseId);
@@ -231,6 +261,9 @@ public class ReleaseOrchestrationService {
         return toResponse(record);
     }
 
+    /**
+     * 处理分页发布记录相关逻辑。
+     */
     @Transactional(readOnly = true)
     public PageResponse<ReleaseRecordPageResponse> pageReleaseRecords(
             Long current,
@@ -254,6 +287,9 @@ public class ReleaseOrchestrationService {
         );
     }
 
+    /**
+     * 查询发布应用 Id。
+     */
     @Transactional(readOnly = true)
     public PageResponse<ReleaseRecordPageResponse> queryReleaseByAppId(
             Long appId
@@ -274,6 +310,9 @@ public class ReleaseOrchestrationService {
         );
     }
 
+    /**
+     * 处理响应相关逻辑。
+     */
     private ReleaseRecordResponse toResponse(AppReleaseRecord record) {
         return new ReleaseRecordResponse(
                 record.getId(),
@@ -301,6 +340,9 @@ public class ReleaseOrchestrationService {
         );
     }
 
+    /**
+     * 处理分页响应相关逻辑。
+     */
     private ReleaseRecordPageResponse toPageResponse(AppReleaseRecord record) {
         return new ReleaseRecordPageResponse(
                 record.getId(),
@@ -312,18 +354,26 @@ public class ReleaseOrchestrationService {
                 record.getVersionCode(),
                 record.getStoreType().getCode(),
                 record.getReleaseMode().getCode(),
+                record.getReleaseType(),
                 record.getReleaseStatus().getCode(),
                 record.getReleaseTime(),
                 record.getFinishTime(),
+                record.getApiResponseLog(),
                 record.getCreateUser(),
                 record.getUpdateUser()
         );
     }
 
+    /**
+     * 规范化Current。
+     */
     private long normalizeCurrent(Long current) {
         return current == null || current < 1 ? 1 : current;
     }
 
+    /**
+     * 规范化Size。
+     */
     private long normalizeSize(Long size) {
         if (size == null || size < 1) {
             return 10;
@@ -331,10 +381,16 @@ public class ReleaseOrchestrationService {
         return Math.min(size, 100);
     }
 
+    /**
+     * 规范化发布类型。
+     */
     private Long normalizeReleaseType(Long releaseType) {
         return releaseType == null ? 1L : releaseType;
     }
 
+    /**
+     * 创建发布记录。
+     */
     private AppReleaseRecord createReleaseRecord(
             AppVersion version,
             StoreType storeType,
@@ -362,6 +418,9 @@ public class ReleaseOrchestrationService {
         return record;
     }
 
+    /**
+     * 处理提交包 Failure。
+     */
     private void handleSubmitPackageFailure(List<StoreSubmitContext> submitContexts, RuntimeException ex) {
         for (StoreSubmitContext submitContext : submitContexts) {
             AppReleaseRecord record = submitContext.record();
@@ -379,6 +438,9 @@ public class ReleaseOrchestrationService {
         }
     }
 
+    /**
+     * 校验发布请求。
+     */
     private void validateReleaseRequest(ReleaseSubmitRequest request, Long releaseType) {
         if (releaseType != 1L && releaseType != 2L) {
             throw new IllegalArgumentException("releaseType must be 1 or 2");
@@ -414,10 +476,16 @@ public class ReleaseOrchestrationService {
             List<StoreSubmitContext> submitContexts,
             SubmitPackageDownloadException failure
     ) {
+        /**
+         * 处理success相关逻辑。
+         */
         private static SubmitPreparation success(AppVersion version, List<StoreSubmitContext> submitContexts) {
             return new SubmitPreparation(version, submitContexts, null);
         }
 
+        /**
+         * 处理failure相关逻辑。
+         */
         private static SubmitPreparation failure(SubmitPackageDownloadException failure) {
             return new SubmitPreparation(null, List.of(), failure);
         }

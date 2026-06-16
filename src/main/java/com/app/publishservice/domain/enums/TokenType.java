@@ -10,10 +10,16 @@ public enum TokenType {
     @EnumValue
     private final String code;
 
+    /**
+     * 初始化TokenType。
+     */
     TokenType(String code) {
         this.code = code;
     }
 
+    /**
+     * 获取编码。
+     */
     public String getCode() {
         return code;
     }

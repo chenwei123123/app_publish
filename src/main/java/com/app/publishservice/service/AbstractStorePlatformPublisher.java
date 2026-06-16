@@ -72,10 +72,16 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
     protected final HttpClient packageHttpClient;
     protected final PublishMetadataResolver publishMetadataResolver;
 
+    /**
+     * 初始化AbstractStorePlatformPublisher。
+     */
     protected AbstractStorePlatformPublisher(RestClient restClient, ObjectMapper objectMapper, AppProperties appProperties) {
         this(restClient, objectMapper, appProperties, null);
     }
 
+    /**
+     * 初始化AbstractStorePlatformPublisher。
+     */
     @Autowired
     protected AbstractStorePlatformPublisher(
             RestClient restClient,
@@ -93,6 +99,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
                 .build();
     }
 
+    /**
+     * 刷新令牌。
+     */
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         log.debug("Start refresh token, storeConfigId={}, storeType={}", storeConfig.getId(), storeConfig.getStoreType().getCode());
@@ -138,6 +147,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return new TokenPayload(TokenType.ACCESS_TOKEN.getCode(), token, LocalDateTime.now().plusSeconds(expiresIn.longValue()));
     }
 
+    /**
+     * 提交发布。
+     */
     @Override
     public StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         log.info(
@@ -195,6 +207,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 查询审核。
+     */
     @Override
     public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         log.debug("Start query review, releaseId={}, storeType={}, releaseType={}", record.getId(), record.getStoreType(), record.getReleaseType());
@@ -235,18 +250,30 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 处理接口地址相关逻辑。
+     */
     protected StoreApiProperties.StoreEndpointProperties endpoint(AppStoreConfig storeConfig) {
         return appProperties.getStoreApi().getStore(storeConfig.getStoreType().getCode());
     }
 
+    /**
+     * 处理execute 商店请求相关逻辑。
+     */
     protected <T> T executeStoreRequest(String action, Supplier<T> request) {
         return executeStoreRequest(null, action, request);
     }
 
+    /**
+     * 处理execute 商店请求相关逻辑。
+     */
     protected <T> T executeStoreRequest(StoreRequestTrace trace, Supplier<T> request) {
         return executeStoreRequest(trace, trace == null ? null : trace.action(), request);
     }
 
+    /**
+     * 处理execute 商店请求相关逻辑。
+     */
     protected <T> T executeStoreRequest(StoreRequestTrace trace, String action, Supplier<T> request) {
         long startTime = System.currentTimeMillis();
         try {
@@ -275,6 +302,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 处理trace相关逻辑。
+     */
     protected StoreRequestTrace trace(
             AppStoreConfig storeConfig,
             String action,
@@ -286,6 +316,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return new StoreRequestTrace(storeConfig, action, requestMethod, requestUrl, requestParams, requestBody);
     }
 
+    /**
+     * 处理请求载荷相关逻辑。
+     */
     protected Map<String, Object> requestPayload(Object body, Map<String, Object> extras) {
         Map<String, Object> payload = new LinkedHashMap<>();
         if (body instanceof Map<?, ?> map) {
@@ -299,6 +332,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return payload;
     }
 
+    /**
+     * 处理日志商店请求 Success相关逻辑。
+     */
     private void logStoreRequestSuccess(StoreRequestTrace trace, Object response, long durationMs) {
         if (trace == null || storeRequestLogService == null) {
             return;
@@ -316,6 +352,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         );
     }
 
+    /**
+     * 处理日志商店请求 Failure相关逻辑。
+     */
     private void logStoreRequestFailure(
             StoreRequestTrace trace,
             Integer responseStatusCode,
@@ -340,6 +379,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         );
     }
 
+    /**
+     * 转换响应。
+     */
     private String stringifyResponse(String action, Object response) {
         if (response == null) {
             return null;
@@ -356,6 +398,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return String.valueOf(response);
     }
 
+    /**
+     * 转换Resource Access 异常。
+     */
     private StoreApiException translateResourceAccessException(String action, ResourceAccessException ex) {
         boolean timeout = isTimeoutException(ex);
         HttpStatus status = timeout ? HttpStatus.GATEWAY_TIMEOUT : HttpStatus.BAD_GATEWAY;
@@ -366,6 +411,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return new StoreApiException(status, message, ex);
     }
 
+    /**
+     * 判断是否超时异常。
+     */
     private boolean isTimeoutException(Throwable throwable) {
         Throwable current = throwable;
         while (current != null) {
@@ -386,6 +434,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return false;
     }
 
+    /**
+     * 构建响应报文 Suffix。
+     */
     private String buildResponseBodySuffix(String responseBody) {
         if (!StringUtils.hasText(responseBody)) {
             return "";
@@ -397,6 +448,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return ", body=" + normalized;
     }
 
+    /**
+     * 映射状态。
+     */
     protected ReleaseStatus mapStatus(String value) {
         return switch (value.toLowerCase()) {
             case "pass", "approved", "online" -> ReleaseStatus.PASS;
@@ -406,6 +460,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         };
     }
 
+    /**
+     * 获取首个字符串。
+     */
     protected String firstString(Map<String, Object> source, String... keys) {
         if (source == null || keys == null) {
             return "";
@@ -419,6 +476,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return "";
     }
 
+    /**
+     * 写入JSON。
+     */
     protected String writeJson(Object object) {
         try {
             return objectMapper.writeValueAsString(object);
@@ -427,10 +487,16 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 校验Local 包。
+     */
     protected Path requireLocalPackage(AppVersion version) {
         return requireLocalPackage(version.getPackageUrl(), "Package path is empty");
     }
 
+    /**
+     * 校验Local 包。
+     */
     protected Path requireLocalPackage(String packageLocation, String emptyMessage) {
         if (!StringUtils.hasText(packageLocation)) {
             throw new IllegalArgumentException(emptyMessage);
@@ -448,10 +514,16 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return downloadPackageToLocal(downloadUrl, inferFileName(normalizedLocation));
     }
 
+    /**
+     * 计算 MD5 摘要Hex。
+     */
     private String md5Hex(Path path) {
         return md5Hex(new PackageContentSource(path.getFileName().toString(), path, null));
     }
 
+    /**
+     * 处理sha256 Hex相关逻辑。
+     */
     protected String sha256Hex(Path path) {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
@@ -470,6 +542,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 计算 MD5 摘要Hex。
+     */
     private String md5Hex(byte[] content) {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("MD5");
@@ -480,6 +555,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 计算 MD5 摘要Hex。
+     */
     protected String md5Hex(PackageContentSource packageSource) {
         try {
             MessageDigest messageDigest = MessageDigest.getInstance("MD5");
@@ -498,6 +576,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 处理hmac Sha256 Hex相关逻辑。
+     */
     protected String hmacSha256Hex(String data, String key) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
@@ -508,6 +589,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 处理Hex相关逻辑。
+     */
     protected String toHex(byte[] bytes) {
         StringBuilder builder = new StringBuilder(bytes.length * 2);
         for (byte value : bytes) {
@@ -520,6 +604,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return builder.toString();
     }
 
+    /**
+     * 处理文件 Size相关逻辑。
+     */
     protected long fileSize(Path path) {
         try {
             return Files.size(path);
@@ -528,6 +615,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 解码商店响应报文。
+     */
     protected String decodeStoreResponseBody(String action, byte[] body) {
         if (body == null || body.length == 0) {
             return "";
@@ -535,6 +625,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return new String(body, StandardCharsets.UTF_8);
     }
 
+    /**
+     * 解析项目元数据上下文。
+     */
     protected ProjectMetadataContext resolveProjectMetadataContext(String packageLocation) {
         return new ProjectMetadataContext(
                 publishMetadataResolver.metadataPath(),
@@ -542,22 +635,37 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         );
     }
 
+    /**
+     * 解析项目 Asset 路径。
+     */
     protected Path resolveProjectAssetPath(Path metadataPath, Object assetLocation) {
         return publishMetadataResolver.resolveAssetPath(metadataPath, assetLocation);
     }
 
+    /**
+     * 解析项目 Asset 路径。
+     */
     protected List<Path> resolveProjectAssetPaths(Path metadataPath, List<String> assetLocations) {
         return resolveProjectAssetPaths(metadataPath, assetLocations, "Asset file not found in project: ");
     }
 
+    /**
+     * 解析项目 Asset 路径。
+     */
     protected List<Path> resolveProjectAssetPaths(Path metadataPath, List<String> assetLocations, String assetNotFoundMessagePrefix) {
         return publishMetadataResolver.resolveAssetPaths(metadataPath, assetLocations, assetNotFoundMessagePrefix);
     }
 
+    /**
+     * 处理元数据 Lookup相关逻辑。
+     */
     protected Object metadataLookup(Map<String, Object> metadata, String sectionKey, String key) {
         return publishMetadataResolver.metadataLookup(metadata, sectionKey, key);
     }
 
+    /**
+     * 获取首个列表。
+     */
     protected List<String> firstList(Object... values) {
         if (values == null) {
             return List.of();
@@ -578,6 +686,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return List.of();
     }
 
+    /**
+     * 获取首个Integer。
+     */
     protected Integer firstInteger(Object... values) {
         if (values == null) {
             return null;
@@ -594,18 +705,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return null;
     }
 
-    private String stripFileExtension(String fileName) {
-        int index = fileName.lastIndexOf('.');
-        return index > 0 ? fileName.substring(0, index) : fileName;
-    }
-
-    private String toSnakeCase(String value) {
-        if (!StringUtils.hasText(value)) {
-            return value;
-        }
-        return value.replaceAll("([a-z0-9])([A-Z])", "$1_$2").toLowerCase();
-    }
-
+    /**
+     * 读取JSON。
+     */
     protected Map<String, Object> readJson(String body) {
         if (!StringUtils.hasText(body)) {
             return Map.of();
@@ -622,6 +724,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 读取JSON If Possible。
+     */
     protected Map<String, Object> readJsonIfPossible(String body) {
         if (!StringUtils.hasText(body)) {
             return Map.of();
@@ -634,6 +739,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 处理as 映射相关逻辑。
+     */
     @SuppressWarnings("unchecked")
     protected Map<String, Object> asMap(Object value) {
         if (value instanceof Map<?, ?> map) {
@@ -642,6 +750,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return Map.of();
     }
 
+    /**
+     * 处理int 值相关逻辑。
+     */
     protected int intValue(Object value) {
         if (value instanceof Number number) {
             return number.intValue();
@@ -656,6 +767,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 处理long 值相关逻辑。
+     */
     protected long longValue(Object value, long defaultValue) {
         if (value instanceof Number number) {
             return number.longValue();
@@ -670,10 +784,16 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 判断是否灰度发布。
+     */
     protected boolean isStagedRelease(AppReleaseRecord record) {
         return record != null && record.getReleaseType() != null && record.getReleaseType() == 2L;
     }
 
+    /**
+     * 解析包下载 URL。
+     */
     protected String resolvePackageDownloadUrl(String packageLocation, Path packagePath) {
         if (isHttpUrl(packageLocation)) {
             return packageLocation;
@@ -691,6 +811,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return joinUrl(baseUrl, relativePath);
     }
 
+    /**
+     * 解析仓库 Relative 路径。
+     */
     private String resolveRepositoryRelativePath(String packageLocation, Path packagePath) {
         if (packagePath != null) {
             if (!packagePath.isAbsolute()) {
@@ -713,6 +836,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return normalizeRepositoryPath(packageLocation);
     }
 
+    /**
+     * 下载包 Local。
+     */
     protected Path downloadPackageToLocal(String downloadUrl, String fileName) {
         String normalizedFileName = StringUtils.hasText(fileName) ? fileName : "package.apk";
         Path target = allocateDownloadedPackagePath(normalizedFileName);
@@ -739,6 +865,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         );
     }
 
+    /**
+     * 打开包流。
+     */
     private InputStream openPackageStream(PackageContentSource packageSource) throws IOException {
         if (packageSource.localPath() != null) {
             return Files.newInputStream(packageSource.localPath());
@@ -746,6 +875,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return openRemotePackageStream(packageSource.remoteUrl());
     }
 
+    /**
+     * 上传Resource。
+     */
     protected Object uploadResource(PackageContentSource packageSource) {
         if (packageSource.localPath() != null) {
             return new FileSystemResource(packageSource.localPath());
@@ -753,6 +885,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return new RemotePackageResource(packageSource.fileName(), packageSource.remoteUrl());
     }
 
+    /**
+     * 打开Remote 包流。
+     */
     private InputStream openRemotePackageStream(String downloadUrl) throws IOException {
         if (!StringUtils.hasText(downloadUrl)) {
             throw new IllegalArgumentException("Remote package url is empty");
@@ -788,6 +923,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return response.body();
     }
 
+    /**
+     * 应用包授权。
+     */
     private void applyPackageAuthorization(HttpHeaders headers, String downloadUrl) {
         String authorization = resolvePackageAuthorization(downloadUrl);
         if (StringUtils.hasText(authorization)) {
@@ -795,6 +933,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 解析包授权。
+     */
     private String resolvePackageAuthorization(String downloadUrl) {
         if (!StringUtils.hasText(downloadUrl)) {
             return null;
@@ -809,11 +950,17 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return isCmsArtifactUrl(downloadUrl) ? ApkDownloadUtil.defaultAuthorizationValue() : null;
     }
 
+    /**
+     * 判断是否包仓库 URL。
+     */
     private boolean isPackageRepositoryUrl(String downloadUrl) {
         String baseUrl = appProperties.getPackageRepository().getBaseUrl();
         return StringUtils.hasText(baseUrl) && downloadUrl.startsWith(baseUrl.trim());
     }
 
+    /**
+     * 判断是否Cms Artifact URL。
+     */
     private boolean isCmsArtifactUrl(String downloadUrl) {
         try {
             return CMS_ARTIFACT_HOST.equalsIgnoreCase(URI.create(downloadUrl).getHost());
@@ -822,6 +969,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 分配Downloaded 包路径。
+     */
     private Path allocateDownloadedPackagePath(String fileName) {
         try {
             Path targetDir = Path.of(appProperties.getStorageRoot())
@@ -837,6 +987,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 处理路径相关逻辑。
+     */
     protected Path toPath(String value) {
         try {
             return Path.of(value);
@@ -845,20 +998,32 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         }
     }
 
+    /**
+     * 判断是否HTTP URL。
+     */
     private boolean isHttpUrl(String value) {
         return value.startsWith("http://") || value.startsWith("https://");
     }
 
+    /**
+     * 处理infer 文件名称相关逻辑。
+     */
     protected String inferFileName(String packageLocation) {
         String normalized = packageLocation.replace('\\', '/');
         int slashIndex = normalized.lastIndexOf('/');
         return slashIndex >= 0 ? normalized.substring(slashIndex + 1) : normalized;
     }
 
+    /**
+     * 规范化仓库路径。
+     */
     private String normalizeRepositoryPath(String value) {
         return value.replace('\\', '/').replaceFirst("^/+", "");
     }
 
+    /**
+     * 构建查询字符串。
+     */
     protected String buildQueryString(Map<String, ?> params) {
         List<String> pairs = new ArrayList<>();
         params.forEach((key, value) -> {
@@ -869,22 +1034,34 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return String.join("&", pairs);
     }
 
+    /**
+     * 编码查询参数。
+     */
     private String encodeQueryParam(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
+    /**
+     * 处理join URL相关逻辑。
+     */
     private String joinUrl(String baseUrl, String relativePath) {
         String normalizedBaseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         String normalizedRelativePath = normalizeRepositoryPath(relativePath);
         return normalizedBaseUrl + "/" + normalizedRelativePath;
     }
 
+    /**
+     * 规范化Title。
+     */
     protected String normalizeTitle(String appName, String packageName) {
         String title = firstNonBlank(appName, packageName, "应用发布");
         title = title.replaceAll("[\\r\\n\\t]", " ").trim();
         return title.length() <= 20 ? title : title.substring(0, 20);
     }
 
+    /**
+     * 规范化阶段文本。
+     */
     protected String normalizeStageText(int minLength, int maxLength, String... candidates) {
         String text = firstNonBlank(candidates);
         text = text.replaceAll("[\\r\\n\\t]+", " ").replaceAll("\\s{2,}", " ").trim();
@@ -900,6 +1077,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return text;
     }
 
+    /**
+     * 获取首个Non Blank。
+     */
     protected String firstNonBlank(String... values) {
         if (values == null) {
             return "";
@@ -912,6 +1092,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return "";
     }
 
+    /**
+     * 获取首个Non Null。
+     */
     protected Object firstNonNull(Object... values) {
         if (values == null) {
             return null;
@@ -935,6 +1118,9 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
             Path localPath,
             String remoteUrl
     ) {
+        /**
+         * 处理source 类型相关逻辑。
+         */
         String sourceType() {
             return localPath != null ? "local" : "remote";
         }
@@ -955,26 +1141,41 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         private final String fileName;
         private final String downloadUrl;
 
+        /**
+         * 初始化RemotePackageResource。
+         */
         private RemotePackageResource(String fileName, String downloadUrl) {
             this.fileName = fileName;
             this.downloadUrl = downloadUrl;
         }
 
+        /**
+         * 获取Description。
+         */
         @Override
         public String getDescription() {
             return "remote package " + downloadUrl;
         }
 
+        /**
+         * 获取Filename。
+         */
         @Override
         public String getFilename() {
             return fileName;
         }
 
+        /**
+         * 处理内容 Length相关逻辑。
+         */
         @Override
         public long contentLength() {
             return -1;
         }
 
+        /**
+         * 获取Input 流。
+         */
         @Override
         public InputStream getInputStream() throws IOException {
             return openRemotePackageStream(downloadUrl);

@@ -13,11 +13,17 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ApkDownloadUtilTest {
 
+    /**
+     * 处理tear Down相关逻辑。
+     */
     @AfterEach
     void tearDown() {
         ApkDownloadUtil.configure(null);
     }
 
+    /**
+     * 测试Build APK Urls 版本编码 Build 编码场景。
+     */
     @Test
     void shouldBuildApkUrlsFromVersionCodeAndBuildCode() {
         assertEquals(
@@ -30,11 +36,17 @@ class ApkDownloadUtilTest {
         );
     }
 
+    /**
+     * 测试Reject Blank Build 编码场景。
+     */
     @Test
     void shouldRejectBlankBuildCode() {
         assertThrows(IllegalArgumentException.class, () -> ApkDownloadUtil.buildApk32Url("101", " "));
     }
 
+    /**
+     * 测试Use Configured Templates 授权场景。
+     */
     @Test
     void shouldUseConfiguredTemplatesAndAuthorization() {
         AppProperties.PackageRepositoryProperties properties = new AppProperties.PackageRepositoryProperties();
@@ -55,6 +67,9 @@ class ApkDownloadUtilTest {
         assertEquals("Basic custom-token", ApkDownloadUtil.defaultAuthorizationValue());
     }
 
+    /**
+     * 测试Extract Original 文件名称下载 URL场景。
+     */
     @Test
     void shouldExtractOriginalFileNameFromDownloadUrl() {
         assertEquals(
@@ -63,6 +78,9 @@ class ApkDownloadUtilTest {
         );
     }
 
+    /**
+     * 测试Skip 下载 When Target 文件 Already Exists场景。
+     */
     @Test
     void shouldSkipDownloadWhenTargetFileAlreadyExists() throws IOException {
         Path tempFile = Files.createTempFile("apk-download-util-", ".apk");

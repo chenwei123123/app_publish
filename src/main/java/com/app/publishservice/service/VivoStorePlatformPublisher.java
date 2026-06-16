@@ -64,6 +64,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
     private static final String VIVO_PROTOCOL_VERSION = "1.0";
     private static final DateTimeFormatter VIVO_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /**
+     * 初始化VivoStorePlatformPublisher。
+     */
     VivoStorePlatformPublisher(
             RestClient restClient,
             ObjectMapper objectMapper,
@@ -73,6 +76,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         super(restClient, objectMapper, appProperties, storeRequestLogService);
     }
 
+    /**
+     * 判断是否支持相关数据。
+     */
     @Override
     public boolean supports(AppStoreConfig storeConfig) {
         return storeConfig != null
@@ -80,12 +86,18 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                 && "vivo".equalsIgnoreCase(storeConfig.getStoreType().getCode());
     }
 
+    /**
+     * 刷新令牌。
+     */
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         String marker = StringUtils.hasText(storeConfig.getClientId()) ? storeConfig.getClientId() : "vivo-static";
         return new TokenPayload(TokenType.STATIC.getCode(), marker, LocalDateTime.now().plusYears(10));
     }
 
+    /**
+     * 提交发布。
+     */
     @Override
     public StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -93,6 +105,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         }
     }
 
+    /**
+     * 查询审核。
+     */
     @Override
     public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -102,6 +117,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         }
     }
 
+    /**
+     * 提交VIVO 发布。
+     */
     protected StoreSubmitResult submitVivoRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record) {
         VivoAppDetailsLookupResult appDetailsLookup = ensureVivoSubmitReady(storeConfig, version);
         if (appDetailsLookup.appMissing()) {
@@ -115,6 +133,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return submitVivoFullRelease(storeConfig, version, appDetails);
     }
 
+    /**
+     * 查询VIVO 阶段详情。
+     */
     protected StoreReviewResult queryVivoStageDetails(AppStoreConfig storeConfig, AppReleaseRecord record) {
         if (!StringUtils.hasText(record.getPackageName())) {
             throw new IllegalArgumentException("Vivo staged release requires packageName for detail query");
@@ -153,11 +174,17 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new StoreReviewResult(releaseStatus, responseBody, StringUtils.hasText(rejectReason) ? rejectReason : null);
     }
 
+    /**
+     * 查询VIVO 应用详情。
+     */
     protected StoreReviewResult queryVivoAppDetails(AppStoreConfig storeConfig, AppReleaseRecord record) {
         VivoAppDetailsResult appDetails = queryVivoAppDetails(storeConfig, record.getPackageName());
         return new StoreReviewResult(appDetails.releaseStatus(), appDetails.responseLog(), appDetails.rejectReason());
     }
 
+    /**
+     * 处理VIVO Base URL相关逻辑。
+     */
     protected String vivoBaseUrl(StoreApiProperties.StoreEndpointProperties endpoint) {
         if (StringUtils.hasText(endpoint.getBaseUrl())) {
             return endpoint.getBaseUrl();
@@ -165,11 +192,17 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return endpoint.isSandboxEnabled() ? VIVO_SANDBOX_BASE_URL : VIVO_PRODUCTION_BASE_URL;
     }
 
+    /**
+     * 解码商店响应报文。
+     */
     @Override
     protected String decodeStoreResponseBody(String action, byte[] body) {
         return decodeVivoResponseBody(body);
     }
 
+    /**
+     * 提交VIVO Full 发布。
+     */
     private StoreSubmitResult submitVivoFullRelease(AppStoreConfig storeConfig, AppVersion version, VivoAppDetailsResult appDetails) {
         VivoPackageUploadBundle uploadBundle = uploadVivoPackageBundle(storeConfig, version, false);
         Map<String, Object> payload = buildVivoSubpackageUpdatePayload(
@@ -232,6 +265,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 提交VIVO 阶段发布。
+     */
     private StoreSubmitResult submitVivoStageRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, VivoAppDetailsResult appDetails) {
         VivoPackageUploadBundle uploadBundle = uploadVivoPackageBundle(storeConfig, version, true);
         Map<String, Object> payload = buildVivoSubpackageStagePayload(
@@ -296,6 +332,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 确保VIVO 提交 Ready。
+     */
     private VivoAppDetailsLookupResult ensureVivoSubmitReady(AppStoreConfig storeConfig, AppVersion version) {
         AppInfo appInfo = version.getAppInfo();
         if (appInfo == null || !StringUtils.hasText(appInfo.getPackageName())) {
@@ -321,6 +360,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         throw new IllegalStateException(message.toString());
     }
 
+    /**
+     * 提交VIVO Create 应用。
+     */
     private StoreSubmitResult submitVivoCreateApp(
             AppStoreConfig storeConfig,
             AppVersion version,
@@ -415,10 +457,16 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 上传VIVO 包 Bundle。
+     */
     private VivoPackageUploadBundle uploadVivoPackageBundle(AppStoreConfig storeConfig, AppVersion version, boolean stageUpload) {
         return uploadVivoPackageBundle(storeConfig, version, resolveVivoPackageBundle(version), stageUpload);
     }
 
+    /**
+     * 上传VIVO 包 Bundle。
+     */
     private VivoPackageUploadBundle uploadVivoPackageBundle(
             AppStoreConfig storeConfig,
             AppVersion version,
@@ -444,6 +492,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new VivoPackageUploadBundle(apk32UploadResult, apk64UploadResult);
     }
 
+    /**
+     * 提交VIVO APK 上传。
+     */
     private VivoUploadResult submitVivoApkUpload(
             AppStoreConfig storeConfig,
             AppVersion version,
@@ -519,6 +570,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new VivoUploadResult(storeReleaseId, writeJson(requestLog), responseBody);
     }
 
+    /**
+     * 查询VIVO 应用详情。
+     */
     private VivoAppDetailsResult queryVivoAppDetails(AppStoreConfig storeConfig, String packageName) {
         if (!StringUtils.hasText(packageName)) {
             throw new IllegalArgumentException("Vivo release requires packageName for detail query");
@@ -553,6 +607,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return toVivoAppDetailsResult(response, writeJson(requestLog), responseBody);
     }
 
+    /**
+     * 查询VIVO 应用详情提交。
+     */
     private VivoAppDetailsLookupResult queryVivoAppDetailsForSubmit(AppStoreConfig storeConfig, String packageName) {
         if (!StringUtils.hasText(packageName)) {
             throw new IllegalArgumentException("Vivo release requires packageName for detail query");
@@ -596,6 +653,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 构建VIVO 上传载荷。
+     */
     private Map<String, Object> buildVivoUploadPayload(
             AppStoreConfig storeConfig,
             AppVersion version,
@@ -612,6 +672,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return payload;
     }
 
+    /**
+     * 构建VIVO Subpackage Create 载荷。
+     */
     private Map<String, Object> buildVivoSubpackageCreatePayload(
             AppStoreConfig storeConfig,
             AppVersion version,
@@ -642,6 +705,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return payload;
     }
 
+    /**
+     * 构建VIVO Subpackage Update 载荷。
+     */
     private Map<String, Object> buildVivoSubpackageUpdatePayload(
             AppStoreConfig storeConfig,
             AppVersion version,
@@ -671,6 +737,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return payload;
     }
 
+    /**
+     * 构建VIVO Subpackage 阶段载荷。
+     */
     private Map<String, Object> buildVivoSubpackageStagePayload(
             AppStoreConfig storeConfig,
             AppVersion version,
@@ -700,6 +769,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return payload;
     }
 
+    /**
+     * 构建VIVO Common 载荷。
+     */
     private Map<String, Object> buildVivoCommonPayload(AppStoreConfig storeConfig, String method) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("access_key", storeConfig.getClientId());
@@ -712,6 +784,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return payload;
     }
 
+    /**
+     * 上传VIVO Asset。
+     */
     private VivoUploadResult uploadVivoAsset(
             AppStoreConfig storeConfig,
             String packageName,
@@ -771,6 +846,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new VivoUploadResult(serialNumber, writeJson(requestLog), responseBody);
     }
 
+    /**
+     * 解析VIVO 包 Bundle。
+     */
     private VivoPackageBundle resolveVivoPackageBundle(AppVersion version) {
         String defaultApk64Location = firstNonBlank(version.getPackageUrl64(), version.getPackageUrl());
         ProjectMetadataContext metadataContext = resolveProjectMetadataContext(defaultApk64Location);
@@ -811,6 +889,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new VivoPackageBundle(apk32Source, apk64Source, metadataContext);
     }
 
+    /**
+     * 解析VIVO Create 上下文。
+     */
     private VivoCreateContext resolveVivoCreateContext(AppVersion version, ProjectMetadataContext metadataContext) {
         AppInfo appInfo = version.getAppInfo();
         if (appInfo == null || !StringUtils.hasText(appInfo.getPackageName())) {
@@ -843,6 +924,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 处理wait VIVO 包 Parsing相关逻辑。
+     */
     private void waitForVivoPackageParsing(StoreApiProperties.StoreEndpointProperties endpoint) {
         String baseUrl = vivoBaseUrl(endpoint);
         if (baseUrl.startsWith("http://127.0.0.1") || baseUrl.startsWith("http://localhost")) {
@@ -855,6 +939,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         }
     }
 
+    /**
+     * 发送VIVO 表单。
+     */
     private String postVivoForm(AppStoreConfig storeConfig, StoreApiProperties.StoreEndpointProperties endpoint, Map<String, Object> payload, String sign) {
         MultiValueMap<String, String> body = new LinkedMultiValueMap<>();
         payload.forEach((key, value) -> body.add(key, value == null ? "" : String.valueOf(value)));
@@ -873,6 +960,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return decodeVivoResponseBody(responseBody);
     }
 
+    /**
+     * 构建VIVO Create 截图值。
+     */
     private String buildVivoCreateScreenshotValue(List<String> screenshotSerialNumbers) {
         List<String> sanitized = screenshotSerialNumbers == null
                 ? List.of()
@@ -884,12 +974,18 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return String.join(",", sanitized);
     }
 
+    /**
+     * 校验VIVO 截图 Count。
+     */
     private void validateVivoScreenshotCount(int screenshotCount, String message) {
         if (screenshotCount < VIVO_MIN_SCREENSHOT_COUNT || screenshotCount > VIVO_MAX_SCREENSHOT_COUNT) {
             throw new IllegalStateException(message + " Current count=" + screenshotCount + ".");
         }
     }
 
+    /**
+     * 处理VIVO 应用详情结果相关逻辑。
+     */
     private VivoAppDetailsResult toVivoAppDetailsResult(Map<String, Object> response, String requestLog, String responseLog) {
         Map<String, Object> data = asMap(response.get("data"));
         int status = intValue(data.get("status"));
@@ -906,10 +1002,16 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 判断是否VIVO 应用 Not Found 响应。
+     */
     private boolean isVivoAppNotFoundResponse(Map<String, Object> response) {
         return VIVO_SUB_CODE_APP_NOT_FOUND.equals(firstString(response, "subCode", "sub_code"));
     }
 
+    /**
+     * 映射VIVO 阶段状态。
+     */
     private ReleaseStatus mapVivoStageStatus(int auditStatus, int effectStatus) {
         if (auditStatus == 1) {
             return ReleaseStatus.REJECT;
@@ -923,6 +1025,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return ReleaseStatus.AUDITING;
     }
 
+    /**
+     * 映射VIVO 应用状态。
+     */
     private ReleaseStatus mapVivoAppStatus(int status, int saleStatus, String rejectReason) {
         if (StringUtils.hasText(rejectReason)) {
             return ReleaseStatus.REJECT;
@@ -936,10 +1041,16 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return ReleaseStatus.AUDITING;
     }
 
+    /**
+     * 判断是否VIVO 应用 Approved Online。
+     */
     private boolean isVivoAppApprovedAndOnline(int status, int saleStatus) {
         return saleStatus == 1 && status == 3;
     }
 
+    /**
+     * 确保VIVO Create Allowed。
+     */
     private void ensureVivoCreateAllowed(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         if (endpoint.isSandboxEnabled()) {
@@ -948,6 +1059,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         throw new IllegalStateException("Vivo app create is limited to sandbox environment. Set app.store-api.stores.vivo.sandbox-enabled=true before retrying.");
     }
 
+    /**
+     * 解析VIVO 包 Source。
+     */
     private PackageContentSource resolveVivoPackageSource(String packageLocation, String emptyMessage) {
         if (!StringUtils.hasText(packageLocation)) {
             throw new IllegalArgumentException(emptyMessage);
@@ -970,6 +1084,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new PackageContentSource(localPath.getFileName().toString(), localPath, null);
     }
 
+    /**
+     * 签名VIVO 载荷。
+     */
     private String signVivoPayload(Map<String, Object> payload, String accessSecret) {
         String source = payload.entrySet().stream()
                 .filter(entry -> entry.getValue() != null)
@@ -980,6 +1097,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return hmacSha256Hex(source, accessSecret);
     }
 
+    /**
+     * 解析VIVO 图标路径。
+     */
     private Path resolveVivoIconPath(ProjectMetadataContext metadataContext, Map<String, Object> metadata) {
         Object metadataValue = metadataLookup(metadata, "vivo", "iconPath");
         if (metadataValue == null) {
@@ -988,6 +1108,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return resolveProjectAssetPath(metadataContext.metadataPath(), metadataValue);
     }
 
+    /**
+     * 解析VIVO 截图路径。
+     */
     private List<Path> resolveVivoScreenshotPaths(ProjectMetadataContext metadataContext, Map<String, Object> metadata) {
         return resolveProjectAssetPaths(
                 metadataContext.metadataPath(),
@@ -996,6 +1119,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 确保VIVO Success。
+     */
     private void ensureVivoSuccess(Map<String, Object> response) {
         int code = intValue(response.get("code"));
         String subCode = firstString(response, "subCode", "sub_code");
@@ -1011,6 +1137,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 解码VIVO 响应报文。
+     */
     private String decodeVivoResponseBody(byte[] body) {
         if (body == null || body.length == 0) {
             return "";
@@ -1032,6 +1161,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new String(body, StandardCharsets.UTF_8);
     }
 
+    /**
+     * 解码Strict。
+     */
     private String decodeStrict(byte[] body, Charset charset) {
         CharsetDecoder decoder = charset.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPORT)
@@ -1043,6 +1175,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         }
     }
 
+    /**
+     * 判断Like Mojibake。
+     */
     private boolean looksLikeMojibake(String text) {
         if (!StringUtils.hasText(text)) {
             return false;
@@ -1055,6 +1190,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                 || text.contains("\u00EF\u00BC");
     }
 
+    /**
+     * 格式化VIVO Date 时间。
+     */
     private String formatVivoDateTime(LocalDateTime dateTime) {
         if (dateTime == null) {
             return null;

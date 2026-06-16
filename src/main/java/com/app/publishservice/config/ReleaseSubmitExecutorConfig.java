@@ -9,6 +9,9 @@ import java.util.concurrent.Executor;
 @Configuration
 public class ReleaseSubmitExecutorConfig {
 
+    /**
+     * 处理发布提交 Executor相关逻辑。
+     */
     @Bean("releaseSubmitExecutor")
     public Executor releaseSubmitExecutor() {
         int corePoolSize = Math.max(2, Math.min(Runtime.getRuntime().availableProcessors(), 8));

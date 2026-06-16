@@ -44,6 +44,9 @@ public class PackageVersionService {
     private final Environment environment;
     private final PublishMetadataResolver publishMetadataResolver;
 
+    /**
+     * 初始化PackageVersionService。
+     */
     public PackageVersionService(
             AppManagementService appManagementService,
             AppVersionRepository appVersionRepository,
@@ -61,6 +64,9 @@ public class PackageVersionService {
         this.publishMetadataResolver = new PublishMetadataResolver(appProperties);
     }
 
+    /**
+     * 上传相关数据。
+     */
     @Transactional
     public PackageUploadResponse upload(
             Long appId,
@@ -109,6 +115,9 @@ public class PackageVersionService {
         );
     }
 
+    /**
+     * 校验版本。
+     */
     @Transactional(readOnly = true)
     public AppVersion requireVersion(Long versionId) {
         AppVersion version = appVersionRepository.selectById(versionId);
@@ -119,10 +128,16 @@ public class PackageVersionService {
         return version;
     }
 
+    /**
+     * 处理requires 提交包下载相关逻辑。
+     */
     public boolean requiresSubmitPackageDownload(AppVersion version) {
         return StringUtils.hasText(version.getBuildCode()) && !appProperties.getPackageRepository().isStreamUploadEnabled();
     }
 
+    /**
+     * 处理prepare 版本提交相关逻辑。
+     */
     @Transactional
     public AppVersion prepareVersionForSubmit(AppVersion version) {
         if (StringUtils.hasText(version.getBuildCode())) {
@@ -176,6 +191,9 @@ public class PackageVersionService {
         return version;
     }
 
+    /**
+     * 查询版本。
+     */
     @Transactional(readOnly = true)
     public List<AppVersionResponse> listVersions(Long appId) {
         appManagementService.requireApp(appId);
@@ -188,6 +206,9 @@ public class PackageVersionService {
                 .toList();
     }
 
+    /**
+     * 获取版本。
+     */
     @Transactional(readOnly = true)
     public AppVersionResponse getVersion(Long appId, Long versionId) {
         AppVersion version = requireVersion(versionId);
@@ -197,6 +218,9 @@ public class PackageVersionService {
         return toResponse(version);
     }
 
+    /**
+     * 校验包 Against 应用。
+     */
     private void validatePackageAgainstApp(AppInfo appInfo, PackageMetadata metadata) {
         boolean iosPackage = "ipa".equalsIgnoreCase(metadata.packageType());
         if (appInfo.getAppType() == AppType.HarmonyOS && !iosPackage) {
@@ -207,6 +231,9 @@ public class PackageVersionService {
         }
     }
 
+    /**
+     * 校验Expected 元数据。
+     */
     private void validateExpectedMetadata(
             PackageMetadata metadata,
             String expectedVersionName,
@@ -224,6 +251,9 @@ public class PackageVersionService {
         }
     }
 
+    /**
+     * 确保版本 Is New。
+     */
     private void ensureVersionIsNew(Long appId, String versionName, String versionCode) {
         String normalizedVersionCode = VersionCodeUtil.requireNonBlank(versionCode);
         Long duplicateCount = appVersionRepository.selectCount(
@@ -237,6 +267,9 @@ public class PackageVersionService {
         }
     }
 
+    /**
+     * 处理响应相关逻辑。
+     */
     private AppVersionResponse toResponse(AppVersion version) {
         return new AppVersionResponse(
                 version.getId(),
@@ -255,6 +288,9 @@ public class PackageVersionService {
         );
     }
 
+    /**
+     * 处理prepare Local 提交包元数据相关逻辑。
+     */
     private void prepareLocalSubmitPackagesFromMetadata(AppVersion version) {
         ProjectMetadataContext metadataContext = resolveProjectMetadataContext();
         Map<String, Object> metadata = metadataContext.metadata();
@@ -296,6 +332,9 @@ public class PackageVersionService {
         );
     }
 
+    /**
+     * 分配提交包路径。
+     */
     private Path allocateSubmitPackagePath(String versionCode, String buildCode, String fileName) {
         try {
             return storageService.allocateDownloadPath(versionCode, buildCode, fileName);
@@ -304,12 +343,18 @@ public class PackageVersionService {
         }
     }
 
+    /**
+     * 处理应用版本 Comparator相关逻辑。
+     */
     private Comparator<AppVersion> appVersionComparator() {
         return Comparator
                 .comparing(AppVersion::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(AppVersion::getId, Comparator.nullsLast(Comparator.reverseOrder()));
     }
 
+    /**
+     * 解析项目元数据上下文。
+     */
     private ProjectMetadataContext resolveProjectMetadataContext() {
         return new ProjectMetadataContext(
                 publishMetadataResolver.metadataPath(),
@@ -317,14 +362,23 @@ public class PackageVersionService {
         );
     }
 
+    /**
+     * 解析项目 Asset 路径。
+     */
     private Path resolveProjectAssetPath(Path metadataPath, Object assetLocation) {
         return publishMetadataResolver.resolveAssetPath(metadataPath, assetLocation);
     }
 
+    /**
+     * 处理元数据 Lookup相关逻辑。
+     */
     private Object metadataLookup(Map<String, Object> metadata, String sectionKey, String key) {
         return publishMetadataResolver.metadataLookup(metadata, sectionKey, key);
     }
 
+    /**
+     * 获取首个Non Null。
+     */
     private Object firstNonNull(Object... values) {
         if (values == null) {
             return null;

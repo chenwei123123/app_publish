@@ -46,6 +46,9 @@ class ConfigurableStorePublisherXiaomiTest {
     @TempDir
     Path tempDir;
 
+    /**
+     * 测试提交小米发布查询多部分表单 Push场景。
+     */
     @Test
     void shouldSubmitXiaomiReleaseWithQueryAndMultipartPush() throws Exception {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
@@ -155,6 +158,9 @@ class ConfigurableStorePublisherXiaomiTest {
         }
     }
 
+    /**
+     * 测试查询小米审核 Infer Pass When Target 版本 Is Live场景。
+     */
     @Test
     void shouldQueryXiaomiReviewAndInferPassWhenTargetVersionIsLive() throws Exception {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
@@ -202,6 +208,9 @@ class ConfigurableStorePublisherXiaomiTest {
         }
     }
 
+    /**
+     * 测试Keep Auditing When 小米查询 Cannot Confirm Target 版本场景。
+     */
     @Test
     void shouldKeepAuditingWhenXiaomiQueryCannotConfirmTargetVersion() throws Exception {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
@@ -244,6 +253,9 @@ class ConfigurableStorePublisherXiaomiTest {
         }
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
@@ -258,6 +270,9 @@ class ConfigurableStorePublisherXiaomiTest {
         return appProperties;
     }
 
+    /**
+     * 处理小米发布元数据相关逻辑。
+     */
     private Map<String, Object> xiaomiPublishMetadata() {
         return Map.of(
                 "xiaomi", Map.of(
@@ -288,6 +303,9 @@ class ConfigurableStorePublisherXiaomiTest {
         );
     }
 
+    /**
+     * 处理小米商店配置相关逻辑。
+     */
     private AppStoreConfig xiaomiStoreConfig(KeyPair keyPair) {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("xiaomi"));
@@ -297,6 +315,9 @@ class ConfigurableStorePublisherXiaomiTest {
         return storeConfig;
     }
 
+    /**
+     * 处理应用版本相关逻辑。
+     */
     private AppVersion appVersion(Path package64Path, Path secondApk, Path fallbackPackagePath) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
@@ -319,6 +340,9 @@ class ConfigurableStorePublisherXiaomiTest {
         return version;
     }
 
+    /**
+     * 处理小米审核记录相关逻辑。
+     */
     private AppReleaseRecord xiaomiReviewRecord(String versionCode, LocalDateTime releaseTime) {
         AppReleaseRecord record = new AppReleaseRecord();
         record.setId(1L);
@@ -335,11 +359,17 @@ class ConfigurableStorePublisherXiaomiTest {
         return record;
     }
 
+    /**
+     * 处理JSON 映射相关逻辑。
+     */
     private Map<String, Object> jsonMap(String json) throws Exception {
         return objectMapper.readValue(json, new TypeReference<>() {
         });
     }
 
+    /**
+     * 解析多部分表单。
+     */
     private Map<String, String> parseMultipart(String contentType, byte[] body) {
         String boundary = extractBoundary(contentType);
         String content = new String(body, StandardCharsets.ISO_8859_1);
@@ -371,6 +401,9 @@ class ConfigurableStorePublisherXiaomiTest {
         return result;
     }
 
+    /**
+     * 提取Boundary。
+     */
     private String extractBoundary(String contentType) {
         for (String item : contentType.split(";")) {
             String trimmed = item.trim();
@@ -381,6 +414,9 @@ class ConfigurableStorePublisherXiaomiTest {
         throw new IllegalArgumentException("Multipart boundary is missing");
     }
 
+    /**
+     * 解密Sig。
+     */
     private String decryptSig(String hex, PrivateKey privateKey) throws Exception {
         byte[] encrypted = hexToBytes(hex);
         Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
@@ -402,6 +438,9 @@ class ConfigurableStorePublisherXiaomiTest {
         return new String(plain, StandardCharsets.UTF_8);
     }
 
+    /**
+     * 处理hex Bytes相关逻辑。
+     */
     private byte[] hexToBytes(String hex) {
         byte[] bytes = new byte[hex.length() / 2];
         for (int index = 0; index < bytes.length; index++) {
@@ -411,6 +450,9 @@ class ConfigurableStorePublisherXiaomiTest {
         return bytes;
     }
 
+    /**
+     * 计算 MD5 摘要Hex。
+     */
     private String md5Hex(byte[] bytes) throws Exception {
         java.security.MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
         digest.update(bytes);

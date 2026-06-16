@@ -46,11 +46,17 @@ public class StoreRequestLogService {
     private final AppStoreRequestLogRepository requestLogRepository;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 初始化StoreRequestLogService。
+     */
     public StoreRequestLogService(AppStoreRequestLogRepository requestLogRepository, ObjectMapper objectMapper) {
         this.requestLogRepository = requestLogRepository;
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 处理日志 Success相关逻辑。
+     */
     public void logSuccess(
             AppStoreConfig storeConfig,
             String action,
@@ -77,6 +83,9 @@ public class StoreRequestLogService {
         );
     }
 
+    /**
+     * 处理日志 Failure相关逻辑。
+     */
     public void logFailure(
             AppStoreConfig storeConfig,
             String action,
@@ -104,6 +113,9 @@ public class StoreRequestLogService {
         );
     }
 
+    /**
+     * 保存相关数据。
+     */
     private void save(
             AppStoreConfig storeConfig,
             String action,
@@ -140,6 +152,9 @@ public class StoreRequestLogService {
         requestLogRepository.insert(log);
     }
 
+    /**
+     * 获取下一个请求 Order。
+     */
     private Long nextRequestOrder(Long releaseRecordId) {
         if (releaseRecordId == null) {
             return null;
@@ -157,6 +172,9 @@ public class StoreRequestLogService {
         return latest.getRequestOrder() + 1;
     }
 
+    /**
+     * 转换相关数据。
+     */
     private String stringify(Object value) {
         if (value == null) {
             return null;
@@ -171,6 +189,9 @@ public class StoreRequestLogService {
         }
     }
 
+    /**
+     * 处理sanitize 字符串相关逻辑。
+     */
     private String sanitizeString(String value) {
         if (!StringUtils.hasText(value)) {
             return value;
@@ -188,11 +209,17 @@ public class StoreRequestLogService {
         }
     }
 
+    /**
+     * 判断Like JSON。
+     */
     private boolean looksLikeJson(String value) {
         return (value.startsWith("{") && value.endsWith("}"))
                 || (value.startsWith("[") && value.endsWith("]"));
     }
 
+    /**
+     * 处理sanitize 值相关逻辑。
+     */
     private Object sanitizeValue(Object value) {
         if (value instanceof Map<?, ?> map) {
             Map<String, Object> sanitized = new LinkedHashMap<>();
@@ -215,6 +242,9 @@ public class StoreRequestLogService {
         return limitLength(String.valueOf(value), 10000);
     }
 
+    /**
+     * 判断是否Sensitive Key。
+     */
     private boolean isSensitiveKey(String key) {
         if (!StringUtils.hasText(key)) {
             return false;
@@ -225,10 +255,16 @@ public class StoreRequestLogService {
         return key.contains("token") || key.contains("secret") || key.contains("sign") || key.contains("authorization");
     }
 
+    /**
+     * 规范化Key。
+     */
     private String normalizeKey(String key) {
         return key.trim().replace('-', '_').toLowerCase(Locale.ROOT);
     }
 
+    /**
+     * 处理limit Length相关逻辑。
+     */
     private String limitLength(String value, int maxLength) {
         if (value == null || value.length() <= maxLength) {
             return value;

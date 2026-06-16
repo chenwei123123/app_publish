@@ -14,6 +14,9 @@ public class JacksonConfig {
 
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
+    /**
+     * 处理jackson2 Object Mapper Builder Customizer相关逻辑。
+     */
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer jackson2ObjectMapperBuilderCustomizer() {
         return builder -> {

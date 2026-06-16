@@ -40,6 +40,9 @@ class ConfigurableStorePublisherYingyongbaoTest {
     @TempDir
     Path tempDir;
 
+    /**
+     * 测试提交应用宝发布 Signed 上传 Update 请求场景。
+     */
     @Test
     void shouldSubmitYingyongbaoReleaseWithSignedUploadAndUpdateRequests() throws Exception {
         Path apk32 = tempDir.resolve("demo-32.apk");
@@ -128,6 +131,9 @@ class ConfigurableStorePublisherYingyongbaoTest {
         }
     }
 
+    /**
+     * 测试查询应用宝审核状态场景。
+     */
     @Test
     void shouldQueryYingyongbaoReviewStatus() throws Exception {
         AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
@@ -165,6 +171,9 @@ class ConfigurableStorePublisherYingyongbaoTest {
         }
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
@@ -182,6 +191,9 @@ class ConfigurableStorePublisherYingyongbaoTest {
         return appProperties;
     }
 
+    /**
+     * 处理应用宝商店配置相关逻辑。
+     */
     private AppStoreConfig yingyongbaoStoreConfig() {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("yingyongbao"));
@@ -190,6 +202,9 @@ class ConfigurableStorePublisherYingyongbaoTest {
         return storeConfig;
     }
 
+    /**
+     * 处理应用版本相关逻辑。
+     */
     private AppVersion appVersion(Path apk32, Path apk64) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
@@ -209,6 +224,9 @@ class ConfigurableStorePublisherYingyongbaoTest {
         return version;
     }
 
+    /**
+     * 发送JSON。
+     */
     private void sendJson(com.sun.net.httpserver.HttpExchange exchange, String body) throws java.io.IOException {
         byte[] response = body.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().add("Content-Type", "application/json");
@@ -217,6 +235,9 @@ class ConfigurableStorePublisherYingyongbaoTest {
         exchange.close();
     }
 
+    /**
+     * 解析表单。
+     */
     private Map<String, String> parseForm(byte[] body) {
         String content = new String(body, StandardCharsets.UTF_8);
         Map<String, String> result = new LinkedHashMap<>();
@@ -232,12 +253,18 @@ class ConfigurableStorePublisherYingyongbaoTest {
         return result;
     }
 
+    /**
+     * 处理without相关逻辑。
+     */
     private Map<String, String> without(Map<String, String> params, String keyToRemove) {
         Map<String, String> result = new LinkedHashMap<>(params);
         result.remove(keyToRemove);
         return result;
     }
 
+    /**
+     * 签名相关数据。
+     */
     private String sign(Map<String, String> params, String accessSecret) throws Exception {
         String payload = params.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -248,10 +275,16 @@ class ConfigurableStorePublisherYingyongbaoTest {
         return toHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
     }
 
+    /**
+     * 计算 MD5 摘要相关数据。
+     */
     private String md5(String content) throws Exception {
         return toHex(java.security.MessageDigest.getInstance("MD5").digest(content.getBytes(StandardCharsets.UTF_8)));
     }
 
+    /**
+     * 处理Hex相关逻辑。
+     */
     private String toHex(byte[] bytes) {
         StringBuilder builder = new StringBuilder(bytes.length * 2);
         for (byte value : bytes) {

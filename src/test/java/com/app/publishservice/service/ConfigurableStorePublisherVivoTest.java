@@ -47,6 +47,9 @@ class ConfigurableStorePublisherVivoTest {
     @TempDir
     Path tempDir;
 
+    /**
+     * 测试提交 VIVO Full 发布 Update 请求场景。
+     */
     @Test
     void shouldSubmitVivoFullReleaseWithUpdateRequest() throws Exception {
         Path apk = buildVivoPackage("demo-32.apk", "demo-64.apk");
@@ -126,6 +129,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试提交 VIVO 发布 Remote 包 Streaming When Enabled场景。
+     */
     @Test
     void shouldSubmitVivoReleaseWithRemotePackageStreamingWhenEnabled() throws Exception {
         byte[] apk32Bytes = "remote-demo-32".getBytes(StandardCharsets.UTF_8);
@@ -204,6 +210,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试提交 VIVO 阶段发布 Create Update 请求场景。
+     */
     @Test
     void shouldSubmitVivoStageReleaseWithCreateUpdateRequest() throws Exception {
         Path apk = buildVivoPackage("stage-demo-32.apk", "stage-demo-64.apk");
@@ -264,6 +273,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试Reject VIVO 提交 When 应用详情 Not Approved Online场景。
+     */
     @Test
     void shouldRejectVivoSubmitWhenAppDetailsNotApprovedAndOnline() throws Exception {
         byte[] apkBytes = "fake-apk-binary".getBytes(StandardCharsets.UTF_8);
@@ -295,6 +307,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试Create VIVO 应用 When 应用详情查询 Returns11001场景。
+     */
     @Test
     void shouldCreateVivoAppWhenAppDetailsQueryReturns11001() throws Exception {
         Path apk = buildVivoCreatePackage();
@@ -367,6 +382,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试Create VIVO 应用 Five 截图场景。
+     */
     @Test
     void shouldCreateVivoAppWithFiveScreenshots() throws Exception {
         Path apk = buildVivoCreatePackage();
@@ -421,6 +439,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试Fail VIVO Create When Assets Are Missing场景。
+     */
     @Test
     void shouldFailVivoCreateWhenAssetsAreMissing() throws Exception {
         Path apk = buildVivoCreatePackage();
@@ -449,6 +470,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试Reject VIVO Create When 截图 Count Is Less Than Three场景。
+     */
     @Test
     void shouldRejectVivoCreateWhenScreenshotCountIsLessThanThree() throws Exception {
         Path apk = buildVivoCreatePackage();
@@ -478,6 +502,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试Reject VIVO Create Outside Sandbox场景。
+     */
     @Test
     void shouldRejectVivoCreateOutsideSandbox() throws Exception {
         Path apk = buildVivoCreatePackage();
@@ -508,6 +535,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试查询 VIVO 阶段详情场景。
+     */
     @Test
     void shouldQueryVivoStageDetails() throws Exception {
         AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
@@ -530,6 +560,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试查询 VIVO 应用详情 Full 发布场景。
+     */
     @Test
     void shouldQueryVivoAppDetailsForFullRelease() throws Exception {
         AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
@@ -553,6 +586,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试Reject Non APK 包 VIVO场景。
+     */
     @Test
     void shouldRejectNonApkPackageForVivo() throws Exception {
         Path bundle = tempDir.resolve("demo.aab");
@@ -567,6 +603,9 @@ class ConfigurableStorePublisherVivoTest {
         assertEquals("Vivo upload only supports APK packages", exception.getMessage());
     }
 
+    /**
+     * 测试下载包仓库 When Local 文件 Missing场景。
+     */
     @Test
     void shouldDownloadPackageFromRepositoryWhenLocalFileMissing() throws Exception {
         byte[] apkBytes = "repo-apk-binary".getBytes(StandardCharsets.UTF_8);
@@ -636,6 +675,9 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 测试Choose VIVO Sandbox Production Base URL 配置场景。
+     */
     @Test
     void shouldChooseVivoSandboxOrProductionBaseUrlByConfig() throws Exception {
         VivoStorePlatformPublisher publisher = new VivoStorePlatformPublisher(RestClient.create(), new ObjectMapper(), new AppProperties(), null);
@@ -655,6 +697,9 @@ class ConfigurableStorePublisherVivoTest {
         );
     }
 
+    /**
+     * 测试Decode Gbk Msg VIVO 错误响应场景。
+     */
     @Test
     void shouldDecodeGbkMsgFromVivoErrorResponse() throws Exception {
         byte[] apkBytes = "fake-apk-binary".getBytes(StandardCharsets.UTF_8);
@@ -681,10 +726,16 @@ class ConfigurableStorePublisherVivoTest {
         }
     }
 
+    /**
+     * 处理上传。
+     */
     private void handleUpload(HttpExchange exchange, AtomicReference<Map<String, String>> requestParts) throws IOException {
         handleUpload(exchange, requestParts, "serial-123");
     }
 
+    /**
+     * 处理上传。
+     */
     private void handleUpload(HttpExchange exchange, AtomicReference<Map<String, String>> requestParts, String serialNumber) throws IOException {
         assertEquals("POST", exchange.getRequestMethod());
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
@@ -707,6 +758,9 @@ class ConfigurableStorePublisherVivoTest {
         exchange.close();
     }
 
+    /**
+     * 处理Gbk 上传错误。
+     */
     private void handleGbkUploadError(HttpExchange exchange, String message) throws IOException {
         assertEquals("POST", exchange.getRequestMethod());
         byte[] requestBody = exchange.getRequestBody().readAllBytes();
@@ -721,6 +775,9 @@ class ConfigurableStorePublisherVivoTest {
         exchange.close();
     }
 
+    /**
+     * 处理阶段提交。
+     */
     private void handleStageSubmit(HttpExchange exchange, AtomicReference<Map<String, String>> form) throws IOException {
         assertEquals("POST", exchange.getRequestMethod());
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
@@ -740,6 +797,9 @@ class ConfigurableStorePublisherVivoTest {
         exchange.close();
     }
 
+    /**
+     * 处理应用提交。
+     */
     private void handleAppSubmit(HttpExchange exchange, AtomicReference<Map<String, String>> form) throws IOException {
         assertEquals("POST", exchange.getRequestMethod());
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
@@ -759,6 +819,9 @@ class ConfigurableStorePublisherVivoTest {
         exchange.close();
     }
 
+    /**
+     * 处理阶段详情查询。
+     */
     private void handleStageDetailQuery(HttpExchange exchange, AtomicReference<Map<String, String>> form) throws IOException {
         assertEquals("POST", exchange.getRequestMethod());
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
@@ -784,10 +847,16 @@ class ConfigurableStorePublisherVivoTest {
         exchange.close();
     }
 
+    /**
+     * 处理应用详情查询。
+     */
     private void handleAppDetailQuery(HttpExchange exchange, AtomicReference<Map<String, String>> form) throws IOException {
         handleAppDetailQuery(exchange, form, 3, 1);
     }
 
+    /**
+     * 处理应用详情查询。
+     */
     private void handleAppDetailQuery(HttpExchange exchange, AtomicReference<Map<String, String>> form, int status, int saleStatus) throws IOException {
         assertEquals("POST", exchange.getRequestMethod());
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
@@ -813,6 +882,9 @@ class ConfigurableStorePublisherVivoTest {
         exchange.close();
     }
 
+    /**
+     * 处理应用详情 Not Found 查询。
+     */
     private void handleAppDetailNotFoundQuery(HttpExchange exchange, AtomicReference<Map<String, String>> form) throws IOException {
         assertEquals("POST", exchange.getRequestMethod());
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
@@ -832,6 +904,9 @@ class ConfigurableStorePublisherVivoTest {
         exchange.close();
     }
 
+    /**
+     * 处理Create 应用提交。
+     */
     private void handleCreateAppSubmit(HttpExchange exchange, AtomicReference<Map<String, String>> form) throws IOException {
         assertEquals("POST", exchange.getRequestMethod());
         String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
@@ -851,10 +926,16 @@ class ConfigurableStorePublisherVivoTest {
         exchange.close();
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server) {
         return appProperties(server, Map.of());
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server, Map<String, Object> publishMetadata) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
@@ -868,16 +949,25 @@ class ConfigurableStorePublisherVivoTest {
         return appProperties;
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server, String packageRepositoryBaseUrl) {
         return appProperties(server, packageRepositoryBaseUrl, Map.of());
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server, String packageRepositoryBaseUrl, Map<String, Object> publishMetadata) {
         AppProperties appProperties = appProperties(server, publishMetadata);
         appProperties.getPackageRepository().setBaseUrl(packageRepositoryBaseUrl);
         return appProperties;
     }
 
+    /**
+     * 处理VIVO 商店配置相关逻辑。
+     */
     private AppStoreConfig vivoStoreConfig() {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("vivo"));
@@ -886,6 +976,9 @@ class ConfigurableStorePublisherVivoTest {
         return storeConfig;
     }
 
+    /**
+     * 处理应用版本相关逻辑。
+     */
     private AppVersion appVersion(Path packagePath) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
@@ -903,6 +996,9 @@ class ConfigurableStorePublisherVivoTest {
         return version;
     }
 
+    /**
+     * 处理应用版本相关逻辑。
+     */
     private AppVersion appVersion(String packageUrl) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
@@ -920,10 +1016,16 @@ class ConfigurableStorePublisherVivoTest {
         return version;
     }
 
+    /**
+     * 构建VIVO Create 包。
+     */
     private Path buildVivoCreatePackage() throws Exception {
         return buildVivoPackage("create-demo-32.apk", "create-demo-64.apk");
     }
 
+    /**
+     * 构建VIVO 包。
+     */
     private Path buildVivoPackage(String apk32FileName, String apk64FileName) throws Exception {
         Path packageDir = tempDir.resolve("packages");
         Files.createDirectories(packageDir);
@@ -934,6 +1036,9 @@ class ConfigurableStorePublisherVivoTest {
         return apk64;
     }
 
+    /**
+     * 构建VIVO 发布元数据。
+     */
     private Map<String, Object> buildVivoPublishMetadata(Path projectRoot, Path apk32Path, Path apk64Path, boolean includeIcon, int screenshotCount) throws Exception {
         Path assetsDir = projectRoot.resolve("assets").resolve("vivo");
         Files.createDirectories(assetsDir);
@@ -967,10 +1072,16 @@ class ConfigurableStorePublisherVivoTest {
         );
     }
 
+    /**
+     * 处理relative 路径相关逻辑。
+     */
     private String relativePath(Path projectRoot, Path filePath) {
         return projectRoot.toAbsolutePath().normalize().relativize(filePath.toAbsolutePath().normalize()).toString().replace('\\', '/');
     }
 
+    /**
+     * 构建截图元数据配置。
+     */
     private List<String> buildScreenshotMetadataConfig(int screenshotCount) {
         List<String> lines = new ArrayList<>();
         for (int index = 1; index <= screenshotCount; index++) {
@@ -979,6 +1090,9 @@ class ConfigurableStorePublisherVivoTest {
         return lines;
     }
 
+    /**
+     * 处理灰度记录相关逻辑。
+     */
     private AppReleaseRecord stagedRecord() {
         AppReleaseRecord record = new AppReleaseRecord();
         record.setReleaseType(2L);
@@ -988,6 +1102,9 @@ class ConfigurableStorePublisherVivoTest {
         return record;
     }
 
+    /**
+     * 解析多部分表单。
+     */
     private Map<String, String> parseMultipart(String contentType, byte[] body) {
         String boundary = extractBoundary(contentType);
         String content = new String(body, StandardCharsets.ISO_8859_1);
@@ -1020,6 +1137,9 @@ class ConfigurableStorePublisherVivoTest {
         return result;
     }
 
+    /**
+     * 解析表单。
+     */
     private Map<String, String> parseForm(byte[] body) {
         String content = new String(body, StandardCharsets.UTF_8);
         Map<String, String> result = new LinkedHashMap<>();
@@ -1035,6 +1155,9 @@ class ConfigurableStorePublisherVivoTest {
         return result;
     }
 
+    /**
+     * 提取Boundary。
+     */
     private String extractBoundary(String contentType) {
         for (String item : contentType.split(";")) {
             String trimmed = item.trim();
@@ -1045,6 +1168,9 @@ class ConfigurableStorePublisherVivoTest {
         throw new IllegalArgumentException("Multipart boundary is missing");
     }
 
+    /**
+     * 签名相关数据。
+     */
     private String sign(Map<String, String> params, String accessSecret) throws Exception {
         String payload = params.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -1055,12 +1181,18 @@ class ConfigurableStorePublisherVivoTest {
         return toHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
     }
 
+    /**
+     * 计算 MD5 摘要Hex。
+     */
     private String md5Hex(byte[] data) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("MD5");
         digest.update(data);
         return toHex(digest.digest());
     }
 
+    /**
+     * 处理Hex相关逻辑。
+     */
     private String toHex(byte[] bytes) {
         StringBuilder builder = new StringBuilder(bytes.length * 2);
         for (byte value : bytes) {

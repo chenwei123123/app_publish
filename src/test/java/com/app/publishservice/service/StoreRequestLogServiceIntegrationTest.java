@@ -48,6 +48,9 @@ class StoreRequestLogServiceIntegrationTest {
     @Autowired
     private AppReleaseRecordRepository releaseRecordRepository;
 
+    /**
+     * 测试Persist Masked Ordered 商店请求日志场景。
+     */
     @Test
     void shouldPersistMaskedOrderedStoreRequestLogs() {
         AppStoreConfig storeConfig = createStoreConfig();
@@ -97,6 +100,9 @@ class StoreRequestLogServiceIntegrationTest {
         assertEquals("upstream bad gateway", logs.get(1).getErrorMessage());
     }
 
+    /**
+     * 创建商店配置。
+     */
     private AppStoreConfig createStoreConfig() {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("oppo"));
@@ -107,6 +113,9 @@ class StoreRequestLogServiceIntegrationTest {
         return storeConfig;
     }
 
+    /**
+     * 创建发布记录。
+     */
     private AppReleaseRecord createReleaseRecord() {
         AppInfo appInfo = new AppInfo();
         appInfo.setAppName("Demo Log App");

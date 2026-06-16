@@ -9,14 +9,23 @@ public enum ReleaseMode {
     @EnumValue
     private final String code;
 
+    /**
+     * 初始化ReleaseMode。
+     */
     ReleaseMode(String code) {
         this.code = code;
     }
 
+    /**
+     * 获取编码。
+     */
     public String getCode() {
         return code;
     }
 
+    /**
+     * 处理编码相关逻辑。
+     */
     public static ReleaseMode fromCode(String code) {
         for (ReleaseMode value : values()) {
             if (value.code.equalsIgnoreCase(code)) {

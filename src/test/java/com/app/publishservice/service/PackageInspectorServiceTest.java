@@ -17,6 +17,9 @@ class PackageInspectorServiceTest {
 
     private final PackageInspectorService packageInspectorService = new PackageInspectorService(new ObjectMapper());
 
+    /**
+     * 测试Read 元数据 Archive场景。
+     */
     @Test
     void shouldReadMetadataFromArchive() throws Exception {
         Path tempFile = Files.createTempFile("demo-1.2.3-build45-reinforced", ".apk");
@@ -41,6 +44,9 @@ class PackageInspectorServiceTest {
         assertEquals(64, metadata.checksum().length());
     }
 
+    /**
+     * 测试Read 字符串版本编码 Archive场景。
+     */
     @Test
     void shouldReadStringVersionCodeFromArchive() throws Exception {
         Path tempFile = Files.createTempFile("demo-1.2.3-build-release-45", ".apk");

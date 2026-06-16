@@ -13,10 +13,16 @@ public class ReleaseReviewPollingJob {
 
     private final ReleaseOrchestrationService releaseOrchestrationService;
 
+    /**
+     * 初始化ReleaseReviewPollingJob。
+     */
     public ReleaseReviewPollingJob(ReleaseOrchestrationService releaseOrchestrationService) {
         this.releaseOrchestrationService = releaseOrchestrationService;
     }
 
+    /**
+     * 处理poll相关逻辑。
+     */
     @Scheduled(fixedDelayString = "${app.review-poll-delay-ms:600000000}")
     public void poll() {
         log.debug("Trigger release review polling job");

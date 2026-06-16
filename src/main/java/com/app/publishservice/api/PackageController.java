@@ -25,10 +25,16 @@ public class PackageController {
 
     private final PackageVersionService packageVersionService;
 
+    /**
+     * 初始化PackageController。
+     */
     public PackageController(PackageVersionService packageVersionService) {
         this.packageVersionService = packageVersionService;
     }
 
+    /**
+     * 查询相关数据。
+     */
     @GetMapping
     @Operation(summary = "查询版本列表", description = "查询指定应用下的所有安装包版本")
     public ApiResponse<List<AppVersionResponse>> list(
@@ -37,6 +43,9 @@ public class PackageController {
         return ApiResponse.success(packageVersionService.listVersions(appId));
     }
 
+    /**
+     * 获取相关数据。
+     */
     @GetMapping("/{versionId}")
     @Operation(summary = "查询版本详情", description = "根据应用 ID 和版本 ID 查询安装包版本详情")
     public ApiResponse<AppVersionResponse> get(
@@ -46,6 +55,9 @@ public class PackageController {
         return ApiResponse.success(packageVersionService.getVersion(appId, versionId));
     }
 
+    /**
+     * 上传相关数据。
+     */
     @PostMapping("/upload")
     @Operation(summary = "上传安装包", description = "上传应用安装包并解析版本信息，可附带版本校验条件")
     public ApiResponse<PackageUploadResponse> upload(

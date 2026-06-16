@@ -33,58 +33,100 @@ public class ReleaseSubmitRequest {
     @Schema(description = "灰度结束时间，仅分阶段发布时生效")
     private LocalDateTime grayEndTime;
 
+    /**
+     * 获取版本 Id。
+     */
     public Long getVersionId() {
         return versionId;
     }
 
+    /**
+     * 设置版本 Id。
+     */
     public void setVersionId(Long versionId) {
         this.versionId = versionId;
     }
 
+    /**
+     * 获取商店 Types。
+     */
     public List<String> getStoreTypes() {
         return storeTypes;
     }
 
+    /**
+     * 设置商店 Types。
+     */
     public void setStoreTypes(List<String> storeTypes) {
         this.storeTypes = storeTypes;
     }
 
+    /**
+     * 获取发布 Mode。
+     */
     public String getReleaseMode() {
         return releaseMode;
     }
 
+    /**
+     * 设置发布 Mode。
+     */
     public void setReleaseMode(String releaseMode) {
         this.releaseMode = releaseMode;
     }
 
+    /**
+     * 获取发布类型。
+     */
     public Long getReleaseType() {
         return releaseType;
     }
 
+    /**
+     * 设置发布类型。
+     */
     public void setReleaseType(Long releaseType) {
         this.releaseType = releaseType;
     }
 
+    /**
+     * 获取灰度 Percent。
+     */
     public Long getGrayPercent() {
         return grayPercent;
     }
 
+    /**
+     * 设置灰度 Percent。
+     */
     public void setGrayPercent(Long grayPercent) {
         this.grayPercent = grayPercent;
     }
 
+    /**
+     * 获取灰度 Start 时间。
+     */
     public LocalDateTime getGrayStartTime() {
         return grayStartTime;
     }
 
+    /**
+     * 设置灰度 Start 时间。
+     */
     public void setGrayStartTime(LocalDateTime grayStartTime) {
         this.grayStartTime = grayStartTime;
     }
 
+    /**
+     * 获取灰度 End 时间。
+     */
     public LocalDateTime getGrayEndTime() {
         return grayEndTime;
     }
 
+    /**
+     * 设置灰度 End 时间。
+     */
     public void setGrayEndTime(LocalDateTime grayEndTime) {
         this.grayEndTime = grayEndTime;
     }

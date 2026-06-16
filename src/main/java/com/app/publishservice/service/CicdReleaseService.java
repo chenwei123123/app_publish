@@ -15,11 +15,17 @@ public class CicdReleaseService {
     private final PackageVersionService packageVersionService;
     private final ReleaseOrchestrationService releaseOrchestrationService;
 
+    /**
+     * 初始化CicdReleaseService。
+     */
     public CicdReleaseService(PackageVersionService packageVersionService, ReleaseOrchestrationService releaseOrchestrationService) {
         this.packageVersionService = packageVersionService;
         this.releaseOrchestrationService = releaseOrchestrationService;
     }
 
+    /**
+     * 处理trigger相关逻辑。
+     */
     public List<ReleaseRecordResponse> trigger(
             Long appId,
             List<String> storeTypes,

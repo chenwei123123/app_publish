@@ -19,10 +19,16 @@ public class ConfigurableStorePublisher extends AbstractStorePlatformPublisher {
 
     private final List<StorePlatformPublisher> storePlatformPublishers;
 
+    /**
+     * 初始化ConfigurableStorePublisher。
+     */
     public ConfigurableStorePublisher(RestClient restClient, ObjectMapper objectMapper, AppProperties appProperties) {
         this(restClient, objectMapper, appProperties, null);
     }
 
+    /**
+     * 初始化ConfigurableStorePublisher。
+     */
     @Autowired
     public ConfigurableStorePublisher(
             RestClient restClient,
@@ -41,12 +47,18 @@ public class ConfigurableStorePublisher extends AbstractStorePlatformPublisher {
         );
     }
 
+    /**
+     * 刷新令牌。
+     */
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         StorePlatformPublisher publisher = resolvePublisher(storeConfig);
         return publisher != null ? publisher.refreshToken(storeConfig) : super.refreshToken(storeConfig);
     }
 
+    /**
+     * 提交发布。
+     */
     @Override
     public StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         StorePlatformPublisher publisher = resolvePublisher(storeConfig);
@@ -55,6 +67,9 @@ public class ConfigurableStorePublisher extends AbstractStorePlatformPublisher {
                 : super.submitRelease(storeConfig, version, record, token);
     }
 
+    /**
+     * 查询审核。
+     */
     @Override
     public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         StorePlatformPublisher publisher = resolvePublisher(storeConfig);
@@ -63,6 +78,9 @@ public class ConfigurableStorePublisher extends AbstractStorePlatformPublisher {
                 : super.queryReview(storeConfig, record, token);
     }
 
+    /**
+     * 解析Publisher。
+     */
     private StorePlatformPublisher resolvePublisher(AppStoreConfig storeConfig) {
         for (StorePlatformPublisher storePlatformPublisher : storePlatformPublishers) {
             if (storePlatformPublisher.supports(storeConfig)) {

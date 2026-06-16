@@ -21,18 +21,27 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    /**
+     * 处理Not Found。
+     */
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(NotFoundException ex, HttpServletRequest request) {
         log.warn("Request not found, method={}, uri={}, message={}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.failure(ex.getMessage()));
     }
 
+    /**
+     * 处理Bad 请求。
+     */
     @ExceptionHandler({IllegalArgumentException.class, ConstraintViolationException.class})
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(Exception ex, HttpServletRequest request) {
         log.warn("Bad request, method={}, uri={}, message={}", request.getMethod(), request.getRequestURI(), ex.getMessage());
         return ResponseEntity.badRequest().body(ApiResponse.failure(ex.getMessage()));
     }
 
+    /**
+     * 处理Validation。
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         String message = ex.getBindingResult().getAllErrors().stream()
@@ -44,6 +53,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(ApiResponse.failure(message));
     }
 
+    /**
+     * 处理商店 API。
+     */
     @ExceptionHandler(StoreApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleStoreApi(StoreApiException ex, HttpServletRequest request) {
         log.warn(
@@ -57,6 +69,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(ApiResponse.failure(ex.getMessage()));
     }
 
+    /**
+     * 处理Unexpected。
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception, method={}, uri={}", request.getMethod(), request.getRequestURI(), ex);

@@ -9,9 +9,18 @@ import com.app.publishservice.service.model.TokenPayload;
 
 public interface StorePublisher {
 
+    /**
+     * 刷新令牌。
+     */
     TokenPayload refreshToken(AppStoreConfig storeConfig);
 
+    /**
+     * 提交发布。
+     */
     StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token);
 
+    /**
+     * 查询审核。
+     */
     StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token);
 }

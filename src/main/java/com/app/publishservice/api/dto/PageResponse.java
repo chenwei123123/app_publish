@@ -13,6 +13,9 @@ public record PageResponse<T>(
         @Schema(description = "分页数据") List<T> records
 ) {
 
+    /**
+     * 处理 `of` 相关逻辑。
+     */
     public static <T> PageResponse<T> of(long current, long size, long total, List<T> records) {
         long safeSize = size <= 0 ? 1 : size;
         long calculatedPages = total <= 0 ? 0 : (total + safeSize - 1) / safeSize;

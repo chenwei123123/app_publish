@@ -43,6 +43,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
     private static final String OPPO_STATUS_ENDPOINT = "/resource/v1/app/task-state";
     private static final long OPPO_TOKEN_EXPIRE_SECONDS = 48 * 60 * 60L;
 
+    /**
+     * 初始化OppoStorePlatformPublisher。
+     */
     OppoStorePlatformPublisher(
             RestClient restClient,
             ObjectMapper objectMapper,
@@ -52,6 +55,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         super(restClient, objectMapper, appProperties, storeRequestLogService);
     }
 
+    /**
+     * 判断是否支持相关数据。
+     */
     @Override
     public boolean supports(AppStoreConfig storeConfig) {
         return storeConfig != null
@@ -59,6 +65,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                 && "oppo".equalsIgnoreCase(storeConfig.getStoreType().getCode());
     }
 
+    /**
+     * 刷新令牌。
+     */
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
@@ -111,6 +120,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new TokenPayload(TokenType.ACCESS_TOKEN.getCode(), token, LocalDateTime.now().plusSeconds(expiresIn));
     }
 
+    /**
+     * 提交发布。
+     */
     @Override
     public StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -118,6 +130,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         }
     }
 
+    /**
+     * 查询审核。
+     */
     @Override
     public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -125,6 +140,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         }
     }
 
+    /**
+     * 提交OPPO 发布。
+     */
     private StoreSubmitResult submitOppoRelease(AppStoreConfig storeConfig, AppVersion version, String token) {
         AppInfo appInfo = version.getAppInfo();
         if (appInfo == null || !StringUtils.hasText(appInfo.getPackageName())) {
@@ -213,6 +231,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new StoreSubmitResult(storeReleaseId, writeJson(requestLog), writeJson(responseLog), "submit success");
     }
 
+    /**
+     * 查询OPPO 审核。
+     */
     private StoreReviewResult queryOppoReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         Map<String, Object> queryParams = buildOppoReviewQuery(record);
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
@@ -236,6 +257,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return new StoreReviewResult(releaseStatus, writeJson(responseLog), StringUtils.hasText(rejectReason) ? rejectReason : null);
     }
 
+    /**
+     * 构建OPPO 审核查询。
+     */
     private Map<String, Object> buildOppoReviewQuery(AppReleaseRecord record) {
         String packageName = record.getPackageName();
         if (!StringUtils.hasText(packageName) && record.getAppInfo() != null) {
@@ -261,6 +285,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return payload;
     }
 
+    /**
+     * 构建OPPO 提交载荷。
+     */
     private Map<String, Object> buildOppoSubmitPayload(
             AppInfo appInfo,
             AppVersion version,
@@ -291,6 +318,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return payload;
     }
 
+    /**
+     * 解析OPPO 版本 Info。
+     */
     private Map<String, Object> resolveOppoVersionInfo(Map<String, Object> multiInfoData, String targetVersionCode) {
         Map<String, Object> apkInfo = asMap(multiInfoData.get("apk_info"));
         if (apkInfo.isEmpty()) {
@@ -311,6 +341,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return Map.of();
     }
 
+    /**
+     * 处理copy OPPO 提交 Field相关逻辑。
+     */
     private void copyOppoSubmitField(Map<String, Object> payload, String fieldName, Map<String, Object> primary, Map<String, Object> secondary, Object... fallbacks) {
         Object value = firstNonNull(primary.get(fieldName), secondary.get(fieldName));
         if (value == null && fallbacks != null) {
@@ -323,6 +356,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         payload.put(fieldName, normalizedValue);
     }
 
+    /**
+     * 规范化OPPO 提交 Field 值。
+     */
     private Object normalizeOppoSubmitFieldValue(String fieldName, Object value) {
         if (value == null) {
             return null;
@@ -340,6 +376,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return value;
     }
 
+    /**
+     * 解析OPPO 包 Bundles。
+     */
     private List<OppoApkBundle> resolveOppoPackageBundles(AppVersion version) {
         String packageUrl32 = version.getPackageUrl32();
         String packageUrl64 = version.getPackageUrl64();
@@ -359,6 +398,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return List.of(new OppoApkBundle(requireLocalPackage(singlePackageLocation, "Oppo package path is empty"), 0));
     }
 
+    /**
+     * 上传OPPO 包。
+     */
     private Map<String, Object> uploadOppoPackage(AppStoreConfig storeConfig, Map<String, Object> uploadConfigData, Path packagePath) {
         String uploadUrl = firstString(uploadConfigData, "upload_url", "uploadUrl");
         if (!StringUtils.hasText(uploadUrl)) {
@@ -434,6 +476,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return fallback;
     }
 
+    /**
+     * 处理OPPO Signed 请求相关逻辑。
+     */
     private Map<String, Object> oppoSignedRequest(
             AppStoreConfig storeConfig,
             String token,
@@ -460,6 +505,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return response;
     }
 
+    /**
+     * 处理请求 OPPO相关逻辑。
+     */
     private String requestOppo(
             AppStoreConfig storeConfig,
             String endpointPath,
@@ -494,6 +542,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    /**
+     * 映射OPPO 状态。
+     */
     private ReleaseStatus mapOppoStatus(Map<String, Object> taskStateData) {
         int taskState = intValue(taskStateData.get("task_state"));
         if (taskState == -1) {
@@ -511,6 +562,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return ReleaseStatus.AUDITING;
     }
 
+    /**
+     * 确保OPPO Success。
+     */
     private void ensureOppoSuccess(Map<String, Object> response, String action) {
         int errno = intValue(response.get("errno"));
         if (errno == 0) {
@@ -525,6 +579,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         throw new StoreApiException(HttpStatus.BAD_GATEWAY, "Oppo " + action + " failed: errno=" + errno + ", msg=" + message);
     }
 
+    /**
+     * 签名OPPO 载荷。
+     */
     private String signOppoPayload(Map<String, Object> payload, String clientSecret) {
         String source = payload.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && !"api_sign".equals(entry.getKey()))
@@ -534,26 +591,44 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return hmacSha256Hex(source, clientSecret);
     }
 
+    /**
+     * 处理OPPO Base URL相关逻辑。
+     */
     private String oppoBaseUrl(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getBaseUrl()) ? endpoint.getBaseUrl() : OPPO_BASE_URL;
     }
 
+    /**
+     * 处理OPPO 令牌接口地址相关逻辑。
+     */
     private String oppoTokenEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getTokenEndpoint()) ? endpoint.getTokenEndpoint() : OPPO_TOKEN_ENDPOINT;
     }
 
+    /**
+     * 处理OPPO 上传配置接口地址相关逻辑。
+     */
     private String oppoUploadConfigEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return OPPO_UPLOAD_CONFIG_ENDPOINT;
     }
 
+    /**
+     * 处理OPPO Multi Info 接口地址相关逻辑。
+     */
     private String oppoMultiInfoEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return OPPO_MULTI_INFO_ENDPOINT;
     }
 
+    /**
+     * 处理OPPO 提交接口地址相关逻辑。
+     */
     private String oppoSubmitEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getSubmitEndpoint()) ? endpoint.getSubmitEndpoint() : OPPO_SUBMIT_ENDPOINT;
     }
 
+    /**
+     * 处理OPPO 状态接口地址相关逻辑。
+     */
     private String oppoStatusEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getStatusEndpoint()) ? endpoint.getStatusEndpoint() : OPPO_STATUS_ENDPOINT;
     }

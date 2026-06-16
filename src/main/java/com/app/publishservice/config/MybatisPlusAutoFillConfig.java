@@ -9,6 +9,9 @@ import java.time.LocalDateTime;
 @Component
 public class MybatisPlusAutoFillConfig implements MetaObjectHandler {
 
+    /**
+     * 新增Fill。
+     */
     @Override
     public void insertFill(MetaObject metaObject) {
         LocalDateTime now = LocalDateTime.now();
@@ -18,6 +21,9 @@ public class MybatisPlusAutoFillConfig implements MetaObjectHandler {
         strictInsertFill(metaObject, "updateUser", String.class, "system");
     }
 
+    /**
+     * 更新Fill。
+     */
     @Override
     public void updateFill(MetaObject metaObject) {
         strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());

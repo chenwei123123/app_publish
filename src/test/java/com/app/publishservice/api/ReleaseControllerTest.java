@@ -17,6 +17,9 @@ class ReleaseControllerTest {
 
     private static final String APK32_DOWNLOAD_FAILED_MESSAGE = "32\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
 
+    /**
+     * 测试Return Download32 Failure 消息 Directly场景。
+     */
     @Test
     void shouldReturnDownload32FailureMessageDirectly() throws Exception {
         ReleaseOrchestrationService releaseOrchestrationService = mock(ReleaseOrchestrationService.class);

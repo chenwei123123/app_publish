@@ -13,10 +13,16 @@ public class RestClientConfig {
 
     private final AppProperties appProperties;
 
+    /**
+     * 初始化RestClientConfig。
+     */
     public RestClientConfig(AppProperties appProperties) {
         this.appProperties = appProperties;
     }
 
+    /**
+     * 处理rest 客户端相关逻辑。
+     */
     @Bean
     public RestClient restClient() {
         Duration timeout = Duration.ofSeconds(Math.max(appProperties.getStoreApi().getDefaultTimeoutSeconds(), 1)*1000);

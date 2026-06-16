@@ -18,24 +18,39 @@ public enum StoreType {
     private final String code;
     private final String description;
 
+    /**
+     * 初始化商店类型。
+     */
     StoreType(String value, String code, String description) {
         this.value = value;
         this.code = code;
         this.description = description;
     }
 
+    /**
+     * 获取值。
+     */
     public String getValue() {
         return value;
     }
 
+    /**
+     * 获取编码。
+     */
     public String getCode() {
         return code;
     }
 
+    /**
+     * 获取Description。
+     */
     public String getDescription() {
         return description;
     }
 
+    /**
+     * 处理值相关逻辑。
+     */
     public static StoreType fromValue(String value) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Store type value cannot be blank");
@@ -49,6 +64,9 @@ public enum StoreType {
         throw new IllegalArgumentException("Unsupported store type value: " + value);
     }
 
+    /**
+     * 处理编码相关逻辑。
+     */
     public static StoreType fromCode(String code) {
         if (code == null || code.isBlank()) {
             throw new IllegalArgumentException("Store type code cannot be blank");
@@ -63,6 +81,9 @@ public enum StoreType {
     }
 
 
+    /**
+     * 处理Description Fuzzy相关逻辑。
+     */
     public static StoreType fromDescriptionFuzzy(String description) {
         if (description == null || description.isBlank()) {
             throw new IllegalArgumentException("Store type description cannot be blank");
@@ -82,6 +103,9 @@ public enum StoreType {
         throw new IllegalArgumentException("Unsupported store type description: " + description);
     }
 
+    /**
+     * 处理值 Description Fuzzy相关逻辑。
+     */
     public static String valueFromDescriptionFuzzy(String description) {
         return fromDescriptionFuzzy(description).getValue();
     }

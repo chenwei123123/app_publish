@@ -35,10 +35,16 @@ public class PackageInspectorService {
 
     private final ObjectMapper objectMapper;
 
+    /**
+     * 初始化PackageInspectorService。
+     */
     public PackageInspectorService(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
+    /**
+     * 处理inspect相关逻辑。
+     */
     public PackageMetadata inspect(Path filePath) {
         String packageType = detectPackageType(filePath.getFileName().toString());
         ArchiveMetadata archiveMetadata = readArchiveMetadata(filePath)
@@ -55,11 +61,17 @@ public class PackageInspectorService {
         );
     }
 
+    /**
+     * 处理inspect相关逻辑。
+     */
     public PackageMetadata inspect(MultipartFile file, Path target) throws IOException {
         file.transferTo(target);
         return inspect(target);
     }
 
+    /**
+     * 读取Archive 元数据。
+     */
     private Optional<ArchiveMetadata> readArchiveMetadata(Path filePath) {
         try (ZipFile zipFile = new ZipFile(filePath.toFile(), StandardCharsets.UTF_8)) {
             for (String metadataPath : METADATA_PATHS) {
@@ -80,6 +92,9 @@ public class PackageInspectorService {
         }
     }
 
+    /**
+     * 处理infer Filename Entries相关逻辑。
+     */
     private ArchiveMetadata inferFromFilenameAndEntries(String filename, ZipFile zipFile) {
         ArchiveMetadata fallback = inferFromFilename(filename);
         return new ArchiveMetadata(
@@ -89,6 +104,9 @@ public class PackageInspectorService {
         );
     }
 
+    /**
+     * 处理detect Reinforced相关逻辑。
+     */
     private boolean detectReinforced(ZipFile zipFile) {
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
         while (entries.hasMoreElements()) {
@@ -102,6 +120,9 @@ public class PackageInspectorService {
         return false;
     }
 
+    /**
+     * 处理infer Filename相关逻辑。
+     */
     private ArchiveMetadata inferFromFilename(String filename) {
         Matcher matcher = VERSION_PATTERN.matcher(filename);
         String versionName = null;
@@ -118,6 +139,9 @@ public class PackageInspectorService {
         return new ArchiveMetadata(versionName, versionCode, reinforced);
     }
 
+    /**
+     * 处理detect 包类型相关逻辑。
+     */
     private String detectPackageType(String filename) {
         String lower = filename.toLowerCase(Locale.ROOT);
         if (lower.endsWith(".apk")) {
@@ -132,6 +156,9 @@ public class PackageInspectorService {
         throw new IllegalArgumentException("Only APK, AAB and IPA are supported");
     }
 
+    /**
+     * 处理sha256相关逻辑。
+     */
     private String sha256(Path filePath) {
         try (InputStream inputStream = Files.newInputStream(filePath)) {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -150,10 +177,16 @@ public class PackageInspectorService {
         }
     }
 
+    /**
+     * 处理文本 Null相关逻辑。
+     */
     private String textOrNull(JsonNode node, String field) {
         return node.hasNonNull(field) ? node.get(field).asText() : null;
     }
 
+    /**
+     * 处理bool Fallback相关逻辑。
+     */
     private boolean boolOrFallback(JsonNode node, String field, boolean fallback) {
         return node.has(field) ? node.get(field).asBoolean() : fallback;
     }

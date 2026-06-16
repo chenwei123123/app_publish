@@ -23,10 +23,16 @@ public class CicdController {
 
     private final CicdReleaseService cicdReleaseService;
 
+    /**
+     * 初始化CicdController。
+     */
     public CicdController(CicdReleaseService cicdReleaseService) {
         this.cicdReleaseService = cicdReleaseService;
     }
 
+    /**
+     * 处理trigger相关逻辑。
+     */
     @PostMapping("/releases/trigger")
     @Operation(summary = "触发 CI/CD 发布", description = "上传安装包并直接触发指定渠道的发布流程")
     public ApiResponse<List<ReleaseRecordResponse>> trigger(

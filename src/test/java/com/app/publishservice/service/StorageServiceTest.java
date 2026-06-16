@@ -13,6 +13,9 @@ import static org.mockito.Mockito.when;
 
 class StorageServiceTest {
 
+    /**
+     * 测试Allocate 下载路径 Environment 版本 Build场景。
+     */
     @Test
     void shouldAllocateDownloadPathByEnvironmentVersionAndBuild(@TempDir Path tempDir) throws Exception {
         AppProperties properties = new AppProperties();

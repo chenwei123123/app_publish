@@ -37,6 +37,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
     private static final String YINGYONGBAO_UPDATE_APP_ENDPOINT = "/update_app";
     private static final String YINGYONGBAO_AUDIT_STATUS_ENDPOINT = "/query_app_update_status";
 
+    /**
+     * 初始化YingyongbaoStorePlatformPublisher。
+     */
     YingyongbaoStorePlatformPublisher(
             RestClient restClient,
             ObjectMapper objectMapper,
@@ -46,6 +49,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         super(restClient, objectMapper, appProperties, storeRequestLogService);
     }
 
+    /**
+     * 判断是否支持相关数据。
+     */
     @Override
     public boolean supports(AppStoreConfig storeConfig) {
         return storeConfig != null
@@ -53,12 +59,18 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
                 && "yingyongbao".equalsIgnoreCase(storeConfig.getStoreType().getCode());
     }
 
+    /**
+     * 刷新令牌。
+     */
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         String marker = StringUtils.hasText(storeConfig.getClientId()) ? storeConfig.getClientId() : "yingyongbao-static";
         return new TokenPayload(TokenType.STATIC.getCode(), marker, LocalDateTime.now().plusYears(10));
     }
 
+    /**
+     * 提交发布。
+     */
     @Override
     public StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -66,6 +78,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         }
     }
 
+    /**
+     * 查询审核。
+     */
     @Override
     public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -73,6 +88,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         }
     }
 
+    /**
+     * 提交应用宝发布。
+     */
     private StoreSubmitResult submitYingyongbaoRelease(AppStoreConfig storeConfig, AppVersion version) {
         YingyongbaoContext context = resolveYingyongbaoContext(version, null);
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
@@ -111,6 +129,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         );
     }
 
+    /**
+     * 查询应用宝审核。
+     */
     private StoreReviewResult queryYingyongbaoReview(AppStoreConfig storeConfig, AppReleaseRecord record) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         String packageName = resolveYingyongbaoPackageName(record);
@@ -130,6 +151,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return new StoreReviewResult(releaseStatus, writeJson(response), StringUtils.hasText(rejectReason) ? rejectReason : null);
     }
 
+    /**
+     * 构建应用宝 Update 载荷。
+     */
     private Map<String, Object> buildYingyongbaoUpdatePayload(
             AppStoreConfig storeConfig,
             AppVersion version,
@@ -191,6 +215,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return payload;
     }
 
+    /**
+     * 上传应用宝文件。
+     */
     private YingyongbaoUploadResult uploadYingyongbaoFile(
             AppStoreConfig storeConfig,
             YingyongbaoContext context,
@@ -241,6 +268,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return new YingyongbaoUploadResult(serialNumber, logEntry);
     }
 
+    /**
+     * 处理应用宝 Signed 请求相关逻辑。
+     */
     private Map<String, Object> yingyongbaoSignedRequest(
             AppStoreConfig storeConfig,
             String endpointPath,
@@ -285,6 +315,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return response;
     }
 
+    /**
+     * 处理mock 应用宝 Signed 响应相关逻辑。
+     */
     private Map<String, Object> mockYingyongbaoSignedResponse(String endpointPath, Map<String, Object> businessParams) {
         Map<String, Object> params = businessParams == null ? Map.of() : businessParams;
         if (matchesYingyongbaoMockEndpoint(endpointPath, YINGYONGBAO_QUERY_APP_DETAIL_ENDPOINT)) {
@@ -321,12 +354,18 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         throw new IllegalStateException("Unsupported Yingyongbao mock endpoint: " + endpointPath);
     }
 
+    /**
+     * 处理matches 应用宝 Mock 接口地址相关逻辑。
+     */
     private boolean matchesYingyongbaoMockEndpoint(String endpointPath, String expectedEndpoint) {
         return StringUtils.hasText(endpointPath)
                 && StringUtils.hasText(expectedEndpoint)
                 && (expectedEndpoint.equals(endpointPath) || endpointPath.endsWith(expectedEndpoint));
     }
 
+    /**
+     * 签名应用宝载荷。
+     */
     private String signYingyongbaoPayload(Map<String, Object> payload, String accessSecret) {
         List<String> pairs = new ArrayList<>();
         payload.entrySet().stream()
@@ -336,6 +375,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return hmacSha256Hex(String.join("&", pairs), accessSecret);
     }
 
+    /**
+     * 解析应用宝上下文。
+     */
     private YingyongbaoContext resolveYingyongbaoContext(AppVersion version, AppReleaseRecord record) {
         String packageName = resolveYingyongbaoPackageName(version, record);
         String packageLocation = firstNonBlank(version == null ? null : version.getPackageUrl64(), version == null ? null : version.getPackageUrl32(), version == null ? null : version.getPackageUrl());
@@ -351,10 +393,16 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return new YingyongbaoContext(appId.trim(), packageName, metadataContext, metadata);
     }
 
+    /**
+     * 解析应用宝包名称。
+     */
     private String resolveYingyongbaoPackageName(AppReleaseRecord record) {
         return resolveYingyongbaoPackageName(null, record);
     }
 
+    /**
+     * 解析应用宝包名称。
+     */
     private String resolveYingyongbaoPackageName(AppVersion version, AppReleaseRecord record) {
         String packageName = record == null ? null : record.getPackageName();
         if (!StringUtils.hasText(packageName) && version != null && version.getAppInfo() != null) {
@@ -366,6 +414,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return packageName.trim();
     }
 
+    /**
+     * 解析应用宝应用 Id。
+     */
     private String resolveYingyongbaoAppId(AppReleaseRecord record) {
         if (record != null && StringUtils.hasText(record.getStoreReleaseId())) {
             return record.getStoreReleaseId().trim();
@@ -376,6 +427,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         throw new IllegalStateException("Yingyongbao review query requires storeReleaseId as appId");
     }
 
+    /**
+     * 解析应用宝包路径。
+     */
     private Path resolveYingyongbaoPackagePath(
             ProjectMetadataContext metadataContext,
             Map<String, Object> metadata,
@@ -396,6 +450,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return requireLocalPackage(String.valueOf(configuredLocation), "Yingyongbao package path is empty");
     }
 
+    /**
+     * 处理应用宝元数据相关逻辑。
+     */
     private Object yingyongbaoMetadata(Map<String, Object> metadata, String key) {
         return firstNonNull(
                 metadataLookup(metadata, "yingyongbao", key),
@@ -404,11 +461,17 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         );
     }
 
+    /**
+     * 解析Deploy 类型。
+     */
     private int resolveDeployType(Map<String, Object> metadata) {
         Integer deployType = firstInteger(yingyongbaoMetadata(metadata, "deployType"));
         return deployType == null ? 1 : deployType;
     }
 
+    /**
+     * 映射应用宝审核状态。
+     */
     private ReleaseStatus mapYingyongbaoAuditStatus(int auditStatus) {
         return switch (auditStatus) {
             case 2 -> ReleaseStatus.REJECT;
@@ -418,6 +481,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         };
     }
 
+    /**
+     * 确保应用宝 Success。
+     */
     private void ensureYingyongbaoSuccess(Map<String, Object> response, String action) {
         int ret = intValue(response.get("ret"));
         if (ret == 0) {
@@ -427,12 +493,18 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         throw new StoreApiException(HttpStatus.BAD_GATEWAY, "Yingyongbao " + action + " failed: ret=" + ret + ", msg=" + message);
     }
 
+    /**
+     * 处理put If Has 文本相关逻辑。
+     */
     private void putIfHasText(Map<String, Object> target, String key, String value) {
         if (StringUtils.hasText(value)) {
             target.put(key, value.trim());
         }
     }
 
+    /**
+     * 处理put If Present相关逻辑。
+     */
     private void putIfPresent(Map<String, Object> target, String key, Object value) {
         if (value == null) {
             return;
@@ -443,6 +515,9 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         target.put(key, value);
     }
 
+    /**
+     * 转换JSON If Needed。
+     */
     private String stringifyJsonIfNeeded(Object value) {
         if (value == null) {
             return null;
@@ -453,26 +528,44 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         return writeJson(value);
     }
 
+    /**
+     * 处理字符串值相关逻辑。
+     */
     private String stringValue(Object value) {
         return value == null ? "" : String.valueOf(value);
     }
 
+    /**
+     * 处理应用宝 Base URL相关逻辑。
+     */
     private String yingyongbaoBaseUrl(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getBaseUrl()) ? endpoint.getBaseUrl() : YINGYONGBAO_BASE_URL;
     }
 
+    /**
+     * 处理应用宝查询应用详情接口地址相关逻辑。
+     */
     private String yingyongbaoQueryAppDetailEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getTokenEndpoint()) ? endpoint.getTokenEndpoint() : YINGYONGBAO_QUERY_APP_DETAIL_ENDPOINT;
     }
 
+    /**
+     * 处理应用宝上传 Info 接口地址相关逻辑。
+     */
     private String yingyongbaoUploadInfoEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return YINGYONGBAO_UPLOAD_INFO_ENDPOINT;
     }
 
+    /**
+     * 处理应用宝 Update 应用接口地址相关逻辑。
+     */
     private String yingyongbaoUpdateAppEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getSubmitEndpoint()) ? endpoint.getSubmitEndpoint() : YINGYONGBAO_UPDATE_APP_ENDPOINT;
     }
 
+    /**
+     * 处理应用宝审核状态接口地址相关逻辑。
+     */
     private String yingyongbaoAuditStatusEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getStatusEndpoint()) ? endpoint.getStatusEndpoint() : YINGYONGBAO_AUDIT_STATUS_ENDPOINT;
     }

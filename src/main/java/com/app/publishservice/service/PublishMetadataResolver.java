@@ -14,14 +14,23 @@ final class PublishMetadataResolver {
 
     private final AppProperties appProperties;
 
+    /**
+     * 初始化PublishMetadataResolver。
+     */
     PublishMetadataResolver(AppProperties appProperties) {
         this.appProperties = appProperties;
     }
 
+    /**
+     * 处理元数据路径相关逻辑。
+     */
     Path metadataPath() {
         return metadataBaseDir().resolve("application.yml").normalize();
     }
 
+    /**
+     * 处理元数据相关逻辑。
+     */
     Map<String, Object> metadata() {
         AppProperties.PublishMetadataProperties metadataProperties = appProperties.getPublishMetadata();
         if (metadataProperties == null || metadataProperties.getValues() == null) {
@@ -30,6 +39,9 @@ final class PublishMetadataResolver {
         return metadataProperties.getValues();
     }
 
+    /**
+     * 解析Asset 路径。
+     */
     Path resolveAssetPath(Path metadataPath, Object assetLocation) {
         if (assetLocation == null) {
             return null;
@@ -55,6 +67,9 @@ final class PublishMetadataResolver {
         return Files.exists(resolved) && Files.isRegularFile(resolved) ? resolved : null;
     }
 
+    /**
+     * 解析Asset 路径。
+     */
     List<Path> resolveAssetPaths(Path metadataPath, List<String> assetLocations, String assetNotFoundMessagePrefix) {
         if (assetLocations == null || assetLocations.isEmpty()) {
             return List.of();
@@ -70,6 +85,9 @@ final class PublishMetadataResolver {
         return resolved;
     }
 
+    /**
+     * 处理元数据 Lookup相关逻辑。
+     */
     Object metadataLookup(Map<String, Object> metadata, String sectionKey, String key) {
         if (metadata == null || !StringUtils.hasText(key)) {
             return null;
@@ -86,6 +104,9 @@ final class PublishMetadataResolver {
         return firstNonNull(metadata.get(key), metadata.get(toSnakeCase(key)));
     }
 
+    /**
+     * 处理元数据 Base Dir相关逻辑。
+     */
     private Path metadataBaseDir() {
         AppProperties.PublishMetadataProperties metadataProperties = appProperties.getPublishMetadata();
         String configuredBaseDir = metadataProperties == null ? null : metadataProperties.getBaseDir();
@@ -99,6 +120,9 @@ final class PublishMetadataResolver {
         return configuredPath.toAbsolutePath().normalize();
     }
 
+    /**
+     * 处理as 映射相关逻辑。
+     */
     @SuppressWarnings("unchecked")
     private Map<String, Object> asMap(Object value) {
         if (value instanceof Map<?, ?> map) {
@@ -107,6 +131,9 @@ final class PublishMetadataResolver {
         return Map.of();
     }
 
+    /**
+     * 获取首个Non Null。
+     */
     private Object firstNonNull(Object... values) {
         if (values == null) {
             return null;
@@ -119,6 +146,9 @@ final class PublishMetadataResolver {
         return null;
     }
 
+    /**
+     * 处理Snake Case相关逻辑。
+     */
     private String toSnakeCase(String value) {
         if (!StringUtils.hasText(value)) {
             return value;
@@ -126,6 +156,9 @@ final class PublishMetadataResolver {
         return value.replaceAll("([a-z0-9])([A-Z])", "$1_$2").toLowerCase();
     }
 
+    /**
+     * 处理路径相关逻辑。
+     */
     private Path toPath(String location) {
         try {
             return Path.of(location);

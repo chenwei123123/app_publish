@@ -21,6 +21,9 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     private static final String TRACE_ID = "traceId";
     private static final String TRACE_ID_HEADER = "X-Trace-Id";
 
+    /**
+     * 处理do Filter Internal相关逻辑。
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
@@ -45,6 +48,9 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         }
     }
 
+    /**
+     * 解析Trace Id。
+     */
     private String resolveTraceId(HttpServletRequest request) {
         String traceId = request.getHeader(TRACE_ID_HEADER);
         if (StringUtils.hasText(traceId)) {
@@ -53,6 +59,9 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
+    /**
+     * 构建请求 URI。
+     */
     private String buildRequestUri(HttpServletRequest request) {
         String queryString = request.getQueryString();
         if (!StringUtils.hasText(queryString)) {

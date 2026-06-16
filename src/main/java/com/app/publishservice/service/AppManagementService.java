@@ -41,6 +41,9 @@ public class AppManagementService {
     private final AppApiTokenCacheRepository tokenCacheRepository;
     private final AppStoreRequestLogRepository appStoreRequestLogRepository;
 
+    /**
+     * 初始化AppManagementService。
+     */
     public AppManagementService(
             AppInfoRepository appInfoRepository,
             AppStoreConfigRepository storeConfigRepository,
@@ -57,6 +60,9 @@ public class AppManagementService {
         this.appStoreRequestLogRepository = appStoreRequestLogRepository;
     }
 
+    /**
+     * 保存应用。
+     */
     @Transactional
     public AppResponse saveApp(AppUpsertRequest request) {
         AppInfo appInfo = request.getId() == null ? new AppInfo() : requireApp(request.getId());
@@ -75,12 +81,18 @@ public class AppManagementService {
         return toResponse(appInfo);
     }
 
+    /**
+     * 更新应用。
+     */
     @Transactional
     public AppResponse updateApp(Long appId, AppUpsertRequest request) {
         request.setId(appId);
         return saveApp(request);
     }
 
+    /**
+     * 删除应用。
+     */
     @Transactional
     public void deleteApp(Long appId) {
         requireApp(appId);
@@ -89,6 +101,9 @@ public class AppManagementService {
         appInfoRepository.deleteById(appId);
     }
 
+    /**
+     * 校验应用。
+     */
     @Transactional(readOnly = true)
     public AppInfo requireApp(Long appId) {
         AppInfo appInfo = appInfoRepository.selectById(appId);
@@ -98,6 +113,9 @@ public class AppManagementService {
         return appInfo;
     }
 
+    /**
+     * 获取应用。
+     */
     @Transactional(readOnly = true)
     public AppDetailResponse getApp(Long appId) {
         AppInfo appInfo = requireApp(appId);
@@ -106,6 +124,9 @@ public class AppManagementService {
         return toDetailResponse(appInfo, versions, releaseRecords);
     }
 
+    /**
+     * 查询应用。
+     */
     @Transactional(readOnly = true)
     public List<AppResponse> listApps( String keyword) {
         return appInfoRepository.selectList(
@@ -121,6 +142,9 @@ public class AppManagementService {
         ).stream().map(this::toResponse).toList();
     }
 
+    /**
+     * 查询商店配置。
+     */
     @Transactional(readOnly = true)
     public List<AppStoreConfig> listStoreConfigs() {
         return storeConfigRepository.selectList(
@@ -130,11 +154,17 @@ public class AppManagementService {
         );
     }
 
+    /**
+     * 获取商店配置响应。
+     */
     @Transactional(readOnly = true)
     public List<StoreConfigResponse> getStoreConfigResponses() {
         return listStoreConfigs().stream().map(this::toStoreConfigResponse).toList();
     }
 
+    /**
+     * 处理分页商店配置响应相关逻辑。
+     */
     @Transactional(readOnly = true)
     public PageResponse<StoreConfigResponse> pageStoreConfigResponses(Long current, Long size, String key) {
         long pageCurrent = normalizeCurrent(current);
@@ -163,6 +193,9 @@ public class AppManagementService {
         );
     }
 
+    /**
+     * 校验商店配置。
+     */
     @Transactional(readOnly = true)
     public AppStoreConfig requireStoreConfig(StoreType storeType) {
         AppStoreConfig storeConfig = findStoreConfigByStoreType(storeType).orElse(null);
@@ -172,6 +205,9 @@ public class AppManagementService {
         return storeConfig;
     }
 
+    /**
+     * 校验商店配置 Id。
+     */
     @Transactional(readOnly = true)
     public AppStoreConfig requireStoreConfigById(Long configId) {
         AppStoreConfig storeConfig = storeConfigRepository.selectOne(
@@ -185,6 +221,9 @@ public class AppManagementService {
         return storeConfig;
     }
 
+    /**
+     * 查找商店配置商店类型。
+     */
     @Transactional(readOnly = true)
     public Optional<AppStoreConfig> findStoreConfigByStoreType(StoreType storeType) {
         return Optional.ofNullable(
@@ -196,6 +235,9 @@ public class AppManagementService {
         );
     }
 
+    /**
+     * 保存商店配置。
+     */
     @Transactional
     public StoreConfigResponse saveStoreConfig(StoreConfigRequest request) {
         StoreType storeType = StoreType.fromCode(request.getStoreType());
@@ -217,17 +259,26 @@ public class AppManagementService {
         return toStoreConfigResponse(requireStoreConfigById(config.getId()));
     }
 
+    /**
+     * 更新商店配置。
+     */
     @Transactional
     public StoreConfigResponse updateStoreConfig(Long configId, StoreConfigRequest request) {
         request.setId(configId);
         return saveStoreConfig(request);
     }
 
+    /**
+     * 获取商店配置。
+     */
     @Transactional(readOnly = true)
     public StoreConfigResponse getStoreConfig(Long configId) {
         return toStoreConfigResponse(requireStoreConfigById(configId));
     }
 
+    /**
+     * 删除商店配置。
+     */
     @Transactional
     public void deleteStoreConfig(Long configId) {
         requireStoreConfigById(configId);
@@ -240,6 +291,9 @@ public class AppManagementService {
         storeConfigRepository.deleteById(configId);
     }
 
+    /**
+     * 更新商店配置状态。
+     */
     @Transactional
     public StoreConfigResponse updateStoreConfigStatus(Long configId, Integer apiStatus) {
         if (apiStatus == null || (apiStatus != 0 && apiStatus != 1)) {
@@ -251,6 +305,9 @@ public class AppManagementService {
         return toStoreConfigResponse(requireStoreConfigById(configId));
     }
 
+    /**
+     * 处理响应相关逻辑。
+     */
     private AppResponse toResponse(AppInfo appInfo) {
         List<AppVersionResponse> versions = listVersionResponses(appInfo.getId());
         List<ReleaseRecordResponse> releaseRecords = listReleaseRecordResponses(appInfo.getId());
@@ -275,6 +332,9 @@ public class AppManagementService {
         );
     }
 
+    /**
+     * 处理详情响应相关逻辑。
+     */
     private AppDetailResponse toDetailResponse(
             AppInfo appInfo,
             List<AppVersionResponse> versions,
@@ -301,6 +361,9 @@ public class AppManagementService {
         );
     }
 
+    /**
+     * 处理版本响应相关逻辑。
+     */
     private AppVersionResponse toVersionResponse(AppVersion version) {
         return new AppVersionResponse(
                 version.getId(),
@@ -319,6 +382,9 @@ public class AppManagementService {
         );
     }
 
+    /**
+     * 查询版本响应。
+     */
     private List<AppVersionResponse> listVersionResponses(Long appId) {
         return appVersionRepository.selectList(
                 Wrappers.<AppVersion>lambdaQuery()
@@ -329,12 +395,18 @@ public class AppManagementService {
                 .toList();
     }
 
+    /**
+     * 查询发布记录响应。
+     */
     private List<ReleaseRecordResponse> listReleaseRecordResponses(Long appId) {
         return releaseRecordRepository.selectReleaseRecordsByAppId(appId).stream()
                 .map(this::toReleaseRecordResponse)
                 .toList();
     }
 
+    /**
+     * 处理发布记录响应相关逻辑。
+     */
     private ReleaseRecordResponse toReleaseRecordResponse(AppReleaseRecord record) {
         return new ReleaseRecordResponse(
                 record.getId(),
@@ -362,6 +434,9 @@ public class AppManagementService {
         );
     }
 
+    /**
+     * 处理商店配置响应相关逻辑。
+     */
     private StoreConfigResponse toStoreConfigResponse(AppStoreConfig config) {
         return new StoreConfigResponse(
                 config.getId(),
@@ -383,6 +458,9 @@ public class AppManagementService {
         );
     }
 
+    /**
+     * 保存Update。
+     */
     private <T> void saveOrUpdate(BaseMapper<T> mapper, T entity) {
         BeanWrapper wrapper = new BeanWrapperImpl(entity);
         Object id = wrapper.getPropertyValue("id");
@@ -393,6 +471,9 @@ public class AppManagementService {
         }
     }
 
+    /**
+     * 处理initialize 应用版本 If Needed相关逻辑。
+     */
     private void initializeAppVersionIfNeeded(AppInfo appInfo, String versionCode, String buildCode) {
         String normalizedBuildCode = normalizeBuildCode(buildCode);
         String normalizedVersionCode = VersionCodeUtil.normalize(versionCode);
@@ -439,12 +520,18 @@ public class AppManagementService {
         appVersionRepository.insert(initialVersion);
     }
 
+    /**
+     * 处理应用版本 Comparator相关逻辑。
+     */
     private Comparator<AppVersion> appVersionComparator() {
         return Comparator
                 .comparing(AppVersion::getCreateTime, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(AppVersion::getId, Comparator.nullsLast(Comparator.reverseOrder()));
     }
 
+    /**
+     * 规范化Build 编码。
+     */
     private String normalizeBuildCode(String buildCode) {
         if (!StringUtils.hasText(buildCode)) {
             return null;
@@ -452,10 +539,16 @@ public class AppManagementService {
         return buildCode.trim();
     }
 
+    /**
+     * 规范化Current。
+     */
     private long normalizeCurrent(Long current) {
         return current == null || current < 1 ? 1 : current;
     }
 
+    /**
+     * 规范化Size。
+     */
     private long normalizeSize(Long size) {
         if (size == null || size < 1) {
             return 10;

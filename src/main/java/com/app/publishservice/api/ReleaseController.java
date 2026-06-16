@@ -27,10 +27,16 @@ public class ReleaseController {
 
     private final ReleaseOrchestrationService releaseOrchestrationService;
 
+    /**
+     * 初始化ReleaseController。
+     */
     public ReleaseController(ReleaseOrchestrationService releaseOrchestrationService) {
         this.releaseOrchestrationService = releaseOrchestrationService;
     }
 
+    /**
+     * 提交相关数据。
+     */
     @PostMapping("/submit")
     @Operation(summary = "提交发版", description = "将指定版本提交到一个或多个应用商店进行发版")
     public ApiResponse<List<ReleaseRecordResponse>> submit(
@@ -40,6 +46,9 @@ public class ReleaseController {
         return ApiResponse.success(releaseOrchestrationService.submit(request));
     }
 
+    /**
+     * 查询相关数据。
+     */
     @GetMapping
     @Operation(summary = "查询发版记录", description = "分页查询发版记录列表")
     public ApiResponse<PageResponse<ReleaseRecordPageResponse>> list(
@@ -61,6 +70,9 @@ public class ReleaseController {
         ));
     }
 
+    /**
+     * 获取相关数据。
+     */
     @GetMapping("/{releaseId}")
     @Operation(summary = "查询发版详情", description = "根据发版记录 ID 查询发版详情")
     public ApiResponse<ReleaseRecordResponse> get(
@@ -69,6 +81,9 @@ public class ReleaseController {
         return ApiResponse.success(releaseOrchestrationService.getReleaseRecord(releaseId));
     }
 
+    /**
+     * 查询发布应用 Id。
+     */
     @GetMapping("/appId/{appId}")
     @Operation(summary = "根据应用 ID 查询发版记录", description = "根据应用 ID 查询该应用下的发版记录列表")
     public ApiResponse<PageResponse<ReleaseRecordPageResponse>> queryReleaseByAppId(

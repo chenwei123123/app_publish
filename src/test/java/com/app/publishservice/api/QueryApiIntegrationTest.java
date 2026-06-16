@@ -51,6 +51,9 @@ class QueryApiIntegrationTest {
     @Autowired
     private ReleaseOrchestrationService releaseOrchestrationService;
 
+    /**
+     * 测试Expose Swagger Ui OpenAPI Yaml场景。
+     */
     @Test
     void shouldExposeSwaggerUiAndOpenapiYaml() throws Exception {
         MvcResult openapiResult = mockMvc.perform(get("/openapi.yaml"))
@@ -68,6 +71,9 @@ class QueryApiIntegrationTest {
                 .andExpect(status().is3xxRedirection());
     }
 
+    /**
+     * 测试Expose 查询 Apis 应用版本发布场景。
+     */
     @Test
     void shouldExposeQueryApisForAppVersionAndRelease() throws Exception {
         AppUpsertRequest appRequest = new AppUpsertRequest();
@@ -275,6 +281,9 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.storeType").value("huawei"));
     }
 
+    /**
+     * 测试Initialize 应用版本 When Save 应用 Contains 版本编码场景。
+     */
     @Test
     void shouldInitializeAppVersionWhenSaveAppContainsVersionCode() throws Exception {
         AppUpsertRequest request = new AppUpsertRequest();
@@ -317,6 +326,9 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.versions[0].buildCode").value("b1844"));
     }
 
+    /**
+     * 构建Archive。
+     */
     private byte[] buildArchive(String versionName, String versionCode, boolean reinforced) throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream, StandardCharsets.UTF_8)) {

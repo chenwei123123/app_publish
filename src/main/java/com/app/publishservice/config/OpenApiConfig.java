@@ -11,6 +11,9 @@ import java.util.List;
 @Configuration
 public class OpenApiConfig {
 
+    /**
+     * 打开API。
+     */
     @Bean
     public OpenAPI openAPI() {
         Server server = new Server()

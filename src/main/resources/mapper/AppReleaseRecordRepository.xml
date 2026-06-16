@@ -139,7 +139,7 @@
         LEFT JOIN app_info ai ON ai.id = r.app_id
         LEFT JOIN app_version av ON av.id = r.version_id AND av.app_id = r.app_id
         WHERE r.app_id = #{appId}
-        ORDER BY r.release_time DESC, r.finish_time DESC, r.id DESC
+        ORDER BY r.finish_time DESC, r.release_time DESC, r.id DESC
     </select>
 
     <select id="selectReviewingReleaseRecords" resultMap="AppReleaseRecordResultMap">

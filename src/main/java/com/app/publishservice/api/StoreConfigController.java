@@ -26,10 +26,16 @@ public class StoreConfigController {
 
     private final AppManagementService appManagementService;
 
+    /**
+     * 初始化StoreConfigController。
+     */
     public StoreConfigController(AppManagementService appManagementService) {
         this.appManagementService = appManagementService;
     }
 
+    /**
+     * 创建相关数据。
+     */
     @PostMapping
     @Operation(summary = "创建应用商店账号", description = "创建应用商店账号配置")
     public ApiResponse<StoreConfigResponse> create(
@@ -39,6 +45,9 @@ public class StoreConfigController {
         return ApiResponse.success(appManagementService.saveStoreConfig(request));
     }
 
+    /**
+     * 更新相关数据。
+     */
     @PutMapping("/{configId}")
     @Operation(summary = "更新应用商店账号", description = "根据配置 ID 更新应用商店账号配置")
     public ApiResponse<StoreConfigResponse> update(
@@ -49,6 +58,9 @@ public class StoreConfigController {
         return ApiResponse.success(appManagementService.updateStoreConfig(configId, request));
     }
 
+    /**
+     * 删除相关数据。
+     */
     @DeleteMapping("/{configId}")
     @Operation(summary = "删除应用商店账号", description = "根据配置 ID 删除应用商店账号配置")
     public ApiResponse<Void> delete(
@@ -58,6 +70,9 @@ public class StoreConfigController {
         return ApiResponse.success(null, "OK");
     }
 
+    /**
+     * 查询相关数据。
+     */
     @GetMapping
     @Operation(summary = "查询应用商店账号列表", description = "分页查询应用商店账号配置")
     public ApiResponse<PageResponse<StoreConfigResponse>> list(
@@ -79,6 +94,9 @@ public class StoreConfigController {
         );
     }
 
+    /**
+     * 获取相关数据。
+     */
     @GetMapping("/{configId}")
     @Operation(summary = "查询应用商店账号详情", description = "根据配置 ID 查询应用商店账号配置")
     public ApiResponse<StoreConfigResponse> get(
@@ -87,6 +105,9 @@ public class StoreConfigController {
         return ApiResponse.success(appManagementService.getStoreConfig(configId));
     }
 
+    /**
+     * 更新状态。
+     */
     @PutMapping("/{configId}/status")
     @Operation(summary = "更新应用商店账号状态", description = "启用或禁用应用商店账号配置")
     public ApiResponse<StoreConfigResponse> updateStatus(

@@ -55,6 +55,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     private static final String SANXING_STAGED_ROLLOUT_ENDPOINT = "/seller/v2/content/stagedRolloutRate";
     private static final String SANXING_CONTENT_SUBMIT_ENDPOINT = "/seller/contentSubmit";
 
+    /**
+     * 初始化SanxingStorePlatformPublisher。
+     */
     SanxingStorePlatformPublisher(
             RestClient restClient,
             ObjectMapper objectMapper,
@@ -64,6 +67,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         super(restClient, objectMapper, appProperties, storeRequestLogService);
     }
 
+    /**
+     * 判断是否支持相关数据。
+     */
     @Override
     public boolean supports(AppStoreConfig storeConfig) {
         return storeConfig != null
@@ -71,6 +77,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                 && "sanxing".equalsIgnoreCase(storeConfig.getStoreType().getCode());
     }
 
+    /**
+     * 刷新令牌。
+     */
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
@@ -131,6 +140,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return new TokenPayload(TokenType.ACCESS_TOKEN.getCode(), accessToken, LocalDateTime.now().plusMinutes(55));
     }
 
+    /**
+     * 提交发布。
+     */
     @Override
     public StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -138,6 +150,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
     }
 
+    /**
+     * 查询审核。
+     */
     @Override
     public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -145,6 +160,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
     }
 
+    /**
+     * 提交三星发布。
+     */
     private StoreSubmitResult submitSanxingRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         SanxingContext context = resolveSanxingContext(version, record);
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
@@ -239,6 +257,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return new StoreSubmitResult(context.contentId(), writeJson(requestLog), writeJson(responseLog), "submit success");
     }
 
+    /**
+     * 查询三星审核。
+     */
     private StoreReviewResult querySanxingReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         if (endpoint.isMockEnabled()) {
@@ -280,6 +301,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return new StoreReviewResult(releaseStatus, writeJson(responseLog), StringUtils.hasText(rejectReason) ? rejectReason : null);
     }
 
+    /**
+     * 查询三星内容 Info。
+     */
     private List<Map<String, Object>> querySanxingContentInfo(AppStoreConfig storeConfig, String token, String contentId) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         Map<String, Object> queryParams = Map.of("contentId", contentId);
@@ -296,6 +320,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return readSanxingContentInfo(responseBody);
     }
 
+    /**
+     * 创建三星上传 Session。
+     */
     private Map<String, Object> createSanxingUploadSession(AppStoreConfig storeConfig, String token) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         String url = sanxingBaseUrl(endpoint) + SANXING_CREATE_UPLOAD_SESSION_ENDPOINT;
@@ -317,6 +344,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return response;
     }
 
+    /**
+     * 上传三星文件。
+     */
     private Map<String, Object> uploadSanxingFile(
             AppStoreConfig storeConfig,
             String token,
@@ -351,6 +381,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return response;
     }
 
+    /**
+     * 提交三星内容。
+     */
     private void submitSanxingContent(AppStoreConfig storeConfig, String token, String contentId) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         String url = sanxingBaseUrl(endpoint) + sanxingSubmitEndpoint(endpoint);
@@ -368,6 +401,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         );
     }
 
+    /**
+     * 处理三星 JSON 请求相关逻辑。
+     */
     private Map<String, Object> sanxingJsonRequest(
             AppStoreConfig storeConfig,
             String token,
@@ -399,6 +435,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return response;
     }
 
+    /**
+     * 构建三星 Add Binary 载荷。
+     */
     private Map<String, Object> buildSanxingAddBinaryPayload(
             SanxingContext context,
             Map<String, Object> contentInfo,
@@ -418,6 +457,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return payload;
     }
 
+    /**
+     * 构建三星内容 Update 载荷。
+     */
     private Map<String, Object> buildSanxingContentUpdatePayload(
             AppVersion version,
             SanxingContext context,
@@ -491,6 +533,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return payload;
     }
 
+    /**
+     * 构建三星灰度 Rollout 载荷。
+     */
     private Map<String, Object> buildSanxingStagedRolloutPayload(String contentId, AppReleaseRecord record) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("contentId", contentId);
@@ -500,6 +545,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return payload;
     }
 
+    /**
+     * 映射三星状态。
+     */
     private ReleaseStatus mapSanxingStatus(String rawStatus, Map<String, Object> contentInfo, AppReleaseRecord record) {
         String normalized = rawStatus == null ? "" : rawStatus.trim().toUpperCase(Locale.ROOT);
         return switch (normalized) {
@@ -511,6 +559,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         };
     }
 
+    /**
+     * 处理三星 Binary Matches Target 版本相关逻辑。
+     */
     private boolean sanxingBinaryMatchesTargetVersion(Map<String, Object> contentInfo, AppReleaseRecord record) {
         String expectedVersionCode = resolveSanxingExpectedVersionCode(record);
         if (!StringUtils.hasText(expectedVersionCode)) {
@@ -530,6 +581,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return false;
     }
 
+    /**
+     * 解析三星 Expected 版本编码。
+     */
     private String resolveSanxingExpectedVersionCode(AppReleaseRecord record) {
         String versionCode = record.getVersionCode();
         if (!StringUtils.hasText(versionCode) && record.getAppVersion() != null) {
@@ -538,6 +592,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return StringUtils.hasText(versionCode) ? versionCode.trim() : "";
     }
 
+    /**
+     * 读取三星内容 Info。
+     */
     private List<Map<String, Object>> readSanxingContentInfo(String body) {
         if (!StringUtils.hasText(body)) {
             return List.of();
@@ -550,6 +607,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
     }
 
+    /**
+     * 获取首个三星内容 Info。
+     */
     private Map<String, Object> firstSanxingContentInfo(List<Map<String, Object>> contentInfos, String contentId) {
         if (contentInfos == null || contentInfos.isEmpty()) {
             return Map.of();
@@ -562,6 +622,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return contentInfos.get(0);
     }
 
+    /**
+     * 解析First Binary Seq。
+     */
     private String resolveFirstBinarySeq(Map<String, Object> contentInfo) {
         Object binaryListValue = contentInfo.get("binaryList");
         if (binaryListValue instanceof List<?> binaryList && !binaryList.isEmpty()) {
@@ -570,6 +633,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return "";
     }
 
+    /**
+     * 构建三星文件 Part。
+     */
     private HttpEntity<FileSystemResource> buildSanxingFilePart(Path filePath) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -577,6 +643,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return new HttpEntity<>(new FileSystemResource(filePath), headers);
     }
 
+    /**
+     * 解析三星上下文。
+     */
     private SanxingContext resolveSanxingContext(AppVersion version, AppReleaseRecord record) {
         String packageLocation = firstNonBlank(version.getPackageUrl64(), version.getPackageUrl32(), version.getPackageUrl());
         ProjectMetadataContext metadataContext = resolveProjectMetadataContext(packageLocation);
@@ -602,6 +671,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         );
     }
 
+    /**
+     * 解析三星包路径。
+     */
     private Path resolveSanxingPackagePath(
             ProjectMetadataContext metadataContext,
             Map<String, Object> metadata,
@@ -621,6 +693,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return requireLocalPackage(packageLocation, "Sanxing submit requires apk path");
     }
 
+    /**
+     * 解析三星内容 Id。
+     */
     private String resolveSanxingContentId(AppReleaseRecord record, Map<String, Object> metadata) {
         String contentId = record == null ? null : record.getStoreReleaseId();
         if (!StringUtils.hasText(contentId)) {
@@ -629,6 +704,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return StringUtils.hasText(contentId) ? contentId.trim() : "";
     }
 
+    /**
+     * 处理三星元数据相关逻辑。
+     */
     private Object sanxingMetadata(Map<String, Object> metadata, String key) {
         if (metadata == null) {
             return null;
@@ -640,6 +718,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         );
     }
 
+    /**
+     * 解析三星 Service Account Id。
+     */
     private String resolveSanxingServiceAccountId(AppStoreConfig storeConfig) {
         if (!StringUtils.hasText(storeConfig.getClientId())) {
             throw new IllegalArgumentException("Sanxing token refresh requires clientId as service-account-id");
@@ -647,6 +728,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return storeConfig.getClientId().trim();
     }
 
+    /**
+     * 创建三星 Jwt。
+     */
     private String createSanxingJwt(AppStoreConfig storeConfig, String serviceAccountId) {
         try {
             PrivateKey privateKey = parseSanxingPrivateKey(resolveSanxingPrivateKeyValue(storeConfig));
@@ -669,6 +753,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
     }
 
+    /**
+     * 解析三星 Private Key 值。
+     */
     private String resolveSanxingPrivateKeyValue(AppStoreConfig storeConfig) {
         if (!StringUtils.hasText(storeConfig.getPrivateKey())) {
             throw new IllegalArgumentException("Sanxing token refresh requires privateKey as service account key JSON or PEM");
@@ -687,6 +774,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return StringUtils.hasText(extractedPem) ? extractedPem : content;
     }
 
+    /**
+     * 提取三星 Private Key Pem。
+     */
     private String extractSanxingPrivateKeyPem(String content) {
         if (!StringUtils.hasText(content)) {
             return "";
@@ -707,6 +797,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
     }
 
+    /**
+     * 解析三星 Private Key。
+     */
     private PrivateKey parseSanxingPrivateKey(String privateKeyValue) throws GeneralSecurityException {
         String normalized = privateKeyValue
                 .replace("-----BEGIN PRIVATE KEY-----", "")
@@ -717,10 +810,16 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return KeyFactory.getInstance("RSA").generatePrivate(keySpec);
     }
 
+    /**
+     * 处理base64 URL相关逻辑。
+     */
     private String base64Url(byte[] bytes) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    /**
+     * 处理三星响应报文 Suffix相关逻辑。
+     */
     private String sanxingResponseBodySuffix(String responseBody) {
         if (!StringUtils.hasText(responseBody)) {
             return "";
@@ -732,15 +831,24 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return ", body=" + normalized;
     }
 
+    /**
+     * 处理三星 Oauth 令牌 Mode相关逻辑。
+     */
     private boolean sanxingOauthTokenMode(StoreApiProperties.StoreEndpointProperties endpoint) {
         String tokenEndpoint = sanxingTokenEndpoint(endpoint);
         return tokenEndpoint.toLowerCase(Locale.ROOT).contains("oauth/token");
     }
 
+    /**
+     * 规范化三星 Yes No。
+     */
     private String normalizeSanxingYesNo(String value) {
         return "Y".equalsIgnoreCase(value) ? "Y" : "N";
     }
 
+    /**
+     * 确保三星 Success。
+     */
     private void ensureSanxingSuccess(Map<String, Object> response, String action) {
         if (response == null || response.isEmpty()) {
             return;
@@ -764,12 +872,18 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
     }
 
+    /**
+     * 处理put If Has 文本相关逻辑。
+     */
     private void putIfHasText(Map<String, Object> target, String key, String value) {
         if (StringUtils.hasText(value)) {
             target.put(key, value.trim());
         }
     }
 
+    /**
+     * 处理put If Present相关逻辑。
+     */
     private void putIfPresent(Map<String, Object> target, String key, Object value) {
         if (value == null) {
             return;
@@ -780,6 +894,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         target.put(key, value);
     }
 
+    /**
+     * 校验三星文本。
+     */
     private String requireSanxingText(String value, String message) {
         if (!StringUtils.hasText(value)) {
             throw new IllegalStateException(message);
@@ -787,22 +904,37 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return value.trim();
     }
 
+    /**
+     * 处理字符串值相关逻辑。
+     */
     private String stringValue(Object value) {
         return value == null ? "" : String.valueOf(value);
     }
 
+    /**
+     * 处理三星 Base URL相关逻辑。
+     */
     private String sanxingBaseUrl(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getBaseUrl()) ? endpoint.getBaseUrl() : SANXING_BASE_URL;
     }
 
+    /**
+     * 处理三星令牌接口地址相关逻辑。
+     */
     private String sanxingTokenEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getTokenEndpoint()) ? endpoint.getTokenEndpoint() : SANXING_TOKEN_ENDPOINT;
     }
 
+    /**
+     * 处理三星内容 Info 接口地址相关逻辑。
+     */
     private String sanxingContentInfoEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getStatusEndpoint()) ? endpoint.getStatusEndpoint() : SANXING_CONTENT_INFO_ENDPOINT;
     }
 
+    /**
+     * 处理三星提交接口地址相关逻辑。
+     */
     private String sanxingSubmitEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getSubmitEndpoint()) ? endpoint.getSubmitEndpoint() : SANXING_CONTENT_SUBMIT_ENDPOINT;
     }

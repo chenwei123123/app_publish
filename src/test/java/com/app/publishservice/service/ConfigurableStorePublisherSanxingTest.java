@@ -47,6 +47,9 @@ class ConfigurableStorePublisherSanxingTest {
     @TempDir
     Path tempDir;
 
+    /**
+     * 测试Refresh 令牌提交三星发布场景。
+     */
     @Test
     void shouldRefreshTokenAndSubmitSanxingRelease() throws Exception {
         KeyPair keyPair = createKeyPair();
@@ -248,6 +251,9 @@ class ConfigurableStorePublisherSanxingTest {
         }
     }
 
+    /**
+     * 测试查询三星 Rejected 审核状态场景。
+     */
     @Test
     void shouldQuerySanxingRejectedReviewStatus() throws Exception {
         KeyPair keyPair = createKeyPair();
@@ -290,6 +296,9 @@ class ConfigurableStorePublisherSanxingTest {
         }
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
@@ -307,6 +316,9 @@ class ConfigurableStorePublisherSanxingTest {
         return appProperties;
     }
 
+    /**
+     * 处理三星商店配置相关逻辑。
+     */
     private AppStoreConfig sanxingStoreConfig(KeyPair keyPair) {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("sanxing"));
@@ -315,6 +327,9 @@ class ConfigurableStorePublisherSanxingTest {
         return storeConfig;
     }
 
+    /**
+     * 处理三星版本相关逻辑。
+     */
     private AppVersion sanxingVersion(Path apkPath) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
@@ -335,6 +350,9 @@ class ConfigurableStorePublisherSanxingTest {
         return version;
     }
 
+    /**
+     * 处理三星发布记录相关逻辑。
+     */
     private AppReleaseRecord sanxingReleaseRecord() {
         AppReleaseRecord record = new AppReleaseRecord();
         record.setId(1L);
@@ -344,6 +362,9 @@ class ConfigurableStorePublisherSanxingTest {
         return record;
     }
 
+    /**
+     * 处理三星审核记录相关逻辑。
+     */
     private AppReleaseRecord sanxingReviewRecord() {
         AppReleaseRecord record = new AppReleaseRecord();
         record.setId(2L);
@@ -353,12 +374,18 @@ class ConfigurableStorePublisherSanxingTest {
         return record;
     }
 
+    /**
+     * 创建Key Pair。
+     */
     private KeyPair createKeyPair() throws Exception {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
         generator.initialize(2048);
         return generator.generateKeyPair();
     }
 
+    /**
+     * 处理三星 Private Key JSON相关逻辑。
+     */
     private String sanxingPrivateKeyJson(KeyPair keyPair) {
         String pkcs8 = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
         String pem = "-----BEGIN PRIVATE KEY-----\n" + wrap64(pkcs8) + "\n-----END PRIVATE KEY-----";
@@ -369,6 +396,9 @@ class ConfigurableStorePublisherSanxingTest {
                 """.formatted(pem.replace("\\", "\\\\").replace("\n", "\\n"));
     }
 
+    /**
+     * 处理wrap64相关逻辑。
+     */
     private String wrap64(String value) {
         StringBuilder builder = new StringBuilder();
         for (int index = 0; index < value.length(); index += 64) {
@@ -380,11 +410,17 @@ class ConfigurableStorePublisherSanxingTest {
         return builder.toString();
     }
 
+    /**
+     * 处理JSON 映射相关逻辑。
+     */
     private Map<String, Object> jsonMap(String json) throws Exception {
         return objectMapper.readValue(json, new TypeReference<>() {
         });
     }
 
+    /**
+     * 处理JSON 映射 Unchecked相关逻辑。
+     */
     private Map<String, Object> jsonMapUnchecked(String json) {
         try {
             return jsonMap(json);
@@ -393,6 +429,9 @@ class ConfigurableStorePublisherSanxingTest {
         }
     }
 
+    /**
+     * 解析多部分表单。
+     */
     private Map<String, String> parseMultipart(String contentType, byte[] body) {
         String boundary = extractBoundary(contentType);
         String content = new String(body, StandardCharsets.ISO_8859_1);
@@ -424,6 +463,9 @@ class ConfigurableStorePublisherSanxingTest {
         return result;
     }
 
+    /**
+     * 提取Boundary。
+     */
     private String extractBoundary(String contentType) {
         for (String item : contentType.split(";")) {
             String trimmed = item.trim();

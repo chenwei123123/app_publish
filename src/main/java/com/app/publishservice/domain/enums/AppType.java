@@ -9,14 +9,23 @@ public enum AppType {
     @EnumValue
     private final int code;
 
+    /**
+     * 初始化AppType。
+     */
     AppType(int code) {
         this.code = code;
     }
 
+    /**
+     * 获取编码。
+     */
     public int getCode() {
         return code;
     }
 
+    /**
+     * 处理编码相关逻辑。
+     */
     public static AppType fromCode(int code) {
         for (AppType value : values()) {
             if (value.code == code) {

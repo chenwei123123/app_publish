@@ -15,9 +15,11 @@ public record ReleaseRecordPageResponse(
         @Schema(description = "版本号") String versionCode,
         @Schema(description = "发布渠道类型") String storeType,
         @Schema(description = "发布模式") String releaseMode,
+        @Schema(description = "发布类型") Long releaseType,
         @Schema(description = "发布状态") String releaseStatus,
         @Schema(description = "提交发布时间") LocalDateTime releaseTime,
         @Schema(description = "发布完成时间") LocalDateTime finishTime,
+        @Schema(description = "接口返回内容") String apiResponseLog,
         @Schema(description = "创建人") String createUser,
         @Schema(description = "更新人") String updateUser
 ) {

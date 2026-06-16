@@ -39,6 +39,9 @@ class ReleaseOrchestrationServiceTest {
 
     private static final String APK32_DOWNLOAD_FAILED_MESSAGE = "32\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
 
+    /**
+     * 测试Reject 灰度发布 OPPO 小米场景。
+     */
     @Test
     void shouldRejectStagedReleaseForOppoAndXiaomi() {
         PackageVersionService packageVersionService = mock(PackageVersionService.class);
@@ -70,6 +73,9 @@ class ReleaseOrchestrationServiceTest {
         assertEquals("oppo does not support staged release submit via API", exception.getMessage());
     }
 
+    /**
+     * 测试Reject 灰度发布应用宝场景。
+     */
     @Test
     void shouldRejectStagedReleaseForYingyongbao() {
         PackageVersionService packageVersionService = mock(PackageVersionService.class);
@@ -101,6 +107,9 @@ class ReleaseOrchestrationServiceTest {
         assertEquals("yingyongbao does not support staged release submit via API", exception.getMessage());
     }
 
+    /**
+     * 测试Persist 下载 Failure 状态 Rethrow 消息场景。
+     */
     @Test
     void shouldPersistDownloadFailureStatusAndRethrowMessage() {
         PackageVersionService packageVersionService = mock(PackageVersionService.class);
@@ -164,6 +173,9 @@ class ReleaseOrchestrationServiceTest {
         assertNotNull(failedRecord.getFinishTime());
     }
 
+    /**
+     * 测试提交商店 Parallel Keep Failures Isolated场景。
+     */
     @Test
     void shouldSubmitStoresInParallelAndKeepFailuresIsolated() throws Exception {
         PackageVersionService packageVersionService = mock(PackageVersionService.class);
@@ -257,6 +269,9 @@ class ReleaseOrchestrationServiceTest {
         }
     }
 
+    /**
+     * 处理transaction Operations相关逻辑。
+     */
     private TransactionOperations transactionOperations() {
         TransactionOperations transactionOperations = mock(TransactionOperations.class);
         lenient().when(transactionOperations.execute(any())).thenAnswer(invocation -> {

@@ -43,6 +43,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     private static final DateTimeFormatter HUAWEI_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
     private static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
 
+    /**
+     * 初始化HuaweiStorePlatformPublisher。
+     */
     HuaweiStorePlatformPublisher(
             RestClient restClient,
             ObjectMapper objectMapper,
@@ -52,6 +55,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         super(restClient, objectMapper, appProperties, storeRequestLogService);
     }
 
+    /**
+     * 判断是否支持相关数据。
+     */
     @Override
     public boolean supports(AppStoreConfig storeConfig) {
         return storeConfig != null
@@ -59,6 +65,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                 && "huawei".equalsIgnoreCase(storeConfig.getStoreType().getCode());
     }
 
+    /**
+     * 刷新令牌。
+     */
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
@@ -98,6 +107,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return new TokenPayload(TokenType.ACCESS_TOKEN.getCode(), token, LocalDateTime.now().plusSeconds(expiresIn));
     }
 
+    /**
+     * 提交发布。
+     */
     @Override
     public StoreSubmitResult submitRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -105,6 +117,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         }
     }
 
+    /**
+     * 查询审核。
+     */
     @Override
     public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
@@ -112,6 +127,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         }
     }
 
+    /**
+     * 提交华为发布。
+     */
     private StoreSubmitResult submitHuaweiRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         AppInfo appInfo = version.getAppInfo();
         if (appInfo == null || !StringUtils.hasText(appInfo.getPackageName())) {
@@ -143,6 +161,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return new StoreSubmitResult(storeReleaseId, writeJson(requestLog), writeJson(responseLog), StringUtils.hasText(message) ? message : "submit success");
     }
 
+    /**
+     * 查询华为审核。
+     */
     private StoreReviewResult queryHuaweiReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         String appId = StringUtils.hasText(record.getStoreReleaseId())
                 ? record.getStoreReleaseId()
@@ -164,6 +185,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return new StoreReviewResult(releaseStatus, writeJson(response), StringUtils.hasText(rejectReason) ? rejectReason : null);
     }
 
+    /**
+     * 查询华为应用 Id。
+     */
     private String queryHuaweiAppId(AppStoreConfig storeConfig, String token, String packageName) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         if (endpoint.isMockEnabled()) {
@@ -198,6 +222,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         throw new IllegalStateException("Huawei appId not found for packageName: " + packageName);
     }
 
+    /**
+     * 查询华为应用 Info。
+     */
     private Map<String, Object> queryHuaweiAppInfo(AppStoreConfig storeConfig, String token, String appId, boolean stagedRelease) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         if (endpoint.isMockEnabled()) {
@@ -228,6 +255,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return response;
     }
 
+    /**
+     * 解析华为包路径。
+     */
     private List<Path> resolveHuaweiPackagePaths(AppVersion version) {
         List<Path> paths = new ArrayList<>();
         if (StringUtils.hasText(version.getPackageUrl32())) {
@@ -245,6 +275,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return paths;
     }
 
+    /**
+     * 上传华为包。
+     */
     private List<Map<String, Object>> uploadHuaweiPackages(
             AppStoreConfig storeConfig,
             String token,
@@ -264,6 +297,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return uploadedFiles;
     }
 
+    /**
+     * 获取华为上传 URL。
+     */
     private Map<String, Object> getHuaweiUploadUrl(
             AppStoreConfig storeConfig,
             String token,
@@ -311,6 +347,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return urlInfo;
     }
 
+    /**
+     * 上传华为文件。
+     */
     private void uploadHuaweiFile(AppStoreConfig storeConfig, Map<String, Object> uploadUrlInfo, Path packagePath) {
         String url = firstString(uploadUrlInfo, "url");
         @SuppressWarnings("unchecked")
@@ -346,6 +385,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         );
     }
 
+    /**
+     * 更新华为应用文件 Info。
+     */
     private HuaweiFileInfoUpdateResult updateHuaweiAppFileInfo(
             AppStoreConfig storeConfig,
             String token,
@@ -382,6 +424,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return new HuaweiFileInfoUpdateResult(body, response);
     }
 
+    /**
+     * 提交华为应用。
+     */
     private Map<String, Object> submitHuaweiApp(
             AppStoreConfig storeConfig,
             String token,
@@ -414,6 +459,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return response;
     }
 
+    /**
+     * 构建华为提交查询参数。
+     */
     private Map<String, Object> buildHuaweiSubmitQueryParams(AppVersion version, AppReleaseRecord record, String appId) {
         Map<String, Object> queryParams = new LinkedHashMap<>();
         queryParams.put("appId", appId);
@@ -439,6 +487,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return queryParams;
     }
 
+    /**
+     * 构建华为提交报文。
+     */
     private Map<String, Object> buildHuaweiSubmitBody(AppVersion version, AppReleaseRecord record) {
         Map<String, Object> body = new LinkedHashMap<>();
         if (!isStagedRelease(record)) {
@@ -463,6 +514,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return body;
     }
 
+    /**
+     * 构建华为提交请求日志。
+     */
     private Map<String, Object> buildHuaweiSubmitRequestLog(AppVersion version, AppReleaseRecord record) {
         Map<String, Object> requestLog = new LinkedHashMap<>();
         requestLog.put("query", buildHuaweiSubmitQueryParams(version, record, "resolved-at-runtime"));
@@ -470,6 +524,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return requestLog;
     }
 
+    /**
+     * 解析华为 Chinese Mainland Flag。
+     */
     private Integer resolveHuaweiChineseMainlandFlag(Path packagePath) {
         Map<String, Object> metadata = resolveProjectMetadataContext(packagePath.toString()).metadata();
         return firstInteger(
@@ -478,10 +535,16 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         );
     }
 
+    /**
+     * 处理字符串值相关逻辑。
+     */
     private String stringValue(Object value) {
         return value == null ? "" : String.valueOf(value);
     }
 
+    /**
+     * 映射华为发布状态。
+     */
     private ReleaseStatus mapHuaweiReleaseStatus(Map<String, Object> appInfoData, String rejectReason) {
         int releaseState = intValue(appInfoData.get("releaseState"));
         return switch (releaseState) {
@@ -492,6 +555,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         };
     }
 
+    /**
+     * 映射华为灰度状态。
+     */
     private ReleaseStatus mapHuaweiStagedStatus(Map<String, Object> appInfoData, Map<String, Object> phasedReleaseInfo, String rejectReason) {
         ReleaseStatus baseStatus = mapHuaweiReleaseStatus(appInfoData, rejectReason);
         if (baseStatus == ReleaseStatus.REJECT || baseStatus == ReleaseStatus.OFFLINE) {
@@ -508,10 +574,16 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         };
     }
 
+    /**
+     * 处理华为 Ret 消息相关逻辑。
+     */
     private String huaweiRetMessage(Map<String, Object> response) {
         return firstString(asMap(response.get("ret")), "msg", "message");
     }
 
+    /**
+     * 确保华为 Success。
+     */
     private void ensureHuaweiSuccess(Map<String, Object> response, String action) {
         Map<String, Object> ret = asMap(response.get("ret"));
         int code = intValue(ret.get("code"));
@@ -522,6 +594,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         throw new StoreApiException(HttpStatus.BAD_GATEWAY, "Huawei " + action + " failed: code=" + code + ", msg=" + message);
     }
 
+    /**
+     * 格式化华为 Date 时间。
+     */
     private String formatHuaweiDateTime(LocalDateTime dateTime) {
         if (dateTime == null) {
             return null;
@@ -529,35 +604,59 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return dateTime.atZone(DEFAULT_ZONE_ID).format(HUAWEI_DATE_TIME_FORMATTER);
     }
 
+    /**
+     * 格式化华为 Percent。
+     */
     private String formatHuaweiPercent(Number percent) {
         double value = percent == null ? 0D : percent.doubleValue();
         return String.format(Locale.ROOT, "%.2f", value);
     }
 
+    /**
+     * 处理华为 Base URL相关逻辑。
+     */
     private String huaweiBaseUrl(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getBaseUrl()) ? endpoint.getBaseUrl() : HUAWEI_BASE_URL;
     }
 
+    /**
+     * 处理华为令牌接口地址相关逻辑。
+     */
     private String huaweiTokenEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getTokenEndpoint()) ? endpoint.getTokenEndpoint() : HUAWEI_TOKEN_ENDPOINT;
     }
 
+    /**
+     * 处理华为应用 Id 列表接口地址相关逻辑。
+     */
     private String huaweiAppIdListEndpoint() {
         return HUAWEI_APPID_LIST_ENDPOINT;
     }
 
+    /**
+     * 处理华为应用 Info 接口地址相关逻辑。
+     */
     private String huaweiAppInfoEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getStatusEndpoint()) ? endpoint.getStatusEndpoint() : HUAWEI_APP_INFO_ENDPOINT;
     }
 
+    /**
+     * 处理华为上传 URL 接口地址相关逻辑。
+     */
     private String huaweiUploadUrlEndpoint() {
         return HUAWEI_UPLOAD_URL_ENDPOINT;
     }
 
+    /**
+     * 处理华为应用文件 Info 接口地址相关逻辑。
+     */
     private String huaweiAppFileInfoEndpoint() {
         return HUAWEI_APP_FILE_INFO_ENDPOINT;
     }
 
+    /**
+     * 处理华为应用提交接口地址相关逻辑。
+     */
     private String huaweiAppSubmitEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getSubmitEndpoint()) ? endpoint.getSubmitEndpoint() : HUAWEI_APP_SUBMIT_ENDPOINT;
     }

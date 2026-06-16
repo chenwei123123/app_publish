@@ -40,6 +40,9 @@ class ConfigurableStorePublisherHuaweiTest {
     @TempDir
     Path tempDir;
 
+    /**
+     * 测试Refresh 华为令牌客户端 Credentials场景。
+     */
     @Test
     void shouldRefreshHuaweiTokenByClientCredentials() throws Exception {
         AtomicReference<Map<String, Object>> tokenRequest = new AtomicReference<>();
@@ -73,6 +76,9 @@ class ConfigurableStorePublisherHuaweiTest {
         }
     }
 
+    /**
+     * 测试提交华为发布 Split 包上传场景。
+     */
     @Test
     void shouldSubmitHuaweiReleaseWithSplitPackageUpload() throws Exception {
         Path apk32 = tempDir.resolve("demo-32.apk");
@@ -202,6 +208,9 @@ class ConfigurableStorePublisherHuaweiTest {
         }
     }
 
+    /**
+     * 测试提交华为灰度发布场景。
+     */
     @Test
     void shouldSubmitHuaweiStagedRelease() throws Exception {
         Path apk32 = tempDir.resolve("stage-32.apk");
@@ -286,6 +295,9 @@ class ConfigurableStorePublisherHuaweiTest {
         }
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
@@ -299,6 +311,9 @@ class ConfigurableStorePublisherHuaweiTest {
         return appProperties;
     }
 
+    /**
+     * 处理华为商店配置相关逻辑。
+     */
     private AppStoreConfig huaweiStoreConfig() {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("huawei"));
@@ -307,6 +322,9 @@ class ConfigurableStorePublisherHuaweiTest {
         return storeConfig;
     }
 
+    /**
+     * 处理应用版本相关逻辑。
+     */
     private AppVersion appVersion(Path apk32, Path apk64) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
@@ -327,6 +345,9 @@ class ConfigurableStorePublisherHuaweiTest {
         return version;
     }
 
+    /**
+     * 解析查询。
+     */
     private Map<String, String> parseQuery(String rawQuery) {
         Map<String, String> result = new LinkedHashMap<>();
         if (rawQuery == null || rawQuery.isBlank()) {
@@ -344,11 +365,17 @@ class ConfigurableStorePublisherHuaweiTest {
         return result;
     }
 
+    /**
+     * 处理JSON 映射相关逻辑。
+     */
     private Map<String, Object> jsonMap(String json) throws IOException {
         return objectMapper.readValue(json, new TypeReference<>() {
         });
     }
 
+    /**
+     * 发送JSON。
+     */
     private void sendJson(HttpExchange exchange, byte[] body) throws IOException {
         exchange.getResponseHeaders().add("Content-Type", "application/json");
         exchange.sendResponseHeaders(200, body.length);

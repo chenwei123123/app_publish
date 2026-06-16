@@ -25,30 +25,51 @@ public final class ApkDownloadUtil {
     private static volatile String authorizationValue = DEFAULT_AUTH_VALUE;
     private static volatile int timeoutMillis = 300000;
 
+    /**
+     * 初始化ApkDownloadUtil。
+     */
     public ApkDownloadUtil(AppProperties appProperties) {
         configure(appProperties.getPackageRepository());
     }
 
+    /**
+     * 下载Apk32。
+     */
     public static void downloadApk32(String versionCode, String buildCode, String savePath) throws IOException {
         downloadApk(buildApk32Url(versionCode, buildCode), savePath);
     }
 
+    /**
+     * 下载Apk64。
+     */
     public static void downloadApk64(String versionCode, String buildCode, String savePath) throws IOException {
         downloadApk(buildApk64Url(versionCode, buildCode), savePath);
     }
 
+    /**
+     * 构建Apk32 URL。
+     */
     public static String buildApk32Url(String versionCode, String buildCode) {
         return apkUrl32Template.formatted(requireVersionCode(versionCode), requireBuildCode(buildCode));
     }
 
+    /**
+     * 构建Apk64 URL。
+     */
     public static String buildApk64Url(String versionCode, String buildCode) {
         return apkUrl64Template.formatted(requireVersionCode(versionCode), requireBuildCode(buildCode));
     }
 
+    /**
+     * 获取默认授权值。
+     */
     public static String defaultAuthorizationValue() {
         return authorizationValue;
     }
 
+    /**
+     * 提取文件名称。
+     */
     public static String extractFileName(String downloadUrl) {
         if (downloadUrl == null || downloadUrl.trim().isEmpty()) {
             throw new IllegalArgumentException("downloadUrl must not be blank");
@@ -61,6 +82,9 @@ public final class ApkDownloadUtil {
         return normalized.substring(separatorIndex + 1);
     }
 
+    /**
+     * 下载APK。
+     */
     private static void downloadApk(String downloadUrl, String savePath) throws IOException {
         Path target = Path.of(savePath);
         if (Files.exists(target) && Files.isRegularFile(target)) {
@@ -84,10 +108,16 @@ public final class ApkDownloadUtil {
         Files.write(target, response.getBody());
     }
 
+    /**
+     * 校验版本编码。
+     */
     private static String requireVersionCode(String versionCode) {
         return VersionCodeUtil.requireNonBlank(versionCode);
     }
 
+    /**
+     * 校验Build 编码。
+     */
     private static String requireBuildCode(String buildCode) {
         if (buildCode == null || buildCode.trim().isEmpty()) {
             throw new IllegalArgumentException("buildCode must not be blank");
@@ -95,6 +125,9 @@ public final class ApkDownloadUtil {
         return buildCode.trim();
     }
 
+    /**
+     * 处理configure相关逻辑。
+     */
     static void configure(AppProperties.PackageRepositoryProperties properties) {
         if (properties == null) {
             apkUrl32Template = DEFAULT_APK_URL_32;

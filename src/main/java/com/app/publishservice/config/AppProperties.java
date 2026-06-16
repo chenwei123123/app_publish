@@ -16,58 +16,100 @@ public class AppProperties {
     private StoreApiProperties storeApi = new StoreApiProperties();
     private PublishMetadataProperties publishMetadata = new PublishMetadataProperties();
 
+    /**
+     * 获取存储 Root。
+     */
     public String getStorageRoot() {
         return storageRoot;
     }
 
+    /**
+     * 设置存储 Root。
+     */
     public void setStorageRoot(String storageRoot) {
         this.storageRoot = storageRoot;
     }
 
+    /**
+     * 获取令牌 Refresh Ahead Seconds。
+     */
     public long getTokenRefreshAheadSeconds() {
         return tokenRefreshAheadSeconds;
     }
 
+    /**
+     * 设置令牌 Refresh Ahead Seconds。
+     */
     public void setTokenRefreshAheadSeconds(long tokenRefreshAheadSeconds) {
         this.tokenRefreshAheadSeconds = tokenRefreshAheadSeconds;
     }
 
+    /**
+     * 获取审核 Poll Delay Ms。
+     */
     public long getReviewPollDelayMs() {
         return reviewPollDelayMs;
     }
 
+    /**
+     * 设置审核 Poll Delay Ms。
+     */
     public void setReviewPollDelayMs(long reviewPollDelayMs) {
         this.reviewPollDelayMs = reviewPollDelayMs;
     }
 
+    /**
+     * 获取审核 Auto Pass Seconds。
+     */
     public long getReviewAutoPassSeconds() {
         return reviewAutoPassSeconds;
     }
 
+    /**
+     * 设置审核 Auto Pass Seconds。
+     */
     public void setReviewAutoPassSeconds(long reviewAutoPassSeconds) {
         this.reviewAutoPassSeconds = reviewAutoPassSeconds;
     }
 
+    /**
+     * 获取包仓库。
+     */
     public PackageRepositoryProperties getPackageRepository() {
         return packageRepository;
     }
 
+    /**
+     * 设置包仓库。
+     */
     public void setPackageRepository(PackageRepositoryProperties packageRepository) {
         this.packageRepository = packageRepository;
     }
 
+    /**
+     * 获取商店 API。
+     */
     public StoreApiProperties getStoreApi() {
         return storeApi;
     }
 
+    /**
+     * 设置商店 API。
+     */
     public void setStoreApi(StoreApiProperties storeApi) {
         this.storeApi = storeApi;
     }
 
+    /**
+     * 获取发布元数据。
+     */
     public PublishMetadataProperties getPublishMetadata() {
         return publishMetadata;
     }
 
+    /**
+     * 设置发布元数据。
+     */
     public void setPublishMetadata(PublishMetadataProperties publishMetadata) {
         this.publishMetadata = publishMetadata;
     }
@@ -81,50 +123,86 @@ public class AppProperties {
         private String authorization;
         private long downloadTimeoutSeconds = 30L;
 
+        /**
+         * 获取APK Url32。
+         */
         public String getApkUrl32() {
             return apkUrl32;
         }
 
+        /**
+         * 设置APK Url32。
+         */
         public void setApkUrl32(String apkUrl32) {
             this.apkUrl32 = apkUrl32;
         }
 
+        /**
+         * 获取APK Url64。
+         */
         public String getApkUrl64() {
             return apkUrl64;
         }
 
+        /**
+         * 设置APK Url64。
+         */
         public void setApkUrl64(String apkUrl64) {
             this.apkUrl64 = apkUrl64;
         }
 
+        /**
+         * 获取Base URL。
+         */
         public String getBaseUrl() {
             return baseUrl;
         }
 
+        /**
+         * 设置Base URL。
+         */
         public void setBaseUrl(String baseUrl) {
             this.baseUrl = baseUrl;
         }
 
+        /**
+         * 判断是否流上传 Enabled。
+         */
         public boolean isStreamUploadEnabled() {
             return streamUploadEnabled;
         }
 
+        /**
+         * 设置流上传 Enabled。
+         */
         public void setStreamUploadEnabled(boolean streamUploadEnabled) {
             this.streamUploadEnabled = streamUploadEnabled;
         }
 
+        /**
+         * 获取授权。
+         */
         public String getAuthorization() {
             return authorization;
         }
 
+        /**
+         * 设置授权。
+         */
         public void setAuthorization(String authorization) {
             this.authorization = authorization;
         }
 
+        /**
+         * 获取下载超时 Seconds。
+         */
         public long getDownloadTimeoutSeconds() {
             return downloadTimeoutSeconds;
         }
 
+        /**
+         * 设置下载超时 Seconds。
+         */
         public void setDownloadTimeoutSeconds(long downloadTimeoutSeconds) {
             this.downloadTimeoutSeconds = downloadTimeoutSeconds;
         }
@@ -135,18 +213,30 @@ public class AppProperties {
         private String baseDir = ".";
         private Map<String, Object> values = new LinkedHashMap<>();
 
+        /**
+         * 获取Base Dir。
+         */
         public String getBaseDir() {
             return baseDir;
         }
 
+        /**
+         * 设置Base Dir。
+         */
         public void setBaseDir(String baseDir) {
             this.baseDir = baseDir;
         }
 
+        /**
+         * 获取值。
+         */
         public Map<String, Object> getValues() {
             return values;
         }
 
+        /**
+         * 设置值。
+         */
         public void setValues(Map<String, Object> values) {
             this.values = values;
         }

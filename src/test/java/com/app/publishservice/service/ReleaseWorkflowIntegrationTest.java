@@ -33,6 +33,9 @@ class ReleaseWorkflowIntegrationTest {
     @Autowired
     private ReleaseOrchestrationService releaseOrchestrationService;
 
+    /**
+     * 测试上传提交 Poll 发布场景。
+     */
     @Test
     void shouldUploadSubmitAndPollRelease() throws Exception {
         AppUpsertRequest appRequest = new AppUpsertRequest();
@@ -75,6 +78,9 @@ class ReleaseWorkflowIntegrationTest {
         assertEquals("reject", refreshed.releaseStatus());
     }
 
+    /**
+     * 构建Archive。
+     */
     private byte[] buildArchive(String versionName, String versionCode, boolean reinforced) throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream, StandardCharsets.UTF_8)) {

@@ -46,6 +46,9 @@ class ConfigurableStorePublisherOppoTest {
     @TempDir
     Path tempDir;
 
+    /**
+     * 测试Refresh OPPO 令牌客户端 Credentials场景。
+     */
     @Test
     void shouldRefreshOppoTokenByClientCredentials() throws Exception {
         AtomicReference<Map<String, String>> queryParams = new AtomicReference<>();
@@ -82,6 +85,9 @@ class ConfigurableStorePublisherOppoTest {
         }
     }
 
+    /**
+     * 测试提交 OPPO 发布 Signed 上传 Update 请求场景。
+     */
     @Test
     void shouldSubmitOppoReleaseWithSignedUploadAndUpdateRequests() throws Exception {
         Path apk32 = tempDir.resolve("demo-32.apk");
@@ -262,6 +268,9 @@ class ConfigurableStorePublisherOppoTest {
         }
     }
 
+    /**
+     * 测试查询 OPPO 审核 Task State Only场景。
+     */
     @Test
     void shouldQueryOppoReviewByTaskStateOnly() throws Exception {
         AtomicReference<Map<String, String>> taskStateForm = new AtomicReference<>();
@@ -303,6 +312,9 @@ class ConfigurableStorePublisherOppoTest {
         }
     }
 
+    /**
+     * 处理应用 Properties相关逻辑。
+     */
     private AppProperties appProperties(HttpServer server) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
@@ -316,6 +328,9 @@ class ConfigurableStorePublisherOppoTest {
         return appProperties;
     }
 
+    /**
+     * 处理OPPO 商店配置相关逻辑。
+     */
     private AppStoreConfig oppoStoreConfig() {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("oppo"));
@@ -324,6 +339,9 @@ class ConfigurableStorePublisherOppoTest {
         return storeConfig;
     }
 
+    /**
+     * 处理应用版本相关逻辑。
+     */
     private AppVersion appVersion(Path packagePath32, Path packagePath64) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
@@ -343,14 +361,23 @@ class ConfigurableStorePublisherOppoTest {
         return version;
     }
 
+    /**
+     * 解析查询。
+     */
     private Map<String, String> parseQuery(String rawQuery) {
         return parsePairs(rawQuery == null ? new byte[0] : rawQuery.getBytes(StandardCharsets.UTF_8));
     }
 
+    /**
+     * 解析表单。
+     */
     private Map<String, String> parseForm(byte[] body) {
         return parsePairs(body);
     }
 
+    /**
+     * 解析Pairs。
+     */
     private Map<String, String> parsePairs(byte[] bytes) {
         String content = new String(bytes, StandardCharsets.UTF_8);
         Map<String, String> result = new LinkedHashMap<>();
@@ -366,6 +393,9 @@ class ConfigurableStorePublisherOppoTest {
         return result;
     }
 
+    /**
+     * 解析多部分表单。
+     */
     private Map<String, String> parseMultipart(String contentType, byte[] body) {
         String boundary = extractBoundary(contentType);
         String content = new String(body, StandardCharsets.ISO_8859_1);
@@ -397,6 +427,9 @@ class ConfigurableStorePublisherOppoTest {
         return result;
     }
 
+    /**
+     * 提取Boundary。
+     */
     private String extractBoundary(String contentType) {
         for (String item : contentType.split(";")) {
             String trimmed = item.trim();
@@ -407,12 +440,18 @@ class ConfigurableStorePublisherOppoTest {
         throw new IllegalArgumentException("Multipart boundary is missing");
     }
 
+    /**
+     * 处理without相关逻辑。
+     */
     private Map<String, String> without(Map<String, String> params, String keyToRemove) {
         Map<String, String> result = new LinkedHashMap<>(params);
         result.remove(keyToRemove);
         return result;
     }
 
+    /**
+     * 签名相关数据。
+     */
     private String sign(Map<String, String> params, String clientSecret) throws Exception {
         String payload = params.entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
@@ -423,6 +462,9 @@ class ConfigurableStorePublisherOppoTest {
         return toHex(mac.doFinal(payload.getBytes(StandardCharsets.UTF_8)));
     }
 
+    /**
+     * 处理Hex相关逻辑。
+     */
     private String toHex(byte[] bytes) {
         StringBuilder builder = new StringBuilder(bytes.length * 2);
         for (byte value : bytes) {
@@ -435,6 +477,9 @@ class ConfigurableStorePublisherOppoTest {
         return builder.toString();
     }
 
+    /**
+     * 计算 MD5 摘要相关数据。
+     */
     private String md5(String content) throws Exception {
         return toHex(java.security.MessageDigest.getInstance("MD5").digest(content.getBytes(StandardCharsets.UTF_8)));
     }
