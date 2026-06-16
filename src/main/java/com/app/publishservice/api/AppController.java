@@ -23,7 +23,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/apps")
-@Tag(name = "应用管理", description = "应用的新增、修改、查询和删除接口")
+@Tag(name = "应用管理", description = "应用基础信息的新增、修改、查询和删除接口")
 public class AppController {
 
     private final AppManagementService appManagementService;
@@ -35,7 +35,7 @@ public class AppController {
     @PostMapping
     @Operation(summary = "创建应用", description = "创建应用基础信息")
     public ApiResponse<AppResponse> save(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "应用请求体")
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "应用新增请求体")
             @Valid @RequestBody AppUpsertRequest request
     ) {
         return ApiResponse.success(appManagementService.saveApp(request));
@@ -45,32 +45,35 @@ public class AppController {
     @Operation(summary = "更新应用", description = "根据应用 ID 更新应用基础信息")
     public ApiResponse<AppResponse> update(
             @Parameter(description = "应用 ID", required = true) @PathVariable Long appId,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "应用请求体")
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "应用更新请求体")
             @Valid @RequestBody AppUpsertRequest request
     ) {
         return ApiResponse.success(appManagementService.updateApp(appId, request));
     }
 
     @GetMapping
-    @Operation(summary = "查询应用列表", description = "按应用名称、描述或包名关键字筛选应用")
+    @Operation(summary = "查询应用列表", description = "按应用名称、应用描述或包名关键字筛选应用")
     public ApiResponse<List<AppResponse>> list(
-            @Parameter(description = "按应用名称、描述或包名进行模糊匹配") @RequestParam(value = "keyword", required = false) String keyword
+            @Parameter(description = "关键字，支持按应用名称、应用描述或包名模糊匹配")
+            @RequestParam(value = "keyword", required = false) String keyword
     ) {
         return ApiResponse.success(appManagementService.listApps(keyword));
     }
 
     @GetMapping("/{appId}")
-    @Operation(summary = "查询应用详情", description = "根据应用 ID 查询应用详情、关联版本和发版记录")
-    public ApiResponse<AppDetailResponse> get(@Parameter(description = "应用 ID", required = true) @PathVariable Long appId) {
+    @Operation(summary = "查询应用详情", description = "根据应用 ID 查询应用详情、关联版本和关联发版记录")
+    public ApiResponse<AppDetailResponse> get(
+            @Parameter(description = "应用 ID", required = true) @PathVariable Long appId
+    ) {
         return ApiResponse.success(appManagementService.getApp(appId));
     }
 
     @DeleteMapping("/{appId}")
-    @Operation(summary = "删除应用", description = "删除应用及其版本、发版记录等相关数据")
-    public ApiResponse<Void> delete(@Parameter(description = "应用 ID", required = true) @PathVariable Long appId) {
+    @Operation(summary = "删除应用", description = "删除应用及其关联的版本、发版记录等数据")
+    public ApiResponse<Void> delete(
+            @Parameter(description = "应用 ID", required = true) @PathVariable Long appId
+    ) {
         appManagementService.deleteApp(appId);
         return ApiResponse.success(null, "OK");
     }
-
-
 }

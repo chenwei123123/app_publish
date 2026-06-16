@@ -62,7 +62,6 @@ import java.util.function.Supplier;
 abstract class AbstractStorePlatformPublisher implements StorePublisher {
 
     protected static final Logger log = LoggerFactory.getLogger(AbstractStorePlatformPublisher.class);
-    private static final String PROJECT_METADATA_FILE_NAME = "app-publish-metadata.json";
     private static final DateTimeFormatter PACKAGE_CACHE_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
     private static final String CMS_ARTIFACT_HOST = "artifacts.cmschina.com.cn";
 
@@ -71,6 +70,7 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
     protected final AppProperties appProperties;
     protected final StoreRequestLogService storeRequestLogService;
     protected final HttpClient packageHttpClient;
+    protected final PublishMetadataResolver publishMetadataResolver;
 
     protected AbstractStorePlatformPublisher(RestClient restClient, ObjectMapper objectMapper, AppProperties appProperties) {
         this(restClient, objectMapper, appProperties, null);
@@ -87,6 +87,7 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         this.objectMapper = objectMapper;
         this.appProperties = appProperties;
         this.storeRequestLogService = storeRequestLogService;
+        this.publishMetadataResolver = new PublishMetadataResolver(appProperties);
         this.packageHttpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(Math.max(appProperties.getStoreApi().getDefaultTimeoutSeconds(), 1)))
                 .build();
@@ -534,100 +535,15 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
         return new String(body, StandardCharsets.UTF_8);
     }
 
-    private ProjectMetadataContext readProjectMetadata(Path packagePath) {
-        return readProjectMetadata(packagePath, true);
-    }
-
-    private ProjectMetadataContext readProjectMetadata(Path packagePath, boolean allowWorkspaceFallback) {
-        Path metadataPath = findProjectMetadataPath(packagePath, allowWorkspaceFallback);
-        if (metadataPath == null) {
-            return new ProjectMetadataContext(null, Map.of());
-        }
-        try (InputStream inputStream = Files.newInputStream(metadataPath)) {
-            return new ProjectMetadataContext(
-                    metadataPath,
-                    objectMapper.readValue(inputStream, new TypeReference<>() {
-                    })
-            );
-        } catch (IOException ex) {
-            throw new IllegalStateException("Failed to read project metadata: " + metadataPath, ex);
-        }
-    }
-
     protected ProjectMetadataContext resolveProjectMetadataContext(String packageLocation) {
-        if (!StringUtils.hasText(packageLocation)) {
-            return readProjectMetadata(Path.of("."));
-        }
-
-        String normalizedPackageLocation = packageLocation.trim();
-        if (isHttpUrl(normalizedPackageLocation)) {
-            return new ProjectMetadataContext(null, Map.of());
-        }
-
-        Path packagePath = toPath(normalizedPackageLocation);
-        if (packagePath != null) {
-            if (packagePath.isAbsolute()) {
-                return Files.exists(packagePath)
-                        ? readProjectMetadata(packagePath, false)
-                        : new ProjectMetadataContext(null, Map.of());
-            }
-            if (Files.exists(packagePath)) {
-                return readProjectMetadata(packagePath);
-            }
-        }
-        return readProjectMetadata(Path.of("."));
-    }
-
-    private Path findProjectMetadataPath(Path packagePath) {
-        return findProjectMetadataPath(packagePath, true);
-    }
-
-    private Path findProjectMetadataPath(Path packagePath, boolean allowWorkspaceFallback) {
-        Path current = packagePath.toAbsolutePath().normalize();
-        if (!Files.isDirectory(current)) {
-            current = current.getParent();
-        }
-        while (current != null) {
-            Path candidate = current.resolve(PROJECT_METADATA_FILE_NAME);
-            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
-                return candidate;
-            }
-            current = current.getParent();
-        }
-        if (!allowWorkspaceFallback) {
-            return null;
-        }
-        Path fallback = Path.of(PROJECT_METADATA_FILE_NAME).toAbsolutePath().normalize();
-        if (Files.exists(fallback) && Files.isRegularFile(fallback)) {
-            return fallback;
-        }
-        return null;
+        return new ProjectMetadataContext(
+                publishMetadataResolver.metadataPath(),
+                publishMetadataResolver.metadata()
+        );
     }
 
     protected Path resolveProjectAssetPath(Path metadataPath, Object assetLocation) {
-        if (assetLocation == null) {
-            return null;
-        }
-        String location = String.valueOf(assetLocation).trim();
-        if (!StringUtils.hasText(location)) {
-            return null;
-        }
-
-        Path directPath = toPath(location);
-        if (directPath != null) {
-            if (!directPath.isAbsolute()) {
-                Path parent = metadataPath == null ? null : metadataPath.toAbsolutePath().normalize().getParent();
-                if (parent != null) {
-                    Path projectPath = parent.resolve(directPath).normalize();
-                    if (Files.exists(projectPath) && Files.isRegularFile(projectPath)) {
-                        return projectPath;
-                    }
-                }
-            } else if (Files.exists(directPath) && Files.isRegularFile(directPath)) {
-                return directPath;
-            }
-        }
-        return null;
+        return publishMetadataResolver.resolveAssetPath(metadataPath, assetLocation);
     }
 
     protected List<Path> resolveProjectAssetPaths(Path metadataPath, List<String> assetLocations) {
@@ -635,37 +551,11 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
     }
 
     protected List<Path> resolveProjectAssetPaths(Path metadataPath, List<String> assetLocations, String assetNotFoundMessagePrefix) {
-        if (assetLocations == null || assetLocations.isEmpty()) {
-            return List.of();
-        }
-        List<Path> resolved = new ArrayList<>();
-        for (String assetLocation : assetLocations) {
-            Path path = resolveProjectAssetPath(metadataPath, assetLocation);
-            if (path == null) {
-                throw new IllegalStateException(assetNotFoundMessagePrefix + assetLocation);
-            }
-            resolved.add(path);
-        }
-        return resolved;
+        return publishMetadataResolver.resolveAssetPaths(metadataPath, assetLocations, assetNotFoundMessagePrefix);
     }
 
     protected Object metadataLookup(Map<String, Object> metadata, String sectionKey, String key) {
-        if (metadata == null || !StringUtils.hasText(key)) {
-            return null;
-        }
-        if (StringUtils.hasText(sectionKey)) {
-            Map<String, Object> section = asMap(metadata.get(sectionKey));
-            if (!section.isEmpty()) {
-                Object value = firstNonNull(
-                        section.get(key),
-                        section.get(toSnakeCase(key))
-                );
-                if (value != null) {
-                    return value;
-                }
-            }
-        }
-        return firstNonNull(metadata.get(key), metadata.get(toSnakeCase(key)));
+        return publishMetadataResolver.metadataLookup(metadata, sectionKey, key);
     }
 
     protected List<String> firstList(Object... values) {

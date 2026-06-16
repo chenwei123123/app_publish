@@ -15,17 +15,21 @@ import com.app.publishservice.domain.enums.StoreType;
 import com.app.publishservice.repository.AppReleaseRecordRepository;
 import com.app.publishservice.service.model.StoreReviewResult;
 import com.app.publishservice.service.model.StoreSubmitResult;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
 
 @Service
 public class ReleaseOrchestrationService {
@@ -37,100 +41,37 @@ public class ReleaseOrchestrationService {
     private final AppReleaseRecordRepository releaseRecordRepository;
     private final TokenService tokenService;
     private final StorePublisher storePublisher;
+    private final Executor releaseSubmitExecutor;
+    private final TransactionOperations transactionOperations;
 
     public ReleaseOrchestrationService(
             PackageVersionService packageVersionService,
             AppManagementService appManagementService,
             AppReleaseRecordRepository releaseRecordRepository,
             TokenService tokenService,
-            StorePublisher storePublisher
+            StorePublisher storePublisher,
+            @Qualifier("releaseSubmitExecutor") Executor releaseSubmitExecutor,
+            TransactionOperations transactionOperations
     ) {
         this.packageVersionService = packageVersionService;
         this.appManagementService = appManagementService;
         this.releaseRecordRepository = releaseRecordRepository;
         this.tokenService = tokenService;
         this.storePublisher = storePublisher;
+        this.releaseSubmitExecutor = releaseSubmitExecutor;
+        this.transactionOperations = transactionOperations;
     }
 
-    @Transactional(noRollbackFor = SubmitPackageDownloadException.class)
     public List<ReleaseRecordResponse> submit(ReleaseSubmitRequest request) {
         log.info("Start release submit, versionId={}, releaseMode={}, stores={}", request.getVersionId(), request.getReleaseMode(), request.getStoreTypes());
-        AppVersion version = packageVersionService.requireVersion(request.getVersionId());
-        List<ReleaseRecordResponse> responses = new ArrayList<>();
-        ReleaseMode releaseMode = ReleaseMode.fromCode(request.getReleaseMode());
-        Long releaseType = normalizeReleaseType(request.getReleaseType());
-        validateReleaseRequest(request, releaseType);
-        List<StoreSubmitContext> submitContexts = new ArrayList<>();
-        for (String storeTypeCode : request.getStoreTypes()) {
-            StoreType storeType = StoreType.fromCode(storeTypeCode);
-            AppStoreConfig storeConfig = appManagementService.requireStoreConfig(storeType);
-            if (storeConfig.getApiStatus() != 1) {
-                throw new IllegalArgumentException("Store config is disabled: " + storeTypeCode);
-            }
-
-            AppReleaseRecord record = createReleaseRecord(
-                    version,
-                    storeType,
-                    releaseMode,
-                    releaseType,
-                    request,
-                     ReleaseStatus.DOWNLOADING
-            );
-            releaseRecordRepository.insert(record);
-            log.info("Release record created, releaseId={}, appId={}, versionId={}, storeType={}", record.getId(), record.getAppId(), record.getVersionId(), storeType.getCode());
-            submitContexts.add(new StoreSubmitContext(storeType, storeConfig, record));
+        SubmitPreparation preparation = transactionOperations.execute(status -> prepareSubmit(request));
+        if (preparation == null) {
+            throw new IllegalStateException("Release submit preparation returned no result");
         }
-
-        try {
-            version = packageVersionService.prepareVersionForSubmit(version);
-                for (StoreSubmitContext submitContext : submitContexts) {
-                    AppReleaseRecord record = submitContext.record();
-                    record.setReleaseStatus(ReleaseStatus.DOWNLOAD_SUCCESS);
-                    releaseRecordRepository.updateById(record);
-                }
-        } catch (RuntimeException ex) {
-                handleSubmitPackageFailure(submitContexts, ex);
-            throw ex;
+        if (preparation.failure() != null) {
+            throw preparation.failure();
         }
-
-        for (StoreSubmitContext submitContext : submitContexts) {
-            StoreType storeType = submitContext.storeType();
-            AppStoreConfig storeConfig = submitContext.storeConfig();
-            AppReleaseRecord record = submitContext.record();
-            if (record.getReleaseStatus() != ReleaseStatus.API_PENDING) {
-                record.setReleaseStatus(ReleaseStatus.API_PENDING);
-                releaseRecordRepository.updateById(record);
-            }
-
-            try {
-                try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record.getId())) {
-                    String token = tokenService.getValidToken(storeConfig);
-                    StoreSubmitResult result = storePublisher.submitRelease(storeConfig, version, record, token);
-                    record.setStoreReleaseId(result.storeReleaseId());
-                    record.setApiRequestLog(result.requestLog());
-                    record.setApiResponseLog(result.responseLog());
-                    record.setReleaseStatus(ReleaseStatus.AUDITING);
-                    record.setReleaseTime(LocalDateTime.now());
-                    releaseRecordRepository.updateById(record);
-                    log.info(
-                            "Submit review success, releaseId={}, storeType={}, storeReleaseId={}, status={}",
-                            record.getId(),
-                            storeType.getCode(),
-                            record.getStoreReleaseId(),
-                            record.getReleaseStatus().getCode()
-                    );
-                }
-            } catch (Exception ex) {
-                record.setReleaseStatus(ReleaseStatus.REJECT);
-                record.setRejectReason(ex.getMessage());
-                record.setApiResponseLog(ex.getMessage());
-                record.setFinishTime(LocalDateTime.now());
-                releaseRecordRepository.updateById(record);
-                log.error("Submit review failed, releaseId={}, storeType={}", record.getId(), storeType.getCode(), ex);
-            }
-            responses.add(toResponse(record));
-        }
-        return responses;
+        return submitToStores(preparation.version(), preparation.submitContexts());
     }
 
     @Transactional
@@ -165,6 +106,120 @@ public class ReleaseOrchestrationService {
                 log.debug("Review status unchanged, releaseId={}, storeType={}, status={}", record.getId(), record.getStoreType().getCode(), before.getCode());
             }
         }
+    }
+
+    private SubmitPreparation prepareSubmit(ReleaseSubmitRequest request) {
+        AppVersion version = packageVersionService.requireVersion(request.getVersionId());
+        ReleaseMode releaseMode = ReleaseMode.fromCode(request.getReleaseMode());
+        Long releaseType = normalizeReleaseType(request.getReleaseType());
+        validateReleaseRequest(request, releaseType);
+
+        List<StoreConfigContext> storeConfigs = new ArrayList<>();
+        for (String storeTypeCode : request.getStoreTypes()) {
+            StoreType storeType = StoreType.fromCode(storeTypeCode);
+            AppStoreConfig storeConfig = appManagementService.requireStoreConfig(storeType);
+            if (storeConfig.getApiStatus() != 1) {
+                throw new IllegalArgumentException("Store config is disabled: " + storeTypeCode);
+            }
+            storeConfigs.add(new StoreConfigContext(storeType, storeConfig));
+        }
+
+        List<StoreSubmitContext> submitContexts = new ArrayList<>();
+        for (StoreConfigContext storeConfigContext : storeConfigs) {
+            AppReleaseRecord record = createReleaseRecord(
+                    version,
+                    storeConfigContext.storeType(),
+                    releaseMode,
+                    releaseType,
+                    request,
+                    ReleaseStatus.DOWNLOADING
+            );
+            releaseRecordRepository.insert(record);
+            log.info("Release record created, releaseId={}, appId={}, versionId={}, storeType={}", record.getId(), record.getAppId(), record.getVersionId(), storeConfigContext.storeType().getCode());
+            submitContexts.add(new StoreSubmitContext(storeConfigContext.storeType(), storeConfigContext.storeConfig(), record));
+        }
+
+        try {
+            version = packageVersionService.prepareVersionForSubmit(version);
+            for (StoreSubmitContext submitContext : submitContexts) {
+                AppReleaseRecord record = submitContext.record();
+                record.setReleaseStatus(ReleaseStatus.DOWNLOAD_SUCCESS);
+                releaseRecordRepository.updateById(record);
+            }
+            return SubmitPreparation.success(version, submitContexts);
+        } catch (SubmitPackageDownloadException ex) {
+            handleSubmitPackageFailure(submitContexts, ex);
+            return SubmitPreparation.failure(ex);
+        }
+    }
+
+    private List<ReleaseRecordResponse> submitToStores(AppVersion version, List<StoreSubmitContext> submitContexts) {
+        List<CompletableFuture<ReleaseRecordResponse>> futures = new ArrayList<>(submitContexts.size());
+        for (StoreSubmitContext submitContext : submitContexts) {
+            futures.add(scheduleStoreSubmit(version, submitContext));
+        }
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
+        return futures.stream().map(CompletableFuture::join).toList();
+    }
+
+    private CompletableFuture<ReleaseRecordResponse> scheduleStoreSubmit(AppVersion version, StoreSubmitContext submitContext) {
+        try {
+            return CompletableFuture.supplyAsync(() -> submitToStore(version, submitContext), releaseSubmitExecutor)
+                    .exceptionally(ex -> handleUnexpectedSubmitFailure(submitContext, unwrapCompletionException(ex)));
+        } catch (RuntimeException ex) {
+            return CompletableFuture.completedFuture(handleUnexpectedSubmitFailure(submitContext, ex));
+        }
+    }
+
+    private ReleaseRecordResponse submitToStore(AppVersion version, StoreSubmitContext submitContext) {
+        StoreType storeType = submitContext.storeType();
+        AppStoreConfig storeConfig = submitContext.storeConfig();
+        AppReleaseRecord record = submitContext.record();
+        if (record.getReleaseStatus() != ReleaseStatus.API_PENDING) {
+            record.setReleaseStatus(ReleaseStatus.API_PENDING);
+            releaseRecordRepository.updateById(record);
+        }
+
+        try {
+            try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record.getId())) {
+                String token = tokenService.getValidToken(storeConfig);
+                StoreSubmitResult result = storePublisher.submitRelease(storeConfig, version, record, token);
+                record.setStoreReleaseId(result.storeReleaseId());
+                record.setApiRequestLog(result.requestLog());
+                record.setApiResponseLog(result.responseLog());
+                record.setReleaseStatus(ReleaseStatus.AUDITING);
+                record.setReleaseTime(LocalDateTime.now());
+                releaseRecordRepository.updateById(record);
+                log.info(
+                        "Submit review success, releaseId={}, storeType={}, storeReleaseId={}, status={}",
+                        record.getId(),
+                        storeType.getCode(),
+                        record.getStoreReleaseId(),
+                        record.getReleaseStatus().getCode()
+                );
+            }
+        } catch (Exception ex) {
+            return handleUnexpectedSubmitFailure(submitContext, ex);
+        }
+        return toResponse(record);
+    }
+
+    private ReleaseRecordResponse handleUnexpectedSubmitFailure(StoreSubmitContext submitContext, Throwable ex) {
+        AppReleaseRecord record = submitContext.record();
+        record.setReleaseStatus(ReleaseStatus.REJECT);
+        record.setRejectReason(ex.getMessage());
+        record.setApiResponseLog(ex.getMessage());
+        record.setFinishTime(LocalDateTime.now());
+        releaseRecordRepository.updateById(record);
+        log.error("Submit review failed, releaseId={}, storeType={}", record.getId(), submitContext.storeType().getCode(), ex);
+        return toResponse(record);
+    }
+
+    private Throwable unwrapCompletionException(Throwable ex) {
+        if (ex instanceof CompletionException completionException && completionException.getCause() != null) {
+            return completionException.getCause();
+        }
+        return ex;
     }
 
     @Transactional(readOnly = true)
@@ -333,7 +388,10 @@ public class ReleaseOrchestrationService {
         }
         for (String storeTypeCode : request.getStoreTypes()) {
             StoreType storeType = StoreType.fromCode(storeTypeCode);
-            if ("oppo".equalsIgnoreCase(storeType.getCode()) || "xiaomi".equalsIgnoreCase(storeType.getCode())) {
+            if ("oppo".equalsIgnoreCase(storeType.getCode())
+                    || "xiaomi".equalsIgnoreCase(storeType.getCode())
+                    || "yingyongbao".equalsIgnoreCase(storeType.getCode())
+            ) {
                 throw new IllegalArgumentException(storeType.getCode() + " does not support staged release submit via API");
             }
         }
@@ -349,6 +407,23 @@ public class ReleaseOrchestrationService {
         if (!request.getGrayStartTime().isBefore(request.getGrayEndTime())) {
             throw new IllegalArgumentException("grayStartTime must be before grayEndTime");
         }
+    }
+
+    private record SubmitPreparation(
+            AppVersion version,
+            List<StoreSubmitContext> submitContexts,
+            SubmitPackageDownloadException failure
+    ) {
+        private static SubmitPreparation success(AppVersion version, List<StoreSubmitContext> submitContexts) {
+            return new SubmitPreparation(version, submitContexts, null);
+        }
+
+        private static SubmitPreparation failure(SubmitPackageDownloadException failure) {
+            return new SubmitPreparation(null, List.of(), failure);
+        }
+    }
+
+    private record StoreConfigContext(StoreType storeType, AppStoreConfig storeConfig) {
     }
 
     private record StoreSubmitContext(StoreType storeType, AppStoreConfig storeConfig, AppReleaseRecord record) {

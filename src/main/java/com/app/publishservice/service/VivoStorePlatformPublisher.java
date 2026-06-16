@@ -631,7 +631,7 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         payload.put("apk32", apk32SerialNumber);
         payload.put("apk64", apk64SerialNumber);
         payload.put("onlineType", 1);
-        payload.put("updateDesc", normalizeStageText(5, 200, version.getUpdateLog(), appDescription, appName, packageName, "Version update notes"));
+        payload.put("updateDesc", normalizeStageText(5, 200,  appDescription, appName, packageName, "Version update notes"));
         payload.put("detailDesc", normalizeStageText(50, 1000, appDescription, version.getUpdateLog(), appName, packageName, "App description"));
         payload.put("icon", iconSerialNumber);
         payload.put("screenshot", screenshotValue);
@@ -662,11 +662,11 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         payload.put("apk32", apk32SerialNumber);
         payload.put("apk64", apk64SerialNumber);
         payload.put("onlineType", 1);
-        payload.put("updateDesc", normalizeStageText(5, 200, version.getUpdateLog(), appDescription, appName, packageName, "Version update notes"));
-        payload.put("detailDesc", normalizeStageText(50, 1000, appDescription, version.getUpdateLog(), appName, packageName, "App description"));
-        payload.put("mainTitle", normalizeTitle(appName, packageName));
-        payload.put("subTitle", "");
-        payload.put("remark", normalizeStageText(10, 200, version.getUpdateLog(), appDescription, appName, packageName, "App update review notes"));
+        payload.put("updateDesc", normalizeStageText(5, 200,  appDescription, appName, packageName, "Version update notes"));
+        //payload.put("detailDesc", normalizeStageText(50, 1000, appDescription, version.getUpdateLog(), appName, packageName, "App description"));
+        //payload.put("mainTitle", normalizeTitle(appName, packageName));
+        //payload.put("subTitle", "");
+        //payload.put("remark", normalizeStageText(10, 200, version.getUpdateLog(), appDescription, appName, packageName, "App update review notes"));
         payload.put("compatibleDevice", VIVO_DEFAULT_COMPATIBLE_DEVICE);
         return payload;
     }
@@ -691,12 +691,12 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         payload.put("stagedProportion", record.getGrayPercent());
         payload.put("apkUuid32", apk32UploadSerialNumber);
         payload.put("apkUuid64", apk64UploadSerialNumber);
-        payload.put("updateDesc", normalizeStageText(5, 200, version.getUpdateLog(), appDescription, appName, packageName, "Version update notes"));
-        payload.put("simpleDesc", normalizeStageText(10, 500, appDescription, version.getUpdateLog(), appName, packageName, "App release notes"));
-        payload.put("description", normalizeStageText(20, 1000, appDescription, version.getUpdateLog(), appName, packageName, "App detail description"));
-        payload.put("remark", normalizeStageText(5, 500, version.getUpdateLog(), appDescription, appName, packageName, "Stage release notes"));
-        payload.put("mainTitle", normalizeTitle(appName, packageName));
-        payload.put("subTitle", "");
+        payload.put("updateDesc", normalizeStageText(5, 200,  appDescription, appName, packageName, "Version update notes"));
+        //payload.put("simpleDesc", normalizeStageText(10, 500, appDescription, version.getUpdateLog(), appName, packageName, "App release notes"));
+        //payload.put("description", normalizeStageText(20, 1000, appDescription, version.getUpdateLog(), appName, packageName, "App detail description"));
+        //payload.put("remark", normalizeStageText(5, 500, version.getUpdateLog(), appDescription, appName, packageName, "Stage release notes"));
+        //payload.put("mainTitle", normalizeTitle(appName, packageName));
+        //payload.put("subTitle", "");
         return payload;
     }
 
@@ -806,7 +806,7 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
             if (StringUtils.hasText(defaultFileName) && !defaultFileName.toLowerCase().endsWith(".apk")) {
                 throw new IllegalArgumentException("Vivo upload only supports APK packages");
             }
-            throw new IllegalStateException("Vivo subpackage submit requires 32-bit apk. Provide vivo.apk32Path in project app-publish-metadata.json.");
+            throw new IllegalStateException("Vivo subpackage submit requires 32-bit apk. Provide app.publish-metadata.values.vivo.apk32Path in application.yml.");
         }
         return new VivoPackageBundle(apk32Source, apk64Source, metadataContext);
     }
@@ -821,14 +821,14 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         Path iconPath = resolveVivoIconPath(metadataContext, metadata);
         List<Path> screenshotPaths = resolveVivoScreenshotPaths(metadataContext, metadata);
         if (iconPath == null) {
-            throw new IllegalStateException("Vivo app create requires icon asset. Provide vivo.iconPath in project app-publish-metadata.json.");
+            throw new IllegalStateException("Vivo app create requires icon asset. Provide app.publish-metadata.values.vivo.iconPath in application.yml.");
         }
-        validateVivoScreenshotCount(screenshotPaths.size(), "Vivo app create requires 3 to 5 screenshots. Configure vivo.screenshotPaths in project app-publish-metadata.json.");
+        validateVivoScreenshotCount(screenshotPaths.size(), "Vivo app create requires 3 to 5 screenshots. Configure app.publish-metadata.values.vivo.screenshotPaths in application.yml.");
 
         Integer appClassify = firstInteger(metadataLookup(metadata, "vivo", "appClassify"), metadataLookup(metadata, null, "appClassify"));
         Integer subAppClassify = firstInteger(metadataLookup(metadata, "vivo", "subAppClassify"), metadataLookup(metadata, null, "subAppClassify"));
         if (appClassify == null || subAppClassify == null) {
-            throw new IllegalStateException("Vivo app create requires appClassify and subAppClassify in project app-publish-metadata.json.");
+            throw new IllegalStateException("Vivo app create requires app.publish-metadata.values.vivo.appClassify and app.publish-metadata.values.vivo.subAppClassify in application.yml.");
         }
         Integer compatibleDevice = firstInteger(metadataLookup(metadata, "vivo", "compatibleDevice"), VIVO_DEFAULT_COMPATIBLE_DEVICE);
         Integer rateAge = firstInteger(metadataLookup(metadata, "vivo", "rateAge"), VIVO_DEFAULT_RATE_AGE);

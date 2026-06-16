@@ -1,21 +1,32 @@
 package com.app.publishservice.api.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
+@Schema(description = "CI/CD 发布请求")
 public class CicdReleaseRequest {
 
     @NotNull
+    @Schema(description = "应用 ID", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long appId;
 
     @NotEmpty
+    @Schema(description = "发布渠道列表", requiredMode = Schema.RequiredMode.REQUIRED)
     private List<String> storeTypes;
 
+    @Schema(description = "版本更新说明")
     private String updateLog;
+
+    @Schema(description = "期望的版本名称，用于上传后校验")
     private String expectedVersionName;
+
+    @Schema(description = "期望的版本号，用于上传后校验")
     private String expectedVersionCode;
+
+    @Schema(description = "期望是否为加固包")
     private Boolean expectedReinforced;
 
     public Long getAppId() {

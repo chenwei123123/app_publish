@@ -1,5 +1,5 @@
 server:
-  port: ${SERVER_PORT:8081}
+  port: ${SERVER_PORT:8090}
 
 spring:
   datasource:
@@ -11,7 +11,7 @@ spring:
 app:
   storage-root: ${APP_STORAGE_ROOT:storage/sit}
   package-repository:
-    stream-upload-enabled: ${PACKAGE_REPOSITORY_STREAM_UPLOAD_ENABLED:true}
+    stream-upload-enabled: ${PACKAGE_REPOSITORY_STREAM_UPLOAD_ENABLED:false}
   store-api:
     stores:
       huawei:

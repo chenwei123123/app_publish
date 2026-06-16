@@ -1,4 +1,4 @@
-package com.app.publishservice.api;
+package com.app.publishservice.handler;
 
 import com.app.publishservice.api.dto.ApiResponse;
 import com.app.publishservice.common.exception.NotFoundException;

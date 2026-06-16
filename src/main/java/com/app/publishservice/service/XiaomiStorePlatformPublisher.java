@@ -7,6 +7,7 @@ import com.app.publishservice.domain.entity.AppInfo;
 import com.app.publishservice.domain.entity.AppReleaseRecord;
 import com.app.publishservice.domain.entity.AppStoreConfig;
 import com.app.publishservice.domain.entity.AppVersion;
+import com.app.publishservice.domain.enums.ReleaseStatus;
 import com.app.publishservice.domain.enums.TokenType;
 import com.app.publishservice.service.model.StoreReviewResult;
 import com.app.publishservice.service.model.StoreSubmitResult;
@@ -27,6 +28,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
@@ -38,7 +40,10 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+
+import com.app.publishservice.util.VersionCodeUtil;
 
 final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher implements StorePlatformPublisher {
 
@@ -77,7 +82,9 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
 
     @Override
     public StoreReviewResult queryReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
-        return super.queryReview(storeConfig, record, token);
+        try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(record == null ? null : record.getId())) {
+            return queryXiaomiReview(storeConfig, record);
+        }
     }
 
     private StoreSubmitResult submitXiaomiRelease(AppStoreConfig storeConfig, AppVersion version) {
@@ -90,11 +97,12 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         }
 
         String userName = resolveXiaomiUserName(storeConfig);
-        String packageLocation = firstNonBlank(version.getPackageUrl64(), version.getPackageUrl());
-        Path apkPath = requireLocalPackage(packageLocation, "Xiaomi package path is empty");
-        ProjectMetadataContext metadataContext = resolveProjectMetadataContext(packageLocation);
+        String apkLocation = version.getPackageUrl32();
+        Path apkPath = requireLocalPackage(apkLocation, "Xiaomi submit requires app_version.package_url_32");
+        Path secondApkPath = resolveXiaomiSecondApkPath(version);
+        ProjectMetadataContext metadataContext = resolveProjectMetadataContext(firstNonBlank(apkLocation, version.getPackageUrl64(), version.getPackageUrl()));
         XiaomiPackageQueryResult packageQuery = queryXiaomiPackage(storeConfig, appInfo.getPackageName(), userName);
-        XiaomiSubmitContext submitContext = resolveXiaomiSubmitContext(version, metadataContext, packageQuery, apkPath);
+        XiaomiSubmitContext submitContext = resolveXiaomiSubmitContext(version, metadataContext, packageQuery, apkPath, secondApkPath);
 
         Map<String, Object> requestData = buildXiaomiSubmitRequestData(userName, submitContext);
         String requestDataJson = writeJson(requestData);
@@ -176,6 +184,49 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         );
     }
 
+    private StoreReviewResult queryXiaomiReview(AppStoreConfig storeConfig, AppReleaseRecord record) {
+        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+        if (endpoint.isMockEnabled()) {
+            ReleaseStatus status = record.getReleaseTime() != null
+                    && record.getReleaseTime().isBefore(LocalDateTime.now().minusSeconds(appProperties.getReviewAutoPassSeconds()))
+                    ? ReleaseStatus.PASS
+                    : ReleaseStatus.AUDITING;
+            return new StoreReviewResult(status, "{\"mockStatus\":\"" + status.getCode() + "\"}", null);
+        }
+
+        String packageName = resolveXiaomiReviewPackageName(record);
+        String userName = resolveXiaomiUserName(storeConfig);
+        XiaomiPackageQueryResult packageQuery = queryXiaomiPackage(storeConfig, packageName, userName);
+        Map<String, Object> response = readJson(packageQuery.responseLog());
+        Map<String, Object> packageInfo = asMap(response.get("packageInfo"));
+        ReleaseStatus releaseStatus = resolveXiaomiReviewStatus(response, packageInfo, record);
+        String rejectReason = releaseStatus == ReleaseStatus.REJECT
+                ? firstNonBlank(
+                firstString(response, "rejectReason", "reason", "auditReason", "message", "msg"),
+                firstString(packageInfo, "rejectReason", "reason", "auditReason")
+        )
+                : null;
+
+        Map<String, Object> responseLog = new LinkedHashMap<>();
+        responseLog.put("query", response);
+        responseLog.put("inferredStatus", releaseStatus.getCode());
+        String targetVersionCode = resolveXiaomiExpectedVersionCode(record);
+        String actualVersionCode = firstString(packageInfo, "versionCode", "version_code");
+        if (StringUtils.hasText(actualVersionCode)) {
+            responseLog.put("packageVersionCode", actualVersionCode.trim());
+        }
+        if (StringUtils.hasText(targetVersionCode) && StringUtils.hasText(actualVersionCode)) {
+            responseLog.put("targetVersionCode", targetVersionCode);
+            int versionCompare = compareXiaomiVersionCode(actualVersionCode, targetVersionCode);
+            responseLog.put("matchedTargetVersion", versionCompare == 0);
+            responseLog.put("packageVersionCodeComparedToTarget", versionCompare);
+        }
+        if (StringUtils.hasText(rejectReason)) {
+            responseLog.put("rejectReason", rejectReason);
+        }
+        return new StoreReviewResult(releaseStatus, writeJson(responseLog), StringUtils.hasText(rejectReason) ? rejectReason : null);
+    }
+
     private Map<String, Object> pushXiaomiPackage(
             AppStoreConfig storeConfig,
             String requestDataJson,
@@ -238,7 +289,8 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
             AppVersion version,
             ProjectMetadataContext metadataContext,
             XiaomiPackageQueryResult packageQuery,
-            Path apkPath
+            Path apkPath,
+            Path secondApkPath
     ) {
         AppInfo appInfo = version.getAppInfo();
         Map<String, Object> metadata = metadataContext.metadata();
@@ -246,18 +298,16 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         if (!create && !packageQuery.updateVersionAllowed()) {
             throw new IllegalStateException("Xiaomi package query indicates version update is not allowed for " + appInfo.getPackageName());
         }
-
-        Path secondApkPath = resolveXiaomiSecondApkPath(metadataContext, metadata, version, apkPath);
         Path iconPath = resolveXiaomiIconPath(metadataContext, metadata);
         if (iconPath == null) {
-            throw new IllegalStateException("Xiaomi submit requires icon asset. Provide xiaomi.iconPath in project app-publish-metadata.json.");
+            throw new IllegalStateException("Xiaomi submit requires icon asset. Provide app.publish-metadata.values.xiaomi.iconPath in application.yml.");
         }
 
         Integer suitableTypeValue = firstInteger(
                 metadataLookup(metadata, "xiaomi", "suitableType"),
                 metadataLookup(metadata, null, "xiaomiSuitableType")
         );
-        int suitableType = suitableTypeValue == null ? 0 : suitableTypeValue;
+        int suitableType = suitableTypeValue == null ? 2 : suitableTypeValue;
 
         List<Path> screenshotPaths = create ? resolveXiaomiScreenshotPaths(metadataContext, metadata) : List.of();
         if (create) {
@@ -265,7 +315,7 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                     screenshotPaths.size(),
                     3,
                     5,
-                    "Xiaomi app create requires 3 to 5 phone screenshots. Configure xiaomi.screenshotPaths in project app-publish-metadata.json."
+                    "Xiaomi app create requires 3 to 5 phone screenshots. Configure app.publish-metadata.values.xiaomi.screenshotPaths in application.yml."
             );
         }
         List<Path> padScreenshotPaths = create && (suitableType == 1 || suitableType == 2)
@@ -276,59 +326,18 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                     padScreenshotPaths.size(),
                     4,
                     5,
-                    "Xiaomi app create for pad devices requires 4 to 5 pad screenshots. Configure xiaomi.padScreenshotPaths in project app-publish-metadata.json."
+                    "Xiaomi app create for pad devices requires 4 to 5 pad screenshots. Configure app.publish-metadata.values.xiaomi.padScreenshotPaths in application.yml."
             );
         }
 
         Map<String, Object> appInfoPayload = new LinkedHashMap<>();
         appInfoPayload.put("appName", appInfo.getAppName().trim());
         appInfoPayload.put("packageName", appInfo.getPackageName().trim());
-        addIfHasText(appInfoPayload, "publisherName", firstNonBlank(
-                stringValue(metadataLookup(metadata, "xiaomi", "publisherName")),
-                stringValue(metadataLookup(metadata, null, "xiaomiPublisherName"))
-        ));
-        addIfHasText(appInfoPayload, "versionName", version.getVersionName());
-        addIfNotNull(appInfoPayload, "category", create ? requireXiaomiCategory(metadata) : firstInteger(
-                metadataLookup(metadata, "xiaomi", "category"),
-                metadataLookup(metadata, "xiaomi", "categoryId"),
-                metadataLookup(metadata, null, "xiaomiCategory")
-        ));
-        addIfHasText(appInfoPayload, "keyWords", create
-                ? requireText(firstNonBlank(
-                stringValue(metadataLookup(metadata, "xiaomi", "keyWords")),
-                stringValue(metadataLookup(metadata, "xiaomi", "keywords")),
-                stringValue(metadataLookup(metadata, null, "xiaomiKeywords"))
-        ), "Xiaomi app create requires xiaomi.keyWords in project app-publish-metadata.json.")
-                : firstNonBlank(
-                stringValue(metadataLookup(metadata, "xiaomi", "keyWords")),
-                stringValue(metadataLookup(metadata, "xiaomi", "keywords")),
-                stringValue(metadataLookup(metadata, null, "xiaomiKeywords"))
-        ));
-        addIfHasText(appInfoPayload, "desc", create
-                ? requireText(firstNonBlank(
-                stringValue(metadataLookup(metadata, "xiaomi", "desc")),
-                appInfo.getAppDescription()
-        ), "Xiaomi app create requires xiaomi.desc or appDescription.")
-                : firstNonBlank(
-                stringValue(metadataLookup(metadata, "xiaomi", "desc")),
-                appInfo.getAppDescription()
-        ));
         addIfHasText(appInfoPayload, "updateDesc", firstNonBlank(
                 version.getUpdateLog(),
                 stringValue(metadataLookup(metadata, "xiaomi", "updateDesc")),
                 appInfo.getAppDescription(),
                 appInfo.getAppName()
-        ));
-        addIfHasText(appInfoPayload, "brief", create
-                ? requireText(firstNonBlank(
-                stringValue(metadataLookup(metadata, "xiaomi", "brief")),
-                appInfo.getAppName(),
-                appInfo.getAppDescription()
-        ), "Xiaomi app create requires xiaomi.brief or appName.")
-                : firstNonBlank(
-                stringValue(metadataLookup(metadata, "xiaomi", "brief")),
-                appInfo.getAppName(),
-                appInfo.getAppDescription()
         ));
         addIfHasText(appInfoPayload, "privacyUrl", requireText(firstNonBlank(
                 stringValue(metadataLookup(metadata, "xiaomi", "privacyUrl")),
@@ -358,6 +367,128 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
             throw new IllegalArgumentException("Xiaomi submit requires store config email or accountName as userName");
         }
         return userName.trim();
+    }
+
+    private String resolveXiaomiReviewPackageName(AppReleaseRecord record) {
+        String packageName = record.getPackageName();
+        if (!StringUtils.hasText(packageName) && record.getAppInfo() != null) {
+            packageName = record.getAppInfo().getPackageName();
+        }
+        if (!StringUtils.hasText(packageName) && record.getAppVersion() != null && record.getAppVersion().getAppInfo() != null) {
+            packageName = record.getAppVersion().getAppInfo().getPackageName();
+        }
+        if (!StringUtils.hasText(packageName) && StringUtils.hasText(record.getStoreReleaseId())) {
+            int separator = record.getStoreReleaseId().indexOf(':');
+            if (separator > 0) {
+                packageName = record.getStoreReleaseId().substring(0, separator);
+            }
+        }
+        if (!StringUtils.hasText(packageName)) {
+            throw new IllegalArgumentException("Xiaomi review query requires packageName");
+        }
+        return packageName.trim();
+    }
+
+    private ReleaseStatus resolveXiaomiReviewStatus(
+            Map<String, Object> response,
+            Map<String, Object> packageInfo,
+            AppReleaseRecord record
+    ) {
+        ReleaseStatus explicitStatus = explicitXiaomiTerminalStatus(response, packageInfo);
+        if (explicitStatus != null) {
+            return explicitStatus;
+        }
+        return resolveXiaomiVersionCodeStatus(packageInfo, record);
+    }
+
+    private ReleaseStatus explicitXiaomiTerminalStatus(Map<String, Object> response, Map<String, Object> packageInfo) {
+        Object rawStatus = firstNonNull(
+                response.get("status"),
+                response.get("reviewStatus"),
+                response.get("auditStatus"),
+                response.get("appStatus"),
+                response.get("state"),
+                packageInfo.get("status"),
+                packageInfo.get("reviewStatus"),
+                packageInfo.get("auditStatus"),
+                packageInfo.get("appStatus"),
+                packageInfo.get("state")
+        );
+        if (rawStatus == null) {
+            return null;
+        }
+
+        String normalized = String.valueOf(rawStatus).trim().toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "reject", "rejected", "failed" -> ReleaseStatus.REJECT;
+            case "offline" -> ReleaseStatus.OFFLINE;
+            default -> null;
+        };
+    }
+
+    private ReleaseStatus resolveXiaomiVersionCodeStatus(Map<String, Object> packageInfo, AppReleaseRecord record) {
+        if (packageInfo.isEmpty()) {
+            return ReleaseStatus.AUDITING;
+        }
+        String expectedVersionCode = resolveXiaomiExpectedVersionCode(record);
+        String actualVersionCode = firstString(packageInfo, "versionCode", "version_code");
+        if (!StringUtils.hasText(expectedVersionCode) || !StringUtils.hasText(actualVersionCode)) {
+            return ReleaseStatus.AUDITING;
+        }
+
+        return compareXiaomiVersionCode(actualVersionCode, expectedVersionCode) >= 0
+                ? ReleaseStatus.PASS
+                : ReleaseStatus.AUDITING;
+    }
+
+    private String resolveXiaomiExpectedVersionCode(AppReleaseRecord record) {
+        String versionCode = record.getVersionCode();
+        if (!StringUtils.hasText(versionCode) && record.getAppVersion() != null) {
+            versionCode = record.getAppVersion().getVersionCode();
+        }
+        if (!StringUtils.hasText(versionCode) && StringUtils.hasText(record.getStoreReleaseId())) {
+            int separator = record.getStoreReleaseId().lastIndexOf(':');
+            if (separator >= 0 && separator < record.getStoreReleaseId().length() - 1) {
+                versionCode = record.getStoreReleaseId().substring(separator + 1);
+            }
+        }
+        return StringUtils.hasText(versionCode) ? versionCode.trim() : "";
+    }
+
+    private int compareXiaomiVersionCode(String actualVersionCode, String expectedVersionCode) {
+        String actual = VersionCodeUtil.normalize(actualVersionCode);
+        String expected = VersionCodeUtil.normalize(expectedVersionCode);
+        if (actual == null && expected == null) {
+            return 0;
+        }
+        if (actual == null) {
+            return -1;
+        }
+        if (expected == null) {
+            return 1;
+        }
+        if (actual.equals(expected)) {
+            return 0;
+        }
+
+        if (actual.matches("\\d+") && expected.matches("\\d+")) {
+            return new BigInteger(actual).compareTo(new BigInteger(expected));
+        }
+        if (actual.matches("\\d+(?:\\.\\d+)*") && expected.matches("\\d+(?:\\.\\d+)*")) {
+            String[] actualParts = actual.split("\\.");
+            String[] expectedParts = expected.split("\\.");
+            int length = Math.max(actualParts.length, expectedParts.length);
+            for (int index = 0; index < length; index++) {
+                BigInteger actualPart = index < actualParts.length ? new BigInteger(actualParts[index]) : BigInteger.ZERO;
+                BigInteger expectedPart = index < expectedParts.length ? new BigInteger(expectedParts[index]) : BigInteger.ZERO;
+                int compare = actualPart.compareTo(expectedPart);
+                if (compare != 0) {
+                    return compare;
+                }
+            }
+            return 0;
+        }
+        return actual.compareTo(expected);
     }
 
     private String signXiaomiPayload(AppStoreConfig storeConfig, String requestDataJson, Map<String, Path> fileParts) {
@@ -458,30 +589,12 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         );
     }
 
-    private Path resolveXiaomiSecondApkPath(
-            ProjectMetadataContext metadataContext,
-            Map<String, Object> metadata,
-            AppVersion version,
-            Path apkPath
-    ) {
-        Object metadataValue = firstNonNull(
-                metadataLookup(metadata, "xiaomi", "secondApkPath"),
-                metadataLookup(metadata, "xiaomi", "secondApk"),
-                metadataLookup(metadata, "xiaomi", "apk32Path"),
-                metadataLookup(metadata, null, "xiaomiSecondApkPath")
-        );
-        Path resolvedPath = resolveProjectAssetPath(metadataContext.metadataPath(), metadataValue);
-        if (resolvedPath != null) {
-            return resolvedPath;
+    private Path resolveXiaomiSecondApkPath(AppVersion version) {
+        String packageUrl64 = version.getPackageUrl64();
+        if (!StringUtils.hasText(packageUrl64)) {
+            return null;
         }
-        String packageUrl32 = version.getPackageUrl32();
-        if (StringUtils.hasText(packageUrl32)) {
-            Path secondApkPath = requireLocalPackage(packageUrl32, "Xiaomi second apk path is empty");
-            if (!secondApkPath.equals(apkPath)) {
-                return secondApkPath;
-            }
-        }
-        return null;
+        return requireLocalPackage(packageUrl64, "Xiaomi submit secondApk requires app_version.package_url_64");
     }
 
     private Integer requireXiaomiCategory(Map<String, Object> metadata) {
@@ -491,7 +604,7 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                 metadataLookup(metadata, null, "xiaomiCategory")
         );
         if (category == null) {
-            throw new IllegalStateException("Xiaomi app create requires xiaomi.category in project app-publish-metadata.json.");
+            throw new IllegalStateException("Xiaomi app create requires app.publish-metadata.values.xiaomi.category in application.yml.");
         }
         return category;
     }

@@ -2,31 +2,37 @@ openapi: 3.0.3
 info:
   title: 应用发布服务 API
   version: 1.0.0
-  description: 当前应用发布服务接口的 OpenAPI 定义。
+  description: 应用发布服务当前对外接口定义，字段说明已按最新代码结构更新，并补充中文注释。
 servers:
   - url: /
     description: 当前访问地址
 tags:
   - name: 应用管理
-  - name: 渠道配置
+    description: 应用基础信息的新增、修改、查询和删除接口
+  - name: 应用商店账号配置
+    description: 应用商店账号配置的新增、修改、查询和状态维护接口
   - name: 安装包管理
-  - name: 发版管理
-  - name: CI/CD
+    description: 安装包上传、版本解析和版本查询接口
+  - name: 发布管理
+    description: 发版提交与发版记录查询接口
+  - name: CI/CD 发布
+    description: CI/CD 场景下一键上传并触发发布的接口
 paths:
   /api/apps:
     post:
       tags: [应用管理]
       summary: 创建应用
+      description: 创建应用基础信息。
       requestBody:
-        description: 应用请求体
         required: true
+        description: 应用新增请求体
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AppUpsertRequest'
       responses:
         '200':
-          description: 创建成功并返回应用信息
+          description: 创建成功
           content:
             application/json:
               schema:
@@ -34,15 +40,17 @@ paths:
     get:
       tags: [应用管理]
       summary: 查询应用列表
+      description: 按应用名称、应用描述或包名关键字筛选应用。
       parameters:
         - in: query
           name: keyword
-          description: 按应用名称、描述或包名进行模糊匹配
+          required: false
+          description: 关键字，支持按应用名称、应用描述或包名模糊匹配
           schema:
             type: string
       responses:
         '200':
-          description: 查询成功并返回应用列表
+          description: 查询成功
           content:
             application/json:
               schema:
@@ -51,11 +59,12 @@ paths:
     get:
       tags: [应用管理]
       summary: 查询应用详情
+      description: 根据应用 ID 查询应用详情、关联版本和关联发版记录。
       parameters:
         - $ref: '#/components/parameters/AppId'
       responses:
         '200':
-          description: 查询成功并返回应用详情
+          description: 查询成功
           content:
             application/json:
               schema:
@@ -63,18 +72,19 @@ paths:
     put:
       tags: [应用管理]
       summary: 更新应用
+      description: 根据应用 ID 更新应用基础信息。
       parameters:
         - $ref: '#/components/parameters/AppId'
       requestBody:
-        description: 应用请求体
         required: true
+        description: 应用更新请求体
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/AppUpsertRequest'
       responses:
         '200':
-          description: 更新成功并返回最新应用信息
+          description: 更新成功
           content:
             application/json:
               schema:
@@ -82,6 +92,7 @@ paths:
     delete:
       tags: [应用管理]
       summary: 删除应用
+      description: 删除应用及其关联的版本、发版记录等数据。
       parameters:
         - $ref: '#/components/parameters/AppId'
       responses:
@@ -93,97 +104,107 @@ paths:
                 $ref: '#/components/schemas/ApiResponseVoid'
   /api/store-configs:
     get:
-      tags: [渠道配置]
-      summary: 查询渠道配置列表
+      tags: [应用商店账号配置]
+      summary: 查询应用商店账号列表
+      description: 分页查询应用商店账号配置。
       parameters:
         - in: query
           name: current
-          description: 当前页，兼容 pageNum
+          required: false
+          description: 当前页，兼容 `pageNum`
           schema:
             type: integer
             format: int64
         - in: query
           name: size
-          description: 每页大小，兼容 pageSize
+          required: false
+          description: 每页大小，兼容 `pageSize`
           schema:
             type: integer
             format: int64
         - in: query
           name: pageNum
-          description: 当前页别名，未传 current 时生效
+          required: false
+          description: 当前页别名，未传 `current` 时生效
           schema:
             type: integer
             format: int64
         - in: query
           name: pageSize
-          description: 每页大小别名，未传 size 时生效
+          required: false
+          description: 每页大小别名，未传 `size` 时生效
           schema:
             type: integer
             format: int64
         - in: query
           name: key
-          description: 按渠道名称、账号名、邮箱或电话进行模糊匹配
+          required: false
+          description: 关键字，支持按商店类型、账号名、邮箱或手机号模糊匹配
           schema:
             type: string
       responses:
         '200':
-          description: 查询成功并返回渠道配置分页结果
+          description: 查询成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponsePageResponseStoreConfigResponse'
     post:
-      tags: [渠道配置]
-      summary: 创建渠道配置
+      tags: [应用商店账号配置]
+      summary: 创建应用商店账号
+      description: 创建应用商店账号配置。
       requestBody:
-        description: 渠道配置请求
         required: true
+        description: 应用商店账号配置请求体
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/StoreConfigRequest'
       responses:
         '200':
-          description: 创建成功并返回渠道配置
+          description: 创建成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseStoreConfigResponse'
   /api/store-configs/{configId}:
     get:
-      tags: [渠道配置]
-      summary: 查询渠道配置详情
+      tags: [应用商店账号配置]
+      summary: 查询应用商店账号详情
+      description: 根据配置 ID 查询应用商店账号配置。
       parameters:
         - $ref: '#/components/parameters/ConfigId'
       responses:
         '200':
-          description: 查询成功并返回渠道配置详情
+          description: 查询成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseStoreConfigResponse'
     put:
-      tags: [渠道配置]
-      summary: 更新渠道配置
+      tags: [应用商店账号配置]
+      summary: 更新应用商店账号
+      description: 根据配置 ID 更新应用商店账号配置。
       parameters:
         - $ref: '#/components/parameters/ConfigId'
       requestBody:
-        description: 渠道配置请求
         required: true
+        description: 应用商店账号配置更新请求体
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/StoreConfigRequest'
       responses:
         '200':
-          description: 更新成功并返回最新渠道配置
+          description: 更新成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseStoreConfigResponse'
     delete:
-      tags: [渠道配置]
-      summary: 删除渠道配置
+      tags: [应用商店账号配置]
+      summary: 删除应用商店账号
+      description: 根据配置 ID 删除应用商店账号配置。
       parameters:
         - $ref: '#/components/parameters/ConfigId'
       responses:
@@ -195,20 +216,21 @@ paths:
                 $ref: '#/components/schemas/ApiResponseVoid'
   /api/store-configs/{configId}/status:
     put:
-      tags: [渠道配置]
-      summary: 更新渠道配置状态
+      tags: [应用商店账号配置]
+      summary: 更新应用商店账号状态
+      description: 启用或禁用应用商店账号配置。
       parameters:
         - $ref: '#/components/parameters/ConfigId'
         - in: query
           name: apiStatus
           required: true
-          description: API 状态：1=启用，0=禁用
+          description: API 状态，`1` 表示启用，`0` 表示禁用
           schema:
             type: integer
             enum: [0, 1]
       responses:
         '200':
-          description: 更新成功并返回最新渠道配置
+          description: 更新成功
           content:
             application/json:
               schema:
@@ -217,11 +239,12 @@ paths:
     get:
       tags: [安装包管理]
       summary: 查询版本列表
+      description: 查询指定应用下的所有安装包版本。
       parameters:
         - $ref: '#/components/parameters/AppId'
       responses:
         '200':
-          description: 查询成功并返回版本列表
+          description: 查询成功
           content:
             application/json:
               schema:
@@ -230,12 +253,13 @@ paths:
     get:
       tags: [安装包管理]
       summary: 查询版本详情
+      description: 根据应用 ID 和版本 ID 查询安装包版本详情。
       parameters:
         - $ref: '#/components/parameters/AppId'
         - $ref: '#/components/parameters/VersionId'
       responses:
         '200':
-          description: 查询成功并返回版本详情
+          description: 查询成功
           content:
             application/json:
               schema:
@@ -244,11 +268,12 @@ paths:
     post:
       tags: [安装包管理]
       summary: 上传安装包
+      description: 上传应用安装包并解析版本信息，可附带版本校验条件。
       parameters:
         - $ref: '#/components/parameters/AppId'
       requestBody:
-        description: 安装包上传表单
         required: true
+        description: 安装包上传表单
         content:
           multipart/form-data:
             schema:
@@ -264,125 +289,122 @@ paths:
                   description: 版本更新说明
                 expectedVersionName:
                   type: string
-                  description: 期望版本名称，用于上传后校验
+                  description: 期望的版本名称，用于上传后校验
                 expectedVersionCode:
-                  type: integer
-                  description: 期望版本号，用于上传后校验
+                  type: string
+                  description: 期望的版本号，用于上传后校验
                 expectedReinforced:
                   type: boolean
-                  description: 是否期望为加固包，用于上传后校验
+                  description: 期望是否为加固包，用于上传后校验
       responses:
         '200':
-          description: 上传成功并返回解析后的版本信息
+          description: 上传成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponsePackageUploadResponse'
   /api/releases:
     get:
-      tags: [发版管理]
+      tags: [发布管理]
       summary: 查询发版记录
+      description: 分页查询发版记录列表。
       parameters:
         - in: query
           name: current
-          description: 当前页，兼容 pageNum
+          required: false
+          description: 当前页，兼容 `pageNum`
           schema:
             type: integer
             format: int64
         - in: query
           name: size
-          description: 每页大小，兼容 pageSize
+          required: false
+          description: 每页大小，兼容 `pageSize`
           schema:
             type: integer
             format: int64
         - in: query
           name: pageNum
-          description: 当前页别名，未传 current 时生效
+          required: false
+          description: 当前页别名，未传 `current` 时生效
           schema:
             type: integer
             format: int64
         - in: query
           name: pageSize
-          description: 每页大小别名，未传 size 时生效
+          required: false
+          description: 每页大小别名，未传 `size` 时生效
           schema:
             type: integer
             format: int64
         - in: query
           name: key
-          description: 按渠道类型、应用名称、包名、应用描述或版本号进行模糊匹配
+          required: false
+          description: 关键字，支持按商店类型、应用名称、包名、应用描述或版本号模糊匹配
           schema:
             type: string
       responses:
         '200':
-          description: 查询成功并返回发版记录分页结果
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiResponsePageResponseReleaseRecordPageResponse'
-  /api/releases/appId/{appId}:
-    get:
-      tags: [发版管理]
-      summary: 根据应用 ID 查询发版记录
-      parameters:
-        - $ref: '#/components/parameters/AppId'
-      responses:
-        '200':
-          description: 查询成功并返回该应用的发版记录分页结果
+          description: 查询成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponsePageResponseReleaseRecordPageResponse'
   /api/releases/submit:
     post:
-      tags: [发版管理]
+      tags: [发布管理]
       summary: 提交发版
+      description: 将指定版本提交到一个或多个应用商店进行发版。
       requestBody:
-        description: 发版提交请求
         required: true
+        description: 发版提交请求体
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ReleaseSubmitRequest'
       responses:
         '200':
-          description: 提交成功并返回发版记录列表
+          description: 提交成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseReleaseRecordResponseList'
   /api/releases/{releaseId}:
     get:
-      tags: [发版管理]
+      tags: [发布管理]
       summary: 查询发版详情
+      description: 根据发版记录 ID 查询发版详情。
       parameters:
         - $ref: '#/components/parameters/ReleaseId'
       responses:
         '200':
-          description: 查询成功并返回发版详情
+          description: 查询成功
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiResponseReleaseRecordResponse'
-  /api/releases/{releaseId}/logs:
+  /api/releases/appId/{appId}:
     get:
-      tags: [发版管理]
-      summary: 查询发版日志
+      tags: [发布管理]
+      summary: 根据应用 ID 查询发版记录
+      description: 根据应用 ID 查询该应用下的发版记录列表。
       parameters:
-        - $ref: '#/components/parameters/ReleaseId'
+        - $ref: '#/components/parameters/AppId'
       responses:
         '200':
-          description: 查询成功并返回发版日志列表
+          description: 查询成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponseReleaseTaskLogResponseList'
+                $ref: '#/components/schemas/ApiResponsePageResponseReleaseRecordPageResponse'
   /api/cicd/releases/trigger:
     post:
-      tags: [CI/CD]
+      tags: [CI/CD 发布]
       summary: 触发 CI/CD 发布
+      description: 上传安装包并直接触发指定渠道的发布流程。
       requestBody:
-        description: CI/CD 发布触发表单
         required: true
+        description: CI/CD 发布触发表单
         content:
           multipart/form-data:
             schema:
@@ -395,7 +417,7 @@ paths:
                   description: 应用 ID
                 storeTypes:
                   type: string
-                  description: 渠道类型列表，多个值用英文逗号分隔，例如 vivo,xiaomi
+                  description: 发布渠道列表，多个值用英文逗号分隔，例如 `vivo,xiaomi`
                 file:
                   type: string
                   format: binary
@@ -405,16 +427,16 @@ paths:
                   description: 版本更新说明
                 expectedVersionName:
                   type: string
-                  description: 期望版本名称，用于上传后校验
+                  description: 期望的版本名称，用于上传后校验
                 expectedVersionCode:
-                  type: integer
-                  description: 期望版本号，用于上传后校验
+                  type: string
+                  description: 期望的版本号，用于上传后校验
                 expectedReinforced:
                   type: boolean
-                  description: 是否期望为加固包，用于上传后校验
+                  description: 期望是否为加固包，用于上传后校验
       responses:
         '200':
-          description: 触发成功并返回发版记录列表
+          description: 触发成功
           content:
             application/json:
               schema:
@@ -424,55 +446,55 @@ components:
     AppId:
       in: path
       name: appId
-      description: 应用 ID
       required: true
+      description: 应用 ID
       schema:
         type: integer
         format: int64
     ConfigId:
       in: path
       name: configId
-      description: 渠道配置 ID
       required: true
+      description: 应用商店账号配置 ID
       schema:
         type: integer
         format: int64
     VersionId:
       in: path
       name: versionId
-      description: 版本 ID
       required: true
+      description: 版本 ID
       schema:
         type: integer
         format: int64
     ReleaseId:
       in: path
       name: releaseId
-      description: 发版记录 ID
       required: true
+      description: 发版记录 ID
       schema:
         type: integer
         format: int64
   schemas:
     AppUpsertRequest:
       type: object
-      description: 应用新增或更新请求
+      description: 应用新增或更新请求体
       required: [appName, packageName, appType]
       properties:
         id:
           type: integer
           format: int64
-          description: 用于更新请求的应用 ID
+          description: 应用 ID，更新场景可传
         appName:
           type: string
           description: 应用名称
         packageName:
           type: string
-          description: 包名
+          description: 应用包名
         appType:
           type: integer
           enum: [1, 2]
-          description: 应用类型，1=Android 应用，2=iOS 应用
+          description: 应用类型，`1` 表示 Android，`2` 表示 iOS
         appDescription:
           type: string
           description: 应用描述
@@ -494,46 +516,47 @@ components:
         status:
           type: integer
           enum: [0, 1]
-          description: 状态：1=启用，0=禁用
+          default: 1
+          description: 状态，`1` 表示启用，`0` 表示禁用
         versionCode:
-          type: integer
-          description: 版本号编码，创建应用时传入会自动初始化一条版本记录
+          type: string
+          description: 版本号，创建应用时可用于初始化首个版本记录
         buildCode:
           type: string
-          description: 构建号，创建应用时可用于初始化版本记录
+          description: 构建号，创建应用时可用于初始化首个版本记录
     StoreConfigRequest:
       type: object
-      description: 渠道配置请求
+      description: 应用商店账号配置请求体
       required: [storeType]
       properties:
         id:
           type: integer
           format: int64
-          description: 用于更新请求的渠道配置 ID
+          description: 配置 ID，更新场景可传
         storeType:
           type: string
-          description: 应用市场名称，例如 vivo 或 xiaomi
+          description: 应用商店类型，例如 `vivo`、`oppo`、`huawei`、`xiaomi`
         accountName:
           type: string
-          description: 开发者账号名称
+          description: 账号名称
         email:
           type: string
           description: 联系邮箱
         phone:
           type: string
-          description: 联系电话
+          description: 联系手机号
         clientId:
           type: string
           description: 开放平台 Client ID
         clientSecret:
           type: string
           description: 开放平台 Client Secret
-        miPublicKey:
+        publicKey:
           type: string
-          description: 小米公钥
-        miPrivateKey:
+          description: 平台公钥，当前主要用于小米渠道
+        privateKey:
           type: string
-          description: 小米私钥
+          description: 平台私钥，当前主要用于小米渠道
         token:
           type: string
           description: 固定 Token
@@ -543,10 +566,11 @@ components:
         apiStatus:
           type: integer
           enum: [0, 1]
-          description: API 状态：1=启用，0=禁用
+          default: 1
+          description: API 状态，`1` 表示启用，`0` 表示禁用
     ReleaseSubmitRequest:
       type: object
-      description: 发版提交请求
+      description: 发版提交请求体
       required: [versionId, storeTypes]
       properties:
         versionId:
@@ -555,31 +579,31 @@ components:
           description: 版本 ID
         storeTypes:
           type: array
-          description: 发布渠道列表，例如 vivo、xiaomi
+          description: 发布渠道列表，例如 `vivo`、`xiaomi`
           items:
             type: string
         releaseMode:
           type: string
-          default: api
           enum: [manual, api]
-          description: 发布模式，默认 api
+          default: api
+          description: 发布模式，默认 `api`
         releaseType:
           type: integer
           format: int64
           default: 1
-          description: 发布类型：1=全量发布，2=分阶段发布
+          description: 发布类型，`1` 表示全量发布，`2` 表示分阶段发布
         grayPercent:
           type: integer
           format: int64
-          description: 灰度比例，仅分阶段发布时生效，releaseType=2 时必填
+          description: 灰度比例，仅分阶段发布时生效
         grayStartTime:
           type: string
           format: date-time
-          description: 灰度开始时间，仅分阶段发布时生效，releaseType=2 时必填
+          description: 灰度开始时间，仅分阶段发布时生效
         grayEndTime:
           type: string
           format: date-time
-          description: 灰度结束时间，仅分阶段发布时生效，releaseType=2 时必填
+          description: 灰度结束时间，仅分阶段发布时生效
     AppResponse:
       type: object
       description: 应用响应
@@ -593,10 +617,11 @@ components:
           description: 应用名称
         packageName:
           type: string
-          description: 包名
+          description: 应用包名
         appType:
           type: integer
-          description: 应用类型，1=Android 应用，2=iOS 应用
+          enum: [1, 2]
+          description: 应用类型，`1` 表示 Android，`2` 表示 iOS
         appDescription:
           type: string
           description: 应用描述
@@ -617,7 +642,8 @@ components:
           description: 用户协议地址
         status:
           type: integer
-          description: 状态：1=启用，0=禁用
+          enum: [0, 1]
+          description: 状态，`1` 表示启用，`0` 表示禁用
         createUser:
           type: string
           description: 创建人
@@ -632,6 +658,16 @@ components:
           type: string
           format: date-time
           description: 更新时间
+        versions:
+          type: array
+          description: 关联版本列表
+          items:
+            $ref: '#/components/schemas/AppVersionResponse'
+        releaseRecords:
+          type: array
+          description: 关联发版记录列表
+          items:
+            $ref: '#/components/schemas/ReleaseRecordResponse'
     AppDetailResponse:
       type: object
       description: 应用详情响应
@@ -645,10 +681,11 @@ components:
           description: 应用名称
         packageName:
           type: string
-          description: 包名
+          description: 应用包名
         appType:
           type: integer
-          description: 应用类型，1=Android 应用，2=iOS 应用
+          enum: [1, 2]
+          description: 应用类型，`1` 表示 Android，`2` 表示 iOS
         appDescription:
           type: string
           description: 应用描述
@@ -669,7 +706,8 @@ components:
           description: 用户协议地址
         status:
           type: integer
-          description: 状态：1=启用，0=禁用
+          enum: [0, 1]
+          description: 状态，`1` 表示启用，`0` 表示禁用
         createUser:
           type: string
           description: 创建人
@@ -696,36 +734,36 @@ components:
             $ref: '#/components/schemas/ReleaseRecordResponse'
     StoreConfigResponse:
       type: object
-      description: 应用市场账户配置响应
+      description: 应用商店账号配置响应
       properties:
         id:
           type: integer
           format: int64
-          description: 应用市场账户 ID
+          description: 配置 ID
         storeType:
           type: string
-          description: 应用市场名称
+          description: 应用商店类型
         accountName:
           type: string
-          description: 开发者账号名称
+          description: 账号名称
         email:
           type: string
           description: 联系邮箱
         phone:
           type: string
-          description: 联系电话
+          description: 联系手机号
         clientId:
           type: string
           description: 开放平台 Client ID
         clientSecret:
           type: string
           description: 开放平台 Client Secret
-        miPublicKey:
+        publicKey:
           type: string
-          description: 小米公钥
-        miPrivateKey:
+          description: 平台公钥，当前主要用于小米渠道
+        privateKey:
           type: string
-          description: 小米私钥
+          description: 平台私钥，当前主要用于小米渠道
         token:
           type: string
           description: 固定 Token
@@ -734,7 +772,8 @@ components:
           description: IP 白名单
         apiStatus:
           type: integer
-          description: API 状态：1=启用，0=禁用
+          enum: [0, 1]
+          description: API 状态，`1` 表示启用，`0` 表示禁用
         createUser:
           type: string
           description: 创建人
@@ -751,7 +790,7 @@ components:
           description: 更新时间
     PageResponseStoreConfigResponse:
       type: object
-      description: 渠道配置分页响应
+      description: 应用商店账号配置分页响应
       properties:
         current:
           type: integer
@@ -790,7 +829,7 @@ components:
           type: string
           description: 版本名称
         versionCode:
-          type: integer
+          type: string
           description: 版本号
         buildCode:
           type: string
@@ -798,15 +837,15 @@ components:
         packageUrl:
           type: string
           description: 主安装包访问地址
-        packageUrlLow:
+        packageUrl32:
           type: string
           description: 32 位安装包访问地址
-        packageUrlHigh:
+        packageUrl64:
           type: string
           description: 64 位安装包访问地址
         updateLog:
           type: string
-          description: 更新说明
+          description: 版本更新说明
         reinforced:
           type: boolean
           description: 是否为加固包
@@ -842,7 +881,7 @@ components:
           type: string
           description: 版本名称
         versionCode:
-          type: integer
+          type: string
           description: 版本号
         reinforced:
           type: boolean
@@ -856,7 +895,7 @@ components:
           description: 上传时间
     ReleaseRecordResponse:
       type: object
-      description: 发版记录响应
+      description: 发版记录详情响应
       properties:
         id:
           type: integer
@@ -871,7 +910,7 @@ components:
           description: 应用名称
         packageName:
           type: string
-          description: 包名
+          description: 应用包名
         appDescription:
           type: string
           description: 应用描述
@@ -880,18 +919,18 @@ components:
           format: int64
           description: 版本 ID
         versionCode:
-          type: integer
+          type: string
           description: 版本号
         storeType:
           type: string
-          description: 商店类型
+          description: 发布渠道类型
         releaseMode:
           type: string
-          description: 发布方式
+          description: 发布模式
         releaseType:
           type: integer
           format: int64
-          description: 发布类型：1=全量发布，2=分阶段发布
+          description: 发布类型，`1` 表示全量发布，`2` 表示分阶段发布
         grayPercent:
           type: integer
           format: int64
@@ -909,24 +948,24 @@ components:
           description: 发布状态
         storeReleaseId:
           type: string
-          description: 商店侧发版单号
+          description: 商店侧发布单号
         rejectReason:
           type: string
           description: 驳回原因
         apiRequestLog:
           type: string
-          description: API 请求日志
+          description: 第三方 API 请求日志
         apiResponseLog:
           type: string
-          description: API 响应日志
+          description: 第三方 API 响应日志
         releaseTime:
           type: string
           format: date-time
-          description: 提审时间
+          description: 提交发布时间
         finishTime:
           type: string
           format: date-time
-          description: 完成时间
+          description: 发布完成时间
         createUser:
           type: string
           description: 创建人
@@ -950,7 +989,7 @@ components:
           description: 应用名称
         packageName:
           type: string
-          description: 包名
+          description: 应用包名
         appDescription:
           type: string
           description: 应用描述
@@ -959,25 +998,25 @@ components:
           format: int64
           description: 版本 ID
         versionCode:
-          type: integer
+          type: string
           description: 版本号
         storeType:
           type: string
-          description: 商店类型
+          description: 发布渠道类型
         releaseMode:
           type: string
-          description: 发布方式
+          description: 发布模式
         releaseStatus:
           type: string
           description: 发布状态
         releaseTime:
           type: string
           format: date-time
-          description: 提审时间
+          description: 提交发布时间
         finishTime:
           type: string
           format: date-time
-          description: 完成时间
+          description: 发布完成时间
         createUser:
           type: string
           description: 创建人
@@ -1009,72 +1048,33 @@ components:
           description: 分页数据
           items:
             $ref: '#/components/schemas/ReleaseRecordPageResponse'
-    ReleaseTaskLogResponse:
-      type: object
-      description: 发版任务日志响应
-      properties:
-        id:
-          type: integer
-          format: int64
-          description: 日志 ID
-        releaseRecordId:
-          type: integer
-          format: int64
-          description: 发版记录 ID
-        action:
-          type: string
-          description: 执行动作
-        statusBefore:
-          type: string
-          description: 变更前状态
-        statusAfter:
-          type: string
-          description: 变更后状态
-        message:
-          type: string
-          description: 日志消息
-        payload:
-          type: string
-          description: 附加上下文数据
-        createUser:
-          type: string
-          description: 创建人
-        updateUser:
-          type: string
-          description: 更新人
-        createTime:
-          type: string
-          format: date-time
-          description: 创建时间
     ApiResponseAppResponse:
       type: object
-      description: 通用接口响应，数据体为应用信息
+      description: 通用接口响应，`data` 为应用信息
       properties:
         success:
           type: boolean
           description: 是否成功
         data:
-          description: 响应数据
           $ref: '#/components/schemas/AppResponse'
         message:
           type: string
           description: 响应消息
     ApiResponseAppDetailResponse:
       type: object
-      description: 通用接口响应，数据体为应用详情
+      description: 通用接口响应，`data` 为应用详情
       properties:
         success:
           type: boolean
           description: 是否成功
         data:
-          description: 响应数据
           $ref: '#/components/schemas/AppDetailResponse'
         message:
           type: string
           description: 响应消息
     ApiResponseAppResponseList:
       type: object
-      description: 通用接口响应，数据体为应用列表
+      description: 通用接口响应，`data` 为应用列表
       properties:
         success:
           type: boolean
@@ -1089,46 +1089,43 @@ components:
           description: 响应消息
     ApiResponseStoreConfigResponse:
       type: object
-      description: 通用接口响应，数据体为渠道配置
+      description: 通用接口响应，`data` 为应用商店账号配置
       properties:
         success:
           type: boolean
           description: 是否成功
         data:
-          description: 响应数据
           $ref: '#/components/schemas/StoreConfigResponse'
         message:
           type: string
           description: 响应消息
     ApiResponsePageResponseStoreConfigResponse:
       type: object
-      description: 通用接口响应，数据体为渠道配置分页结果
+      description: 通用接口响应，`data` 为应用商店账号配置分页结果
       properties:
         success:
           type: boolean
           description: 是否成功
         data:
-          description: 响应数据
           $ref: '#/components/schemas/PageResponseStoreConfigResponse'
         message:
           type: string
           description: 响应消息
     ApiResponseAppVersionResponse:
       type: object
-      description: 通用接口响应，数据体为版本详情
+      description: 通用接口响应，`data` 为应用版本详情
       properties:
         success:
           type: boolean
           description: 是否成功
         data:
-          description: 响应数据
           $ref: '#/components/schemas/AppVersionResponse'
         message:
           type: string
           description: 响应消息
     ApiResponseAppVersionResponseList:
       type: object
-      description: 通用接口响应，数据体为版本列表
+      description: 通用接口响应，`data` 为应用版本列表
       properties:
         success:
           type: boolean
@@ -1143,33 +1140,31 @@ components:
           description: 响应消息
     ApiResponsePackageUploadResponse:
       type: object
-      description: 通用接口响应，数据体为安装包上传结果
+      description: 通用接口响应，`data` 为安装包上传结果
       properties:
         success:
           type: boolean
           description: 是否成功
         data:
-          description: 响应数据
           $ref: '#/components/schemas/PackageUploadResponse'
         message:
           type: string
           description: 响应消息
     ApiResponseReleaseRecordResponse:
       type: object
-      description: 通用接口响应，数据体为发版详情
+      description: 通用接口响应，`data` 为发版记录详情
       properties:
         success:
           type: boolean
           description: 是否成功
         data:
-          description: 响应数据
           $ref: '#/components/schemas/ReleaseRecordResponse'
         message:
           type: string
           description: 响应消息
     ApiResponseReleaseRecordResponseList:
       type: object
-      description: 通用接口响应，数据体为发版记录列表
+      description: 通用接口响应，`data` 为发版记录列表
       properties:
         success:
           type: boolean
@@ -1184,29 +1179,13 @@ components:
           description: 响应消息
     ApiResponsePageResponseReleaseRecordPageResponse:
       type: object
-      description: 通用接口响应，数据体为发版记录分页结果
+      description: 通用接口响应，`data` 为发版记录分页结果
       properties:
         success:
           type: boolean
           description: 是否成功
         data:
-          description: 响应数据
           $ref: '#/components/schemas/PageResponseReleaseRecordPageResponse'
-        message:
-          type: string
-          description: 响应消息
-    ApiResponseReleaseTaskLogResponseList:
-      type: object
-      description: 通用接口响应，数据体为发版日志列表
-      properties:
-        success:
-          type: boolean
-          description: 是否成功
-        data:
-          type: array
-          description: 响应数据
-          items:
-            $ref: '#/components/schemas/ReleaseTaskLogResponse'
         message:
           type: string
           description: 响应消息
@@ -1219,7 +1198,7 @@ components:
           description: 是否成功
         data:
           nullable: true
-          description: 响应数据，为空
+          description: 响应数据，固定为空
         message:
           type: string
           description: 响应消息

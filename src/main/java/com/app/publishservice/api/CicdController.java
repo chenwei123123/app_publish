@@ -31,12 +31,12 @@ public class CicdController {
     @Operation(summary = "触发 CI/CD 发布", description = "上传安装包并直接触发指定渠道的发布流程")
     public ApiResponse<List<ReleaseRecordResponse>> trigger(
             @Parameter(description = "应用 ID", required = true) @RequestParam("appId") Long appId,
-            @Parameter(description = "渠道类型列表，多个值用英文逗号分隔", required = true) @RequestParam("storeTypes") String storeTypes,
+            @Parameter(description = "发布渠道列表，多个值用英文逗号分隔", required = true) @RequestParam("storeTypes") String storeTypes,
             @Parameter(description = "安装包文件", required = true) @RequestParam("file") MultipartFile file,
             @Parameter(description = "版本更新说明") @RequestParam(value = "updateLog", required = false) String updateLog,
-            @Parameter(description = "期望版本名称，用于上传后校验") @RequestParam(value = "expectedVersionName", required = false) String expectedVersionName,
-            @Parameter(description = "期望版本号，用于上传后校验") @RequestParam(value = "expectedVersionCode", required = false) String expectedVersionCode,
-            @Parameter(description = "是否期望为加固包") @RequestParam(value = "expectedReinforced", required = false) Boolean expectedReinforced
+            @Parameter(description = "期望的版本名称，用于上传后校验") @RequestParam(value = "expectedVersionName", required = false) String expectedVersionName,
+            @Parameter(description = "期望的版本号，用于上传后校验") @RequestParam(value = "expectedVersionCode", required = false) String expectedVersionCode,
+            @Parameter(description = "期望是否为加固包") @RequestParam(value = "expectedReinforced", required = false) Boolean expectedReinforced
     ) throws IOException {
         return ApiResponse.success(cicdReleaseService.trigger(
                 appId,

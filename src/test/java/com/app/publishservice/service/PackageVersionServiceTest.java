@@ -4,15 +4,15 @@ import com.app.publishservice.config.AppProperties;
 import com.app.publishservice.domain.entity.AppVersion;
 import com.app.publishservice.repository.AppVersionRepository;
 import com.app.publishservice.util.ApkDownloadUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
 import org.springframework.core.env.Environment;
 
-import java.nio.file.Files;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -30,7 +30,7 @@ class PackageVersionServiceTest {
 
     private static final String APK32_DOWNLOAD_FAILED_MESSAGE = "32\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
     private static final String APK64_DOWNLOAD_FAILED_MESSAGE = "64\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
-    private static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9app-publish-metadata.json\u4E2D\u7684apk32Path";
+    private static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk32Path";
 
     @Test
     void shouldPrepareRemoteSubmitPackageUrlsWhenStreamUploadEnabled() {
@@ -47,7 +47,6 @@ class PackageVersionServiceTest {
                 mock(StorageService.class),
                 mock(PackageInspectorService.class),
                 appProperties,
-                new ObjectMapper(),
                 environment
         );
 
@@ -82,7 +81,6 @@ class PackageVersionServiceTest {
                 storageService,
                 mock(PackageInspectorService.class),
                 appProperties,
-                new ObjectMapper(),
                 environment
         );
 
@@ -128,7 +126,6 @@ class PackageVersionServiceTest {
                 storageService,
                 mock(PackageInspectorService.class),
                 appProperties,
-                new ObjectMapper(),
                 environment
         );
 
@@ -168,17 +165,13 @@ class PackageVersionServiceTest {
         Path apk32 = Files.writeString(tempDir.resolve("cms_yht_32.apk"), "apk32");
         Path apk64 = Files.writeString(tempDir.resolve("cms_yht_64.apk"), "apk64");
         Path packageFile = Files.writeString(tempDir.resolve("origin.apk"), "origin");
-        Files.writeString(
-                tempDir.resolve("app-publish-metadata.json"),
-                """
-                {
-                  "vivo": {
-                    "apk32Path": "cms_yht_32.apk",
-                    "apk64Path": "cms_yht_64.apk"
-                  }
-                }
-                """
-        );
+        appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
+        appProperties.getPublishMetadata().setValues(Map.of(
+                "vivo", Map.of(
+                        "apk32Path", "cms_yht_32.apk",
+                        "apk64Path", "cms_yht_64.apk"
+                )
+        ));
 
         PackageVersionService service = new PackageVersionService(
                 mock(AppManagementService.class),
@@ -186,7 +179,6 @@ class PackageVersionServiceTest {
                 mock(StorageService.class),
                 mock(PackageInspectorService.class),
                 appProperties,
-                new ObjectMapper(),
                 environment
         );
 
@@ -211,16 +203,10 @@ class PackageVersionServiceTest {
         when(environment.matchesProfiles("dev")).thenReturn(true);
 
         Path packageFile = Files.writeString(tempDir.resolve("origin.apk"), "origin");
-        Files.writeString(
-                tempDir.resolve("app-publish-metadata.json"),
-                """
-                {
-                  "vivo": {
-                    "apk64Path": "cms_yht_64.apk"
-                  }
-                }
-                """
-        );
+        appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
+        appProperties.getPublishMetadata().setValues(Map.of(
+                "vivo", Map.of("apk64Path", "cms_yht_64.apk")
+        ));
         assertNotNull(packageFile);
 
         PackageVersionService service = new PackageVersionService(
@@ -229,7 +215,6 @@ class PackageVersionServiceTest {
                 mock(StorageService.class),
                 mock(PackageInspectorService.class),
                 appProperties,
-                new ObjectMapper(),
                 environment
         );
 

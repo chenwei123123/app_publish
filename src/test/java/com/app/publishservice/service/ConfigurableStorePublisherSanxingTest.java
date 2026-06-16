@@ -1,0 +1,436 @@
+package com.app.publishservice.service;
+
+import com.app.publishservice.config.AppProperties;
+import com.app.publishservice.config.StoreApiProperties;
+import com.app.publishservice.domain.entity.AppInfo;
+import com.app.publishservice.domain.entity.AppReleaseRecord;
+import com.app.publishservice.domain.entity.AppStoreConfig;
+import com.app.publishservice.domain.entity.AppVersion;
+import com.app.publishservice.domain.enums.ReleaseStatus;
+import com.app.publishservice.domain.enums.StoreType;
+import com.app.publishservice.service.model.StoreReviewResult;
+import com.app.publishservice.service.model.StoreSubmitResult;
+import com.app.publishservice.service.model.TokenPayload;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.web.client.RestClient;
+
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.time.LocalDateTime;
+import java.util.Base64;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ConfigurableStorePublisherSanxingTest {
+
+    private static final String CONTENT_ID = "123456789012";
+    private static final String SERVICE_ACCOUNT_ID = "sa-sanxing-123";
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void shouldRefreshTokenAndSubmitSanxingRelease() throws Exception {
+        KeyPair keyPair = createKeyPair();
+        Path apk = tempDir.resolve("demo-sanxing.apk");
+        Files.writeString(apk, "sanxing-apk", StandardCharsets.UTF_8);
+
+        AtomicReference<String> tokenAuthorization = new AtomicReference<>();
+        AtomicReference<Map<String, String>> uploadForm = new AtomicReference<>();
+        AtomicReference<Map<String, Object>> addBinaryPayload = new AtomicReference<>();
+        AtomicReference<Map<String, Object>> contentUpdatePayload = new AtomicReference<>();
+        AtomicReference<Map<String, Object>> stagedRolloutPayload = new AtomicReference<>();
+        AtomicReference<Map<String, Object>> submitPayload = new AtomicReference<>();
+
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/auth/accessToken", exchange -> {
+            tokenAuthorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
+            byte[] response = """
+                    {
+                      "ok": true,
+                      "createdItem": {
+                        "accessToken": "sanxing-token"
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/seller/contentInfo", exchange -> {
+            byte[] response = """
+                    [
+                      {
+                        "contentId": "123456789012",
+                        "appTitle": "Sanxing Demo",
+                        "contentStatus": "FOR_SALE",
+                        "defaultLanguageCode": "ENG",
+                        "applicationType": "android",
+                        "longDescription": "Existing description",
+                        "shortDescription": "",
+                        "newFeature": "",
+                        "ageLimit": "0",
+                        "chinaAgeLimit": "0",
+                        "openSourceURL": "",
+                        "privatePolicyURL": "",
+                        "youTubeURL": "",
+                        "copyrightHolder": "",
+                        "supportEMail": "support@demo.test",
+                        "supportedSiteUrl": "",
+                        "standardPrice": "0",
+                        "paid": "N",
+                        "publicationType": "01",
+                        "usExportLaws": true,
+                        "binaryList": [
+                          {
+                            "binarySeq": "1",
+                            "versionCode": "100",
+                            "versionName": "1.0.0",
+                            "packageName": "com.demo.sanxing"
+                          }
+                        ],
+                        "supportedLanguages": ["ENG"]
+                      }
+                    ]
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/seller/createUploadSessionId", exchange -> {
+            String uploadUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/galaxyapi/fileUpload";
+            byte[] response = ("""
+                    {
+                      "url": "%s",
+                      "sessionId": "session-sanxing-1"
+                    }
+                    """.formatted(uploadUrl)).getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/galaxyapi/fileUpload", exchange -> {
+            uploadForm.set(parseMultipart(exchange.getRequestHeaders().getFirst("Content-Type"), exchange.getRequestBody().readAllBytes()));
+            byte[] response = """
+                    {
+                      "fileKey": "file-key-sanxing-1",
+                      "fileName": "demo-sanxing.apk",
+                      "fileSize": "11",
+                      "errorCode": null,
+                      "errorMsg": null
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/seller/v2/content/binary", exchange -> {
+            addBinaryPayload.set(jsonMapUnchecked(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            byte[] response = """
+                    {
+                      "resultCode": "0000",
+                      "resultMessage": "Ok",
+                      "data": {
+                        "binarySeq": "2"
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/seller/contentUpdate", exchange -> {
+            contentUpdatePayload.set(jsonMapUnchecked(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            byte[] response = """
+                    {
+                      "ctntId": "123456789012",
+                      "contentStatus": "REGISTERING",
+                      "httpStatus": "OK"
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/seller/v2/content/stagedRolloutRate", exchange -> {
+            stagedRolloutPayload.set(jsonMapUnchecked(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            byte[] response = """
+                    {
+                      "resultCode": "0000",
+                      "resultMessage": "Ok",
+                      "data": {
+                        "rolloutRate": 30
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/seller/contentSubmit", exchange -> {
+            submitPayload.set(jsonMapUnchecked(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            exchange.sendResponseHeaders(204, -1);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            AppStoreConfig storeConfig = sanxingStoreConfig(keyPair);
+            TokenPayload tokenPayload = publisher.refreshToken(storeConfig);
+            assertEquals("sanxing-token", tokenPayload.tokenValue());
+            assertNotNull(tokenAuthorization.get());
+            assertTrue(tokenAuthorization.get().startsWith("Bearer "));
+            assertEquals(2, tokenAuthorization.get().chars().filter(ch -> ch == '.').count());
+
+            StoreSubmitResult result = publisher.submitRelease(
+                    storeConfig,
+                    sanxingVersion(apk),
+                    sanxingReleaseRecord(),
+                    tokenPayload.tokenValue()
+            );
+
+            assertEquals("session-sanxing-1", uploadForm.get().get("sessionId"));
+            assertEquals("demo-sanxing.apk", uploadForm.get().get("file.filename"));
+
+            assertEquals(CONTENT_ID, addBinaryPayload.get().get("contentId"));
+            assertEquals("file-key-sanxing-1", addBinaryPayload.get().get("filekey"));
+            assertEquals("N", addBinaryPayload.get().get("gms"));
+            assertEquals("1", addBinaryPayload.get().get("binarySeqForDeviceInfo"));
+
+            assertEquals(CONTENT_ID, contentUpdatePayload.get().get("contentId"));
+            assertEquals("Sanxing Demo", contentUpdatePayload.get().get("appTitle"));
+            assertEquals("ENG", contentUpdatePayload.get().get("defaultLanguageCode"));
+            assertEquals("N", contentUpdatePayload.get().get("paid"));
+            assertEquals("01", contentUpdatePayload.get().get("publicationType"));
+            assertEquals("Sanxing review update", contentUpdatePayload.get().get("newFeature"));
+            assertEquals("Sanxing review update", contentUpdatePayload.get().get("reviewComment"));
+            assertEquals("https://example.com/privacy", contentUpdatePayload.get().get("privatePolicyURL"));
+            assertEquals("null", contentUpdatePayload.get().get("addLanguage"));
+            assertEquals("null", contentUpdatePayload.get().get("screenshots"));
+            assertEquals("null", contentUpdatePayload.get().get("sellCountryList"));
+
+            assertEquals(CONTENT_ID, stagedRolloutPayload.get().get("contentId"));
+            assertEquals("ENABLE_ROLLOUT", stagedRolloutPayload.get().get("function"));
+            assertEquals("REGISTRATION", stagedRolloutPayload.get().get("appStatus"));
+            assertEquals(30, ((Number) stagedRolloutPayload.get().get("rolloutRate")).intValue());
+
+            assertEquals(CONTENT_ID, submitPayload.get().get("contentId"));
+            assertEquals(CONTENT_ID, result.storeReleaseId());
+            assertEquals("submit success", result.message());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void shouldQuerySanxingRejectedReviewStatus() throws Exception {
+        KeyPair keyPair = createKeyPair();
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/seller/contentInfo", exchange -> {
+            byte[] response = """
+                    [
+                      {
+                        "contentId": "123456789012",
+                        "contentStatus": "REJECTED",
+                        "reviewComment": "Rejected by review",
+                        "binaryList": [
+                          {
+                            "versionCode": "101"
+                          }
+                        ]
+                      }
+                    ]
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            StoreReviewResult result = publisher.queryReview(
+                    sanxingStoreConfig(keyPair),
+                    sanxingReviewRecord(),
+                    "sanxing-token"
+            );
+
+            assertEquals(ReleaseStatus.REJECT, result.releaseStatus());
+            assertEquals("Rejected by review", result.rejectReason());
+            assertTrue(result.responseLog().contains("\"mappedStatus\":\"reject\""));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    private AppProperties appProperties(HttpServer server) {
+        AppProperties appProperties = new AppProperties();
+        appProperties.setStorageRoot(tempDir.resolve("storage").toString());
+        appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
+        appProperties.getPublishMetadata().setValues(Map.of(
+                "sanxing", Map.of(
+                        "contentId", CONTENT_ID,
+                        "gms", "N"
+                )
+        ));
+        StoreApiProperties.StoreEndpointProperties sanxing = new StoreApiProperties.StoreEndpointProperties();
+        sanxing.setMockEnabled(false);
+        sanxing.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+        appProperties.getStoreApi().getStores().put("sanxing", sanxing);
+        return appProperties;
+    }
+
+    private AppStoreConfig sanxingStoreConfig(KeyPair keyPair) {
+        AppStoreConfig storeConfig = new AppStoreConfig();
+        storeConfig.setStoreType(StoreType.fromCode("sanxing"));
+        storeConfig.setClientId(SERVICE_ACCOUNT_ID);
+        storeConfig.setPrivateKey(sanxingPrivateKeyJson(keyPair));
+        return storeConfig;
+    }
+
+    private AppVersion sanxingVersion(Path apkPath) {
+        AppInfo appInfo = new AppInfo();
+        appInfo.setId(1L);
+        appInfo.setAppName("Sanxing Demo");
+        appInfo.setPackageName("com.demo.sanxing");
+        appInfo.setAppDescription("Sanxing description");
+        appInfo.setPrivacyUrl("https://example.com/privacy");
+
+        AppVersion version = new AppVersion();
+        version.setId(1L);
+        version.setAppId(1L);
+        version.setAppInfo(appInfo);
+        version.setVersionName("1.0.1");
+        version.setVersionCode("101");
+        version.setUpdateLog("Sanxing review update");
+        version.setPackageUrl64(apkPath.toString());
+        version.setCreateTime(LocalDateTime.now());
+        return version;
+    }
+
+    private AppReleaseRecord sanxingReleaseRecord() {
+        AppReleaseRecord record = new AppReleaseRecord();
+        record.setId(1L);
+        record.setStoreType(StoreType.fromCode("sanxing"));
+        record.setReleaseType(2L);
+        record.setGrayPercent(30L);
+        return record;
+    }
+
+    private AppReleaseRecord sanxingReviewRecord() {
+        AppReleaseRecord record = new AppReleaseRecord();
+        record.setId(2L);
+        record.setStoreType(StoreType.fromCode("sanxing"));
+        record.setStoreReleaseId(CONTENT_ID);
+        record.setVersionCode("101");
+        return record;
+    }
+
+    private KeyPair createKeyPair() throws Exception {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048);
+        return generator.generateKeyPair();
+    }
+
+    private String sanxingPrivateKeyJson(KeyPair keyPair) {
+        String pkcs8 = Base64.getEncoder().encodeToString(keyPair.getPrivate().getEncoded());
+        String pem = "-----BEGIN PRIVATE KEY-----\n" + wrap64(pkcs8) + "\n-----END PRIVATE KEY-----";
+        return """
+                {
+                  "private_key": "%s"
+                }
+                """.formatted(pem.replace("\\", "\\\\").replace("\n", "\\n"));
+    }
+
+    private String wrap64(String value) {
+        StringBuilder builder = new StringBuilder();
+        for (int index = 0; index < value.length(); index += 64) {
+            if (index > 0) {
+                builder.append('\n');
+            }
+            builder.append(value, index, Math.min(index + 64, value.length()));
+        }
+        return builder.toString();
+    }
+
+    private Map<String, Object> jsonMap(String json) throws Exception {
+        return objectMapper.readValue(json, new TypeReference<>() {
+        });
+    }
+
+    private Map<String, Object> jsonMapUnchecked(String json) {
+        try {
+            return jsonMap(json);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Failed to parse json: " + json, ex);
+        }
+    }
+
+    private Map<String, String> parseMultipart(String contentType, byte[] body) {
+        String boundary = extractBoundary(contentType);
+        String content = new String(body, StandardCharsets.ISO_8859_1);
+        String[] parts = content.split(Pattern.quote("--" + boundary));
+        Map<String, String> result = new LinkedHashMap<>();
+        Pattern dispositionPattern = Pattern.compile("name=\"([^\"]+)\"(?:; filename=\"([^\"]+)\")?");
+        for (String part : parts) {
+            if (part.isBlank() || "--\r\n".equals(part) || "--".equals(part)) {
+                continue;
+            }
+            int headerEnd = part.indexOf("\r\n\r\n");
+            if (headerEnd < 0) {
+                continue;
+            }
+            String headers = part.substring(0, headerEnd);
+            String value = part.substring(headerEnd + 4).replaceFirst("\r\n$", "");
+            Matcher matcher = dispositionPattern.matcher(headers);
+            if (!matcher.find()) {
+                continue;
+            }
+            String name = matcher.group(1);
+            String filename = matcher.group(2);
+            if (filename != null) {
+                result.put(name + ".filename", filename);
+            } else {
+                result.put(name, value);
+            }
+        }
+        return result;
+    }
+
+    private String extractBoundary(String contentType) {
+        for (String item : contentType.split(";")) {
+            String trimmed = item.trim();
+            if (trimmed.startsWith("boundary=")) {
+                return trimmed.substring("boundary=".length()).replace("\"", "");
+            }
+        }
+        throw new IllegalArgumentException("Multipart boundary is missing");
+    }
+}

@@ -24,7 +24,7 @@ public class RestClientConfig {
                 .connectTimeout(timeout)
                 .build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);
-        // Spring's JDK request factory enforces this timeout across the whole request lifecycle.
+        // Spring 的 JDK 请求工厂会在整个请求生命周期内统一应用该超时。
         factory.setReadTimeout(timeout);
 
         return RestClient.builder()

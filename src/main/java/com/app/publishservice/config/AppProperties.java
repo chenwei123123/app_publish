@@ -2,6 +2,9 @@ package com.app.publishservice.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @ConfigurationProperties(prefix = "app")
 public class AppProperties {
 
@@ -11,6 +14,7 @@ public class AppProperties {
     private long reviewAutoPassSeconds = 180L;
     private PackageRepositoryProperties packageRepository = new PackageRepositoryProperties();
     private StoreApiProperties storeApi = new StoreApiProperties();
+    private PublishMetadataProperties publishMetadata = new PublishMetadataProperties();
 
     public String getStorageRoot() {
         return storageRoot;
@@ -58,6 +62,14 @@ public class AppProperties {
 
     public void setStoreApi(StoreApiProperties storeApi) {
         this.storeApi = storeApi;
+    }
+
+    public PublishMetadataProperties getPublishMetadata() {
+        return publishMetadata;
+    }
+
+    public void setPublishMetadata(PublishMetadataProperties publishMetadata) {
+        this.publishMetadata = publishMetadata;
     }
 
     public static class PackageRepositoryProperties {
@@ -115,6 +127,28 @@ public class AppProperties {
 
         public void setDownloadTimeoutSeconds(long downloadTimeoutSeconds) {
             this.downloadTimeoutSeconds = downloadTimeoutSeconds;
+        }
+    }
+
+    public static class PublishMetadataProperties {
+
+        private String baseDir = ".";
+        private Map<String, Object> values = new LinkedHashMap<>();
+
+        public String getBaseDir() {
+            return baseDir;
+        }
+
+        public void setBaseDir(String baseDir) {
+            this.baseDir = baseDir;
+        }
+
+        public Map<String, Object> getValues() {
+            return values;
+        }
+
+        public void setValues(Map<String, Object> values) {
+            this.values = values;
         }
     }
 }

@@ -22,7 +22,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/releases")
-@Tag(name = "发布管理", description = "应用发版提交和记录查询接口")
+@Tag(name = "发布管理", description = "发版提交与发版记录查询接口")
 public class ReleaseController {
 
     private final ReleaseOrchestrationService releaseOrchestrationService;
@@ -34,7 +34,7 @@ public class ReleaseController {
     @PostMapping("/submit")
     @Operation(summary = "提交发版", description = "将指定版本提交到一个或多个应用商店进行发版")
     public ApiResponse<List<ReleaseRecordResponse>> submit(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "发版提交请求")
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "发版提交请求体")
             @Valid @RequestBody ReleaseSubmitRequest request
     ) {
         return ApiResponse.success(releaseOrchestrationService.submit(request));
@@ -47,9 +47,11 @@ public class ReleaseController {
             @RequestParam(value = "current", required = false) Long current,
             @Parameter(description = "每页大小，兼容 pageSize")
             @RequestParam(value = "size", required = false) Long size,
+            @Parameter(description = "当前页别名，未传 current 时生效")
             @RequestParam(value = "pageNum", required = false) Long pageNum,
+            @Parameter(description = "每页大小别名，未传 size 时生效")
             @RequestParam(value = "pageSize", required = false) Long pageSize,
-            @Parameter(description = "关键字")
+            @Parameter(description = "关键字，支持按商店类型、应用名称、包名、应用描述或版本号模糊匹配")
             @RequestParam(value = "key", required = false) String key
     ) {
         return ApiResponse.success(releaseOrchestrationService.pageReleaseRecords(
@@ -68,7 +70,7 @@ public class ReleaseController {
     }
 
     @GetMapping("/appId/{appId}")
-    @Operation(summary = "根据 appId 查询发版记录", description = "根据 appId 查询发版记录列表")
+    @Operation(summary = "根据应用 ID 查询发版记录", description = "根据应用 ID 查询该应用下的发版记录列表")
     public ApiResponse<PageResponse<ReleaseRecordPageResponse>> queryReleaseByAppId(
             @Parameter(description = "应用 ID", required = true) @PathVariable Long appId
     ) {

@@ -3,44 +3,44 @@ package com.app.publishservice.api.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-@Schema(description = "Store config request")
+@Schema(description = "应用商店账号配置请求")
 public class StoreConfigRequest {
 
-    @Schema(description = "Config ID used for updates")
+    @Schema(description = "配置 ID，更新场景可传")
     private Long id;
 
     @NotBlank
-    @Schema(description = "Store type, such as vivo or xiaomi", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "应用商店类型，例如 vivo、oppo、huawei、xiaomi", requiredMode = Schema.RequiredMode.REQUIRED)
     private String storeType;
 
-    @Schema(description = "Account name")
+    @Schema(description = "账号名称")
     private String accountName;
 
-    @Schema(description = "Contact email")
+    @Schema(description = "联系邮箱")
     private String email;
 
-    @Schema(description = "Contact phone")
+    @Schema(description = "联系手机号")
     private String phone;
 
-    @Schema(description = "Client ID")
+    @Schema(description = "开放平台 Client ID")
     private String clientId;
 
-    @Schema(description = "Client secret")
+    @Schema(description = "开放平台 Client Secret")
     private String clientSecret;
 
-    @Schema(description = "Xiaomi public key")
+    @Schema(description = "平台公钥，当前主要用于小米渠道")
     private String publicKey;
 
-    @Schema(description = "Xiaomi private key")
+    @Schema(description = "平台私钥，当前主要用于小米渠道")
     private String privateKey;
 
-    @Schema(description = "Static token")
+    @Schema(description = "固定 Token")
     private String token;
 
-    @Schema(description = "IP whitelist")
+    @Schema(description = "IP 白名单")
     private String ipWhitelist;
 
-    @Schema(description = "API status: 1 enabled, 0 disabled")
+    @Schema(description = "API 状态，1 表示启用，0 表示禁用")
     private Integer apiStatus = 1;
 
     public Long getId() {

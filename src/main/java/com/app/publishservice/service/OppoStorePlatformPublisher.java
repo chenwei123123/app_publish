@@ -26,7 +26,9 @@ import org.springframework.web.client.RestClient;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,9 +38,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
     private static final String OPPO_BASE_URL = "https://oop-openapi-cn.heytapmobi.com";
     private static final String OPPO_TOKEN_ENDPOINT = "/developer/v1/token";
     private static final String OPPO_UPLOAD_CONFIG_ENDPOINT = "/resource/v1/upload/get-upload-url";
+    private static final String OPPO_MULTI_INFO_ENDPOINT = "/resource/v1/app/multi-info";
     private static final String OPPO_SUBMIT_ENDPOINT = "/resource/v1/app/upd";
     private static final String OPPO_STATUS_ENDPOINT = "/resource/v1/app/task-state";
-    private static final String OPPO_INFO_ENDPOINT = "/resource/v1/app/info";
     private static final long OPPO_TOKEN_EXPIRE_SECONDS = 48 * 60 * 60L;
 
     OppoStorePlatformPublisher(
@@ -134,33 +136,64 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         Map<String, Object> submitPayload = new LinkedHashMap<>();
-        submitPayload.put("pkg_name", appInfo.getPackageName());
-        submitPayload.put("version_code", version.getVersionCode());
 
         if (endpoint.isMockEnabled()) {
             String storeReleaseId = "oppo-" + UUID.randomUUID();
+            List<Map<String, Object>> apkInfos = List.of(Map.of(
+                    "url", "mock-apk-url",
+                    "md5", "mock-upload-md5",
+                    "cpu_code", 0
+            ));
             Map<String, Object> responseLog = Map.of(
-                    "uploadConfig", Map.of("errno", 0, "data", Map.of("upload_url", "mock-upload-url")),
-                    "upload", Map.of("errno", 0, "data", Map.of("apk_url", "mock-apk-url")),
+                    "uploadConfigs", List.of(Map.of("errno", 0, "data", Map.of("upload_url", "mock-upload-url"))),
+                    "uploads", List.of(Map.of("errno", 0, "data", Map.of("apk_url", "mock-apk-url", "md5", "mock-upload-md5"))),
                     "submit", Map.of("errno", 0, "data", Map.of("task_id", storeReleaseId))
             );
-            submitPayload.put("apk_url", "mock-apk-url");
+            submitPayload.put("pkg_name", appInfo.getPackageName());
+            submitPayload.put("version_code", version.getVersionCode());
+            submitPayload.put("apk_url", writeJson(apkInfos));
             return new StoreSubmitResult(storeReleaseId, writeJson(submitPayload), writeJson(responseLog), "mock submit success");
         }
 
-        Path packagePath = requireLocalPackage(version);
-        Map<String, Object> uploadConfigResponse = oppoSignedRequest(storeConfig, token, oppoUploadConfigEndpoint(endpoint), Map.of(), true);
-        Map<String, Object> uploadConfigData = asMap(uploadConfigResponse.get("data"));
-        Map<String, Object> uploadResult = uploadOppoPackage(storeConfig, uploadConfigData, packagePath);
-        String apkUrl = firstNonBlank(
-                firstString(uploadResult, "apk_url", "apkUrl", "file_url", "fileUrl"),
-                firstString(uploadConfigData, "apk_url", "apkUrl", "file_url", "fileUrl", "upload_url", "uploadUrl")
+        Map<String, Object> multiInfoResponse = oppoSignedRequest(
+                storeConfig,
+                token,
+                oppoMultiInfoEndpoint(endpoint),
+                Map.of("pkg_name", appInfo.getPackageName()),
+                true
         );
-        if (!StringUtils.hasText(apkUrl)) {
-            throw new IllegalStateException("Oppo upload succeeded but apk_url is missing");
+        Map<String, Object> multiInfoData = asMap(multiInfoResponse.get("data"));
+        Map<String, Object> currentVersionInfo = resolveOppoVersionInfo(multiInfoData, version.getVersionCode());
+        submitPayload.putAll(buildOppoSubmitPayload(appInfo, version, multiInfoData, currentVersionInfo));
+
+        List<OppoApkBundle> packageBundles = resolveOppoPackageBundles(version);
+        List<Map<String, Object>> apkInfos = new ArrayList<>();
+        List<Map<String, Object>> uploadConfigResponses = new ArrayList<>();
+        List<Map<String, Object>> uploadResults = new ArrayList<>();
+        for (OppoApkBundle packageBundle : packageBundles) {
+            Map<String, Object> uploadConfigResponse = oppoSignedRequest(storeConfig, token, oppoUploadConfigEndpoint(endpoint), Map.of(), true);
+            Map<String, Object> uploadConfigData = asMap(uploadConfigResponse.get("data"));
+            Map<String, Object> uploadResult = uploadOppoPackage(storeConfig, uploadConfigData, packageBundle.packagePath());
+            String apkUrl = firstString(uploadResult, "apk_url", "apkUrl", "file_url", "fileUrl", "url");
+            if (!StringUtils.hasText(apkUrl)) {
+                throw new IllegalStateException("Oppo upload succeeded but returned apk_url is missing");
+            }
+            String apkMd5 = firstString(uploadResult, "md5", "Md5", "file_md5", "fileMd5");
+            if (!StringUtils.hasText(apkMd5)) {
+                throw new IllegalStateException("Oppo upload succeeded but returned md5 is missing");
+            }
+            Map<String, Object> apkInfo = new LinkedHashMap<>();
+            apkInfo.put("url", apkUrl);
+            apkInfo.put("md5", apkMd5);
+            apkInfo.put("cpu_code", packageBundle.cpuCode());
+            apkInfos.add(apkInfo);
+            uploadConfigResponses.add(uploadConfigResponse);
+            uploadResults.add(uploadResult);
         }
 
-        submitPayload.put("apk_url", apkUrl);
+        submitPayload.put("pkg_name", appInfo.getPackageName());
+        submitPayload.put("version_code", version.getVersionCode());
+        submitPayload.put("apk_url", writeJson(apkInfos));
         Map<String, Object> submitResponse = oppoSignedRequest(storeConfig, token, oppoSubmitEndpoint(endpoint), submitPayload, false);
         Map<String, Object> submitData = asMap(submitResponse.get("data"));
         String storeReleaseId = firstNonBlank(
@@ -169,11 +202,13 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
 
         Map<String, Object> requestLog = new LinkedHashMap<>();
-        requestLog.put("uploadConfig", uploadConfigData);
+        requestLog.put("multiInfo", multiInfoData);
+        requestLog.put("apkInfo", apkInfos);
         requestLog.put("submit", submitPayload);
         Map<String, Object> responseLog = new LinkedHashMap<>();
-        responseLog.put("uploadConfig", uploadConfigResponse);
-        responseLog.put("upload", uploadResult);
+        responseLog.put("multiInfo", multiInfoResponse);
+        responseLog.put("uploadConfigs", uploadConfigResponses);
+        responseLog.put("uploads", uploadResults);
         responseLog.put("submit", submitResponse);
         return new StoreSubmitResult(storeReleaseId, writeJson(requestLog), writeJson(responseLog), "submit success");
     }
@@ -183,42 +218,21 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         if (endpoint.isMockEnabled()) {
             Map<String, Object> mockResponse = Map.of(
-                    "appInfo", Map.of("errno", 0, "data", Map.of("audit_status_name", "审核通过", "audit_status", 2)),
                     "taskState", Map.of("errno", 0, "data", Map.of("task_state", 2))
             );
             return new StoreReviewResult(ReleaseStatus.PASS, writeJson(mockResponse), null);
         }
 
-        Map<String, Object> appInfoResponse = oppoSignedRequest(storeConfig, token, oppoInfoEndpoint(endpoint), queryParams, true);
-        Map<String, Object> appInfoData = asMap(appInfoResponse.get("data"));
-
-        Map<String, Object> taskStateResponse = Map.of();
-        Map<String, Object> taskStateData = Map.of();
-        try {
-            taskStateResponse = oppoSignedRequest(storeConfig, token, oppoStatusEndpoint(endpoint), queryParams, false);
-            taskStateData = asMap(taskStateResponse.get("data"));
-        } catch (RuntimeException ex) {
-            log.warn(
-                    "Failed to query oppo task state, releaseId={}, packageName={}, versionCode={}",
-                    record.getId(),
-                    queryParams.get("pkg_name"),
-                    queryParams.get("version_code"),
-                    ex
-            );
-        }
-
-        ReleaseStatus releaseStatus = mapOppoStatus(appInfoData, taskStateData);
+        Map<String, Object> taskStateResponse = oppoSignedRequest(storeConfig, token, oppoStatusEndpoint(endpoint), queryParams, false);
+        Map<String, Object> taskStateData = asMap(taskStateResponse.get("data"));
+        ReleaseStatus releaseStatus = mapOppoStatus(taskStateData);
         String rejectReason = firstNonBlank(
-                firstString(taskStateData, "err_msg", "errMsg"),
-                firstString(appInfoData, "err_msg", "errMsg"),
-                isRejectStatus(appInfoData) ? firstString(appInfoData, "audit_status_name", "auditStatusName") : ""
+                firstString(taskStateData, "err_msg", "errMsg", "msg", "message"),
+                releaseStatus == ReleaseStatus.REJECT ? "Oppo review rejected" : ""
         );
 
         Map<String, Object> responseLog = new LinkedHashMap<>();
-        responseLog.put("appInfo", appInfoResponse);
-        if (!taskStateResponse.isEmpty()) {
-            responseLog.put("taskState", taskStateResponse);
-        }
+        responseLog.put("taskState", taskStateResponse);
         return new StoreReviewResult(releaseStatus, writeJson(responseLog), StringUtils.hasText(rejectReason) ? rejectReason : null);
     }
 
@@ -245,6 +259,104 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
             payload.put("version_code", versionCode);
         }
         return payload;
+    }
+
+    private Map<String, Object> buildOppoSubmitPayload(
+            AppInfo appInfo,
+            AppVersion version,
+            Map<String, Object> multiInfoData,
+            Map<String, Object> currentVersionInfo
+    ) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("pkg_name", appInfo.getPackageName());
+        //payload.put("version_code", version.getVersionCode());
+        copyOppoSubmitField(payload, "version_code", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "app_name", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "second_category_id", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "third_category_id", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "summary", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "detail_desc", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "update_desc", currentVersionInfo, multiInfoData, appInfo.getAppDescription());
+        copyOppoSubmitField(payload, "privacy_source_url", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "icon_url", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "pic_url", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "online_type", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "test_desc", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "copyright_url", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "business_username", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "business_email", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "business_mobile", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "age_level", currentVersionInfo, multiInfoData);
+        copyOppoSubmitField(payload, "adaptive_equipment", currentVersionInfo, multiInfoData);
+        return payload;
+    }
+
+    private Map<String, Object> resolveOppoVersionInfo(Map<String, Object> multiInfoData, String targetVersionCode) {
+        Map<String, Object> apkInfo = asMap(multiInfoData.get("apk_info"));
+        if (apkInfo.isEmpty()) {
+            return Map.of();
+        }
+        if (StringUtils.hasText(targetVersionCode)) {
+            Map<String, Object> matched = asMap(apkInfo.get(targetVersionCode));
+            if (!matched.isEmpty()) {
+                return matched;
+            }
+        }
+        for (Object value : apkInfo.values()) {
+            Map<String, Object> matched = asMap(value);
+            if (!matched.isEmpty()) {
+                return matched;
+            }
+        }
+        return Map.of();
+    }
+
+    private void copyOppoSubmitField(Map<String, Object> payload, String fieldName, Map<String, Object> primary, Map<String, Object> secondary, Object... fallbacks) {
+        Object value = firstNonNull(primary.get(fieldName), secondary.get(fieldName));
+        if (value == null && fallbacks != null) {
+            value = firstNonNull(fallbacks);
+        }
+        Object normalizedValue = normalizeOppoSubmitFieldValue(fieldName, value);
+        if (normalizedValue == null) {
+            return;
+        }
+        payload.put(fieldName, normalizedValue);
+    }
+
+    private Object normalizeOppoSubmitFieldValue(String fieldName, Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof String stringValue) {
+            String normalized = stringValue.trim();
+            if (!StringUtils.hasText(normalized)) {
+                return null;
+            }
+            return normalized;
+        }
+        if ("cover_url".equals(fieldName) || "video_url_material".equals(fieldName) || "customer_contact".equals(fieldName)) {
+            return writeJson(value);
+        }
+        return value;
+    }
+
+    private List<OppoApkBundle> resolveOppoPackageBundles(AppVersion version) {
+        String packageUrl32 = version.getPackageUrl32();
+        String packageUrl64 = version.getPackageUrl64();
+        if (StringUtils.hasText(packageUrl32) && StringUtils.hasText(packageUrl64)) {
+            Path packagePath32 = requireLocalPackage(packageUrl32, "Oppo 32-bit package path is empty");
+            Path packagePath64 = requireLocalPackage(packageUrl64, "Oppo 64-bit package path is empty");
+            if (packagePath32.equals(packagePath64)) {
+                return List.of(new OppoApkBundle(packagePath32, 0));
+            }
+            return List.of(
+                    new OppoApkBundle(packagePath32, 32),
+                    new OppoApkBundle(packagePath64, 64)
+            );
+        }
+
+        String singlePackageLocation = firstNonBlank(version.getPackageUrl(), packageUrl64, packageUrl32);
+        return List.of(new OppoApkBundle(requireLocalPackage(singlePackageLocation, "Oppo package path is empty"), 0));
     }
 
     private Map<String, Object> uploadOppoPackage(AppStoreConfig storeConfig, Map<String, Object> uploadConfigData, Path packagePath) {
@@ -382,42 +494,21 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
-    private ReleaseStatus mapOppoStatus(Map<String, Object> appInfoData, Map<String, Object> taskStateData) {
-        String auditStatusName = firstString(appInfoData, "audit_status_name", "auditStatusName");
-        if (StringUtils.hasText(auditStatusName)) {
-            if (auditStatusName.contains("驳回") || auditStatusName.contains("拒绝") || auditStatusName.contains("失败")) {
-                return ReleaseStatus.REJECT;
-            }
-            if (auditStatusName.contains("通过") || auditStatusName.contains("上架") || auditStatusName.contains("上线")) {
-                return ReleaseStatus.PASS;
-            }
-            if (auditStatusName.contains("下架")) {
-                return ReleaseStatus.OFFLINE;
-            }
-        }
-
-        int taskState = intValue(firstNonNull(taskStateData.get("task_state"), appInfoData.get("task_state")));
+    private ReleaseStatus mapOppoStatus(Map<String, Object> taskStateData) {
+        int taskState = intValue(taskStateData.get("task_state"));
         if (taskState == -1) {
             return ReleaseStatus.REJECT;
         }
         if (taskState == 1) {
             return ReleaseStatus.AUDITING;
         }
-
-        int auditStatus = intValue(appInfoData.get("audit_status"));
-        if (auditStatus == 2) {
+        if (taskState == 2) {
             return ReleaseStatus.PASS;
         }
-        if (auditStatus == 3 || auditStatus == 4) {
-            return ReleaseStatus.REJECT;
+        if (taskState == 3) {
+            return ReleaseStatus.OFFLINE;
         }
         return ReleaseStatus.AUDITING;
-    }
-
-    private boolean isRejectStatus(Map<String, Object> appInfoData) {
-        String auditStatusName = firstString(appInfoData, "audit_status_name", "auditStatusName");
-        return StringUtils.hasText(auditStatusName)
-                && (auditStatusName.contains("驳回") || auditStatusName.contains("拒绝"));
     }
 
     private void ensureOppoSuccess(Map<String, Object> response, String action) {
@@ -455,6 +546,10 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return OPPO_UPLOAD_CONFIG_ENDPOINT;
     }
 
+    private String oppoMultiInfoEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
+        return OPPO_MULTI_INFO_ENDPOINT;
+    }
+
     private String oppoSubmitEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
         return StringUtils.hasText(endpoint.getSubmitEndpoint()) ? endpoint.getSubmitEndpoint() : OPPO_SUBMIT_ENDPOINT;
     }
@@ -463,7 +558,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return StringUtils.hasText(endpoint.getStatusEndpoint()) ? endpoint.getStatusEndpoint() : OPPO_STATUS_ENDPOINT;
     }
 
-    private String oppoInfoEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
-        return OPPO_INFO_ENDPOINT;
+    private record OppoApkBundle(
+            Path packagePath,
+            int cpuCode
+    ) {
     }
 }

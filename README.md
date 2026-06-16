@@ -1,55 +1,64 @@
-# App Publish Service
+# 应用发布服务
 
-Backend service for multi-store app publishing orchestration.
+用于统一管理多应用商店发布流程的后端服务。
 
-## Stack
+## 技术栈
 
 - Java 17
 - Spring Boot 3.3.x
 - Spring Web
 - MyBatis-Plus
 - MySQL
-- H2 for tests
+- H2（测试）
 
-## Core Capabilities
+## 核心能力
 
-1. Manage app metadata and store API configuration.
-2. Upload APK/AAB/IPA packages and validate version metadata.
-3. Refresh store tokens and submit store review requests.
-4. Persist release task records and continuously update release status.
-5. Poll review results and keep request/response logs.
-6. Expose a CI/CD trigger entry for automated publish workflows.
+1. 管理应用基础信息和商店账号配置。
+2. 上传 APK/AAB/IPA 安装包并校验版本元数据。
+3. 刷新商店 Token 并提交商店审核请求。
+4. 持久化发版任务记录并持续更新发布状态。
+5. 轮询审核结果并保存请求/响应日志。
+6. 提供 CI/CD 触发入口，支持自动化发布流程。
 
-## Main APIs
+## 主要接口
 
-`POST /api/apps`
+创建应用：`POST /api/apps`
 
 ```json
 {
   "appName": "Demo App",
   "packageName": "com.demo.app",
   "appType": 1,
-  "storeConfigs": [
-    {
-      "storeType": "huawei",
-      "clientId": "client-id",
-      "clientSecret": "client-secret"
-    }
-  ]
+  "appDescription": "演示应用",
+  "privacyUrl": "https://example.com/privacy",
+  "userAgreementUrl": "https://example.com/agreement",
+  "status": 1
 }
 ```
 
-`POST /api/apps/{appId}/versions/upload`
+创建商店账号配置：`POST /api/store-configs`
 
-Form fields:
+```json
+{
+  "storeType": "huawei",
+  "accountName": "demo-account",
+  "clientId": "client-id",
+  "clientSecret": "client-secret",
+  "apiStatus": 1
+}
+```
 
-- `file`: APK/AAB/IPA
-- `updateLog`
-- `expectedVersionName`
-- `expectedVersionCode`
-- `expectedReinforced`
+上传安装包：`POST /api/apps/{appId}/versions/upload`
 
-`POST /api/releases/submit`
+表单字段：
+
+- `file`：APK/AAB/IPA 文件
+- `updateLog`：版本更新说明
+- `expectedVersionName`：期望版本名称
+- `expectedVersionCode`：期望版本号
+- `expectedReinforced`：期望是否为加固包
+
+提交发版：`POST /api/releases/submit`
 
 ```json
 {
@@ -59,27 +68,27 @@ Form fields:
 }
 ```
 
-`POST /api/cicd/releases/trigger`
+触发 CI/CD 发布：`POST /api/cicd/releases/trigger`
 
-Form fields:
+表单字段：
 
 - `appId`
-- `storeTypes`: comma-separated, for example `huawei,oppo`
+- `storeTypes`：逗号分隔，例如 `huawei,oppo`
 - `file`
 - `updateLog`
 - `expectedVersionName`
 - `expectedVersionCode`
 - `expectedReinforced`
 
-## Package Metadata Detection
+## 安装包元数据识别
 
-Upload processing detects version and reinforcement state in this order:
+上传处理按以下顺序识别版本号和加固状态：
 
-1. `app-publish-metadata.json` inside the package
-2. File naming convention, for example `demo-1.0.1-build101-reinforced.apk`
-3. Archive keyword scanning, for example `jiagu` or `reinforce`
+1. 安装包内的 `app-publish-metadata.json`
+2. 文件名约定，例如 `demo-1.0.1-build101-reinforced.apk`
+3. 压缩包关键字扫描，例如 `jiagu` 或 `reinforce`
 
-Recommended CI metadata file:
+推荐的 CI 元数据文件：
 
 ```json
 {
@@ -89,30 +98,30 @@ Recommended CI metadata file:
 }
 ```
 
-## Store Integration
+## 商店对接
 
-Store adapters are configuration-driven.
+商店适配器采用配置驱动方式。
 
-- Use `app.store-api.stores.<store>.mock-enabled=true` for local mock submit/review flows.
-- Configure `baseUrl`, `tokenEndpoint`, `submitEndpoint`, and `statusEndpoint` to switch to real HTTP integrations.
+- 本地联调可使用 `app.store-api.stores.<store>.mock-enabled=true` 开启模拟提交/审核流程。
+- 切换真实接口时，配置 `baseUrl`、`tokenEndpoint`、`submitEndpoint` 和 `statusEndpoint`。
 
-## Runtime And Packaging
+## 运行与打包
 
-Development helper scripts are documented in [`startup`](/D:/app_publish/startup/README.md).
-Packaged cross-platform start and stop scripts are documented in [`script`](/D:/app_publish/script/README.md).
+开发辅助脚本见 [startup](/D:/app_publish/startup/README.md)。
+跨平台发布脚本见 [script](/D:/app_publish/script/README.md)。
 
-Package example:
+打包示例：
 
 ```cmd
 startup\package.bat prod
 ```
 
-Generated artifacts:
+生成产物：
 
 - `target/app_publish/`
 - `target/app_publish-<profile>.zip`
 
-## Test
+## 测试
 
 ```cmd
 mvn -s settings.xml test

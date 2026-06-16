@@ -1,8 +1,12 @@
 @echo off
 setlocal
 
+set "DEFAULT_PROFILE=__DEFAULT_PROFILE__"
+set "PROFILE_PLACEHOLDER=__DEFAULT"
+set "PROFILE_PLACEHOLDER=%PROFILE_PLACEHOLDER%_PROFILE__"
+if "%DEFAULT_PROFILE%"=="%PROFILE_PLACEHOLDER%" set "DEFAULT_PROFILE=dev"
 set "PROFILE=%~1"
-if "%PROFILE%"=="" set "PROFILE=dev"
+if "%PROFILE%"=="" set "PROFILE=%DEFAULT_PROFILE%"
 
 if /I not "%PROFILE%"=="dev" if /I not "%PROFILE%"=="sit" if /I not "%PROFILE%"=="prod" (
   echo Usage: stop.bat [dev^|sit^|prod]

@@ -117,19 +117,67 @@
                                 <delete dir="${dist.dir}"/>
                                 <delete file="${project.build.directory}/app_publish-${env.name}.zip"/>
                                 <mkdir dir="${dist.dir}"/>
+                                <mkdir dir="${dist.dir}/config"/>
                                 <mkdir dir="${dist.dir}/log"/>
                                 <mkdir dir="${dist.dir}/script"/>
                                 <mkdir dir="${dist.dir}/script/run"/>
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
                                       todir="${dist.dir}"/>
+                                <copy todir="${dist.dir}/config">
+                                    <fileset dir="${project.build.outputDirectory}">
+                                        <include name="application*.yml"/>
+                                    </fileset>
+                                </copy>
                                 <copy file="${project.basedir}/script/windows/start.bat"
-                                      tofile="${dist.dir}/script/start.bat"/>
+                                      tofile="${dist.dir}/script/start.bat">
+                                    <filterset begintoken="__" endtoken="__">
+                                        <filter token="DEFAULT_PROFILE" value="${env.name}"/>
+                                    </filterset>
+                                </copy>
                                 <copy file="${project.basedir}/script/windows/stop.bat"
-                                      tofile="${dist.dir}/script/stop.bat"/>
+                                      tofile="${dist.dir}/script/stop.bat">
+                                    <filterset begintoken="__" endtoken="__">
+                                        <filter token="DEFAULT_PROFILE" value="${env.name}"/>
+                                    </filterset>
+                                </copy>
+                                <copy file="${project.basedir}/script/windows/restart.bat"
+                                      tofile="${dist.dir}/script/restart.bat">
+                                    <filterset begintoken="__" endtoken="__">
+                                        <filter token="DEFAULT_PROFILE" value="${env.name}"/>
+                                    </filterset>
+                                </copy>
+                                <copy file="${project.basedir}/script/windows/logs.bat"
+                                      tofile="${dist.dir}/script/logs.bat">
+                                    <filterset begintoken="__" endtoken="__">
+                                        <filter token="DEFAULT_PROFILE" value="${env.name}"/>
+                                    </filterset>
+                                </copy>
+                                <copy file="${project.basedir}/script/windows/monitor-startup.ps1"
+                                      tofile="${dist.dir}/script/monitor-startup.ps1"/>
                                 <copy file="${project.basedir}/script/linux/start.sh"
-                                      tofile="${dist.dir}/script/start.sh"/>
+                                      tofile="${dist.dir}/script/start.sh">
+                                    <filterset begintoken="__" endtoken="__">
+                                        <filter token="DEFAULT_PROFILE" value="${env.name}"/>
+                                    </filterset>
+                                </copy>
                                 <copy file="${project.basedir}/script/linux/stop.sh"
-                                      tofile="${dist.dir}/script/stop.sh"/>
+                                      tofile="${dist.dir}/script/stop.sh">
+                                    <filterset begintoken="__" endtoken="__">
+                                        <filter token="DEFAULT_PROFILE" value="${env.name}"/>
+                                    </filterset>
+                                </copy>
+                                <copy file="${project.basedir}/script/linux/restart.sh"
+                                      tofile="${dist.dir}/script/restart.sh">
+                                    <filterset begintoken="__" endtoken="__">
+                                        <filter token="DEFAULT_PROFILE" value="${env.name}"/>
+                                    </filterset>
+                                </copy>
+                                <copy file="${project.basedir}/script/linux/logs.sh"
+                                      tofile="${dist.dir}/script/logs.sh">
+                                    <filterset begintoken="__" endtoken="__">
+                                        <filter token="DEFAULT_PROFILE" value="${env.name}"/>
+                                    </filterset>
+                                </copy>
                                 <zip destfile="${project.build.directory}/app_publish-${env.name}.zip"
                                      basedir="${dist.dir}"/>
                             </target>

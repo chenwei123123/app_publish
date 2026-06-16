@@ -33,6 +33,29 @@ app:
     stream-upload-enabled: ${PACKAGE_REPOSITORY_STREAM_UPLOAD_ENABLED:false}
     authorization: ${PACKAGE_REPOSITORY_AUTHORIZATION:Basic eHVjaGFvNjpBS0NwOGpSN0U5G9LZjZzMWY1N1pGcG9Za2F5SHpqSE52bkRUZWhpY2NZWDDwOUZyNG1YeTJuaHgyV3dmQkdtZ1JoWWdWZXVG}
     download-timeout-seconds: ${PACKAGE_REPOSITORY_DOWNLOAD_TIMEOUT_SECONDS:300}
+  publish-metadata:
+    base-dir: ${APP_PUBLISH_METADATA_BASE_DIR:.}
+    values:
+      versionName: "1.0.0"
+      versionCode: 100
+      reinforced: false
+      #yingyongbao:
+        #appId: "312312312412"
+      #xiaomi:
+        #privacyUrl: ""
+        #iconPath: ""
+      vivo:
+        #appClassify: "9"
+        #subAppClassify: "3"
+        #rateAge: 18
+        compatibleDevice: 2
+        #iconPath: "icon.png"
+        #screenshotPaths:
+          #- "screen1.png"
+          #- "screen2.png"
+          #- "screen3.png"
+        #apk32Path: "D:\\下载\\cms_yht_32.apk"
+        #apk64Path: "D:\\下载\\cms_yht_64.apk"
   store-api:
     default-timeout-seconds: 15
 

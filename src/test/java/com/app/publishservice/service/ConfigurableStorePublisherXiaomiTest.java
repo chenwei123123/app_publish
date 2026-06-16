@@ -6,7 +6,9 @@ import com.app.publishservice.domain.entity.AppInfo;
 import com.app.publishservice.domain.entity.AppReleaseRecord;
 import com.app.publishservice.domain.entity.AppStoreConfig;
 import com.app.publishservice.domain.entity.AppVersion;
+import com.app.publishservice.domain.enums.ReleaseStatus;
 import com.app.publishservice.domain.enums.StoreType;
+import com.app.publishservice.service.model.StoreReviewResult;
 import com.app.publishservice.service.model.StoreSubmitResult;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,54 +54,19 @@ class ConfigurableStorePublisherXiaomiTest {
 
         Path packagesDir = Files.createDirectories(tempDir.resolve("packages"));
         Path assetsDir = Files.createDirectories(tempDir.resolve("assets").resolve("xiaomi"));
-        Path apk = packagesDir.resolve("demo.apk");
+        Path apk64 = packagesDir.resolve("demo.apk");
         Path secondApk = packagesDir.resolve("demo-32.apk");
+        Path fallbackApk = packagesDir.resolve("fallback.apk");
         Path icon = assetsDir.resolve("icon.png");
         Path screenshot1 = assetsDir.resolve("screenshot-1.png");
         Path screenshot2 = assetsDir.resolve("screenshot-2.png");
         Path screenshot3 = assetsDir.resolve("screenshot-3.png");
-        Files.writeString(apk, "xiaomi-apk", StandardCharsets.UTF_8);
+        Files.writeString(apk64, "xiaomi-apk", StandardCharsets.UTF_8);
         Files.writeString(secondApk, "xiaomi-second-apk", StandardCharsets.UTF_8);
         Files.writeString(icon, "xiaomi-icon", StandardCharsets.UTF_8);
         Files.writeString(screenshot1, "xiaomi-shot-1", StandardCharsets.UTF_8);
         Files.writeString(screenshot2, "xiaomi-shot-2", StandardCharsets.UTF_8);
         Files.writeString(screenshot3, "xiaomi-shot-3", StandardCharsets.UTF_8);
-
-        Files.writeString(
-                tempDir.resolve("app-publish-metadata.json"),
-                """
-                        {
-                          "xiaomi": {
-                            "category": 10,
-                            "keyWords": "demo office",
-                            "desc": "Demo xiaomi description",
-                            "brief": "Demo brief",
-                            "publisherName": "Demo Publisher",
-                            "iconPath": "assets/xiaomi/icon.png",
-                            "screenshotPaths": [
-                              "assets/xiaomi/screenshot-1.png",
-                              "assets/xiaomi/screenshot-2.png",
-                              "assets/xiaomi/screenshot-3.png"
-                            ],
-                            "testAccount": {
-                              "zh_CN": {
-                                "accounts": [
-                                  {
-                                    "t": 1,
-                                    "a": "demo",
-                                    "p": "secret"
-                                  }
-                                ],
-                                "auditNotes": "notes"
-                              }
-                            },
-                            "onlineTime": 1780000000000,
-                            "suitableType": 0
-                          }
-                        }
-                        """,
-                StandardCharsets.UTF_8
-        );
 
         AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
         AtomicReference<Map<String, String>> submitForm = new AtomicReference<>();
@@ -139,7 +106,7 @@ class ConfigurableStorePublisherXiaomiTest {
             ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
             StoreSubmitResult result = publisher.submitRelease(
                     xiaomiStoreConfig(keyPair),
-                    appVersion(apk, secondApk),
+                    appVersion(apk64, secondApk, fallbackApk),
                     new AppReleaseRecord(),
                     ""
             );
@@ -167,8 +134,8 @@ class ConfigurableStorePublisherXiaomiTest {
             assertEquals("Demo xiaomi description", appInfo.get("desc"));
             assertEquals("Demo brief", appInfo.get("brief"));
             assertEquals("https://example.com/privacy", appInfo.get("privacyUrl"));
-            assertEquals("demo.apk", submitForm.get().get("apk.filename"));
-            assertEquals("demo-32.apk", submitForm.get().get("secondApk.filename"));
+            assertEquals("demo-32.apk", submitForm.get().get("apk.filename"));
+            assertEquals("demo.apk", submitForm.get().get("secondApk.filename"));
             assertEquals("icon.png", submitForm.get().get("icon.filename"));
             assertEquals("screenshot-1.png", submitForm.get().get("screenshot_1.filename"));
             assertEquals("screenshot-2.png", submitForm.get().get("screenshot_2.filename"));
@@ -188,9 +155,100 @@ class ConfigurableStorePublisherXiaomiTest {
         }
     }
 
+    @Test
+    void shouldQueryXiaomiReviewAndInferPassWhenTargetVersionIsLive() throws Exception {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048);
+        KeyPair keyPair = generator.generateKeyPair();
+
+        AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/dev/query", exchange -> {
+            queryForm.set(parseMultipart(exchange.getRequestHeaders().getFirst("Content-Type"), exchange.getRequestBody().readAllBytes()));
+            byte[] response = """
+                    {
+                      "result": 0,
+                      "message": "query success",
+                      "packageInfo": {
+                        "packageName": "com.demo.xiaomi.app",
+                        "versionCode": "101",
+                        "versionName": "1.0.1"
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            StoreReviewResult result = publisher.queryReview(
+                    xiaomiStoreConfig(keyPair),
+                    xiaomiReviewRecord("101", LocalDateTime.now().minusHours(2)),
+                    ""
+            );
+
+            Map<String, Object> queryRequestData = jsonMap(queryForm.get().get("RequestData"));
+            assertEquals("com.demo.xiaomi.app", queryRequestData.get("packageName"));
+            assertEquals("demo@xiaomi.test", queryRequestData.get("userName"));
+            assertEquals(ReleaseStatus.PASS, result.releaseStatus());
+            assertTrue(result.responseLog().contains("\"matchedTargetVersion\":true"));
+            assertTrue(result.responseLog().contains("\"inferredStatus\":\"pass\""));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void shouldKeepAuditingWhenXiaomiQueryCannotConfirmTargetVersion() throws Exception {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048);
+        KeyPair keyPair = generator.generateKeyPair();
+
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/dev/query", exchange -> {
+            byte[] response = """
+                    {
+                      "result": 0,
+                      "message": "query success",
+                      "packageInfo": {
+                        "packageName": "com.demo.xiaomi.app",
+                        "versionCode": "100",
+                        "versionName": "1.0.0"
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            StoreReviewResult result = publisher.queryReview(
+                    xiaomiStoreConfig(keyPair),
+                    xiaomiReviewRecord("101", LocalDateTime.now().minusDays(1)),
+                    ""
+            );
+
+            assertEquals(ReleaseStatus.AUDITING, result.releaseStatus());
+            assertTrue(result.responseLog().contains("\"matchedTargetVersion\":false"));
+            assertTrue(result.responseLog().contains("\"inferredStatus\":\"auditing\""));
+        } finally {
+            server.stop(0);
+        }
+    }
+
     private AppProperties appProperties(HttpServer server) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
+        appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
+        appProperties.getPublishMetadata().setValues(xiaomiPublishMetadata());
         StoreApiProperties.StoreEndpointProperties xiaomi = new StoreApiProperties.StoreEndpointProperties();
         xiaomi.setMockEnabled(false);
         xiaomi.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
@@ -198,6 +256,36 @@ class ConfigurableStorePublisherXiaomiTest {
         xiaomi.setSubmitEndpoint("/dev/push");
         appProperties.getStoreApi().getStores().put("xiaomi", xiaomi);
         return appProperties;
+    }
+
+    private Map<String, Object> xiaomiPublishMetadata() {
+        return Map.of(
+                "xiaomi", Map.of(
+                        "category", 10,
+                        "keyWords", "demo office",
+                        "desc", "Demo xiaomi description",
+                        "brief", "Demo brief",
+                        "publisherName", "Demo Publisher",
+                        "iconPath", "assets/xiaomi/icon.png",
+                        "screenshotPaths", List.of(
+                                "assets/xiaomi/screenshot-1.png",
+                                "assets/xiaomi/screenshot-2.png",
+                                "assets/xiaomi/screenshot-3.png"
+                        ),
+                        "testAccount", Map.of(
+                                "zh_CN", Map.of(
+                                        "accounts", List.of(Map.of(
+                                                "t", 1,
+                                                "a", "demo",
+                                                "p", "secret"
+                                        )),
+                                        "auditNotes", "notes"
+                                )
+                        ),
+                        "onlineTime", 1780000000000L,
+                        "suitableType", 0
+                )
+        );
     }
 
     private AppStoreConfig xiaomiStoreConfig(KeyPair keyPair) {
@@ -209,7 +297,7 @@ class ConfigurableStorePublisherXiaomiTest {
         return storeConfig;
     }
 
-    private AppVersion appVersion(Path packagePath, Path secondApk) {
+    private AppVersion appVersion(Path package64Path, Path secondApk, Path fallbackPackagePath) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
         appInfo.setAppName("Demo Xiaomi App");
@@ -224,10 +312,27 @@ class ConfigurableStorePublisherXiaomiTest {
         version.setVersionName("1.0.1");
         version.setVersionCode("101");
         version.setUpdateLog("Xiaomi release update");
-        version.setPackageUrl(packagePath.toString());
+        version.setPackageUrl(fallbackPackagePath.toString());
+        version.setPackageUrl64(package64Path.toString());
         version.setPackageUrl32(secondApk.toString());
         version.setCreateTime(LocalDateTime.now());
         return version;
+    }
+
+    private AppReleaseRecord xiaomiReviewRecord(String versionCode, LocalDateTime releaseTime) {
+        AppReleaseRecord record = new AppReleaseRecord();
+        record.setId(1L);
+        record.setStoreType(StoreType.fromCode("xiaomi"));
+        record.setPackageName("com.demo.xiaomi.app");
+        record.setVersionCode(versionCode);
+        record.setStoreReleaseId("com.demo.xiaomi.app:" + versionCode);
+        record.setReleaseTime(releaseTime);
+
+        AppVersion appVersion = new AppVersion();
+        appVersion.setVersionCode(versionCode);
+        appVersion.setVersionName("1.0.1");
+        record.setAppVersion(appVersion);
+        return record;
     }
 
     private Map<String, Object> jsonMap(String json) throws Exception {

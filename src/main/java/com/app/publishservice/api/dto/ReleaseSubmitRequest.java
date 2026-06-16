@@ -21,7 +21,7 @@ public class ReleaseSubmitRequest {
     @Schema(description = "发布模式，默认 api")
     private String releaseMode = "api";
 
-    @Schema(description = "发布类型：1=全量发布，2=分阶段发布")
+    @Schema(description = "发布类型，1 表示全量发布，2 表示分阶段发布")
     private Long releaseType = 1L;
 
     @Schema(description = "灰度比例，仅分阶段发布时生效")

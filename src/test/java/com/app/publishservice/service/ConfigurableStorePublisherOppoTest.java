@@ -11,6 +11,7 @@ import com.app.publishservice.domain.enums.StoreType;
 import com.app.publishservice.service.model.StoreReviewResult;
 import com.app.publishservice.service.model.StoreSubmitResult;
 import com.app.publishservice.service.model.TokenPayload;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -26,7 +27,9 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
@@ -37,6 +40,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ConfigurableStorePublisherOppoTest {
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @TempDir
     Path tempDir;
@@ -79,16 +84,71 @@ class ConfigurableStorePublisherOppoTest {
 
     @Test
     void shouldSubmitOppoReleaseWithSignedUploadAndUpdateRequests() throws Exception {
-        Path apk = tempDir.resolve("demo.apk");
-        Files.writeString(apk, "fake-oppo-apk", StandardCharsets.UTF_8);
+        Path apk32 = tempDir.resolve("demo-32.apk");
+        Path apk64 = tempDir.resolve("demo-64.apk");
+        Files.writeString(apk32, "fake-oppo-apk-32", StandardCharsets.UTF_8);
+        Files.writeString(apk64, "fake-oppo-apk-64", StandardCharsets.UTF_8);
 
-        AtomicReference<Map<String, String>> uploadConfigQuery = new AtomicReference<>();
-        AtomicReference<Map<String, String>> uploadParts = new AtomicReference<>();
+        AtomicReference<Map<String, String>> multiInfoQuery = new AtomicReference<>();
+        List<Map<String, String>> uploadConfigQueries = new ArrayList<>();
+        List<Map<String, String>> uploadParts = new ArrayList<>();
         AtomicReference<Map<String, String>> submitForm = new AtomicReference<>();
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/resource/v1/app/multi-info", exchange -> {
+            assertEquals("GET", exchange.getRequestMethod());
+            multiInfoQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            byte[] response = """
+                    {
+                      "errno": 0,
+                      "data": {
+                        "pkg_name": "com.demo.oppo.app",
+                        "app_name": "Store Oppo App",
+                        "second_category_id": "2001",
+                        "third_category_id": "3001",
+                        "copyright_url": "https://cdn.example.com/copyright.png",
+                        "electronic_cert_url": "https://cdn.example.com/cert.pdf",
+                        "icp_url": "ICP-2026-001",
+                        "special_url": "https://cdn.example.com/special.png",
+                        "business_username": "Store Contact",
+                        "business_email": "store-contact@example.com",
+                        "business_mobile": "13800138000",
+                        "age_level": "3",
+                        "adaptive_equipment": "4",
+                        "adaptive_type": "1",
+                        "customer_contact": [
+                          {
+                            "contact_method": "1",
+                            "contact_info": "400-800-9000",
+                            "working_hours": "09:00-18:00",
+                            "weekend_hours": "10:00-17:00"
+                          }
+                        ],
+                        "apk_info": {
+                          "100": {
+                            "app_name": "Store Oppo App",
+                            "app_subname": "StoreSub",
+                            "summary": "StoreSummary",
+                            "detail_desc": "Store detail description",
+                            "update_desc": "Store old update desc",
+                            "privacy_source_url": "https://example.com/store-privacy",
+                            "icon_url": "https://cdn.example.com/icon.png",
+                            "pic_url": "https://cdn.example.com/shot1.png,https://cdn.example.com/shot2.png,https://cdn.example.com/shot3.png",
+                            "landscape_pic_url": "https://cdn.example.com/land-1.png,https://cdn.example.com/land-2.png,https://cdn.example.com/land-3.png",
+                            "online_type": "1",
+                            "test_desc": "Store test description"
+                          }
+                        }
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
         server.createContext("/resource/v1/upload/get-upload-url", exchange -> {
             assertEquals("GET", exchange.getRequestMethod());
-            uploadConfigQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            uploadConfigQueries.add(parseQuery(exchange.getRequestURI().getRawQuery()));
             byte[] response = """
                     {
                       "errno": 0,
@@ -108,15 +168,17 @@ class ConfigurableStorePublisherOppoTest {
             assertEquals("POST", exchange.getRequestMethod());
             String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
             assertTrue(contentType.contains("multipart/form-data"));
-            uploadParts.set(parseMultipart(contentType, exchange.getRequestBody().readAllBytes()));
+            uploadParts.add(parseMultipart(contentType, exchange.getRequestBody().readAllBytes()));
+            String fileName = uploadParts.get(uploadParts.size() - 1).get("file.filename");
             byte[] response = """
                     {
                       "errno": 0,
                       "data": {
-                        "apk_url": "https://cdn.example.com/demo.apk"
+                        "apk_url": "https://cdn.example.com/%s",
+                        "Md5": "upload-md5-%s"
                       }
                     }
-                    """.getBytes(StandardCharsets.UTF_8);
+                    """.formatted(fileName, fileName).getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, response.length);
             exchange.getResponseBody().write(response);
@@ -143,19 +205,57 @@ class ConfigurableStorePublisherOppoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
-            StoreSubmitResult result = publisher.submitRelease(oppoStoreConfig(), appVersion(apk), new AppReleaseRecord(), "oppo-access-token");
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            StoreSubmitResult result = publisher.submitRelease(oppoStoreConfig(), appVersion(apk32, apk64), new AppReleaseRecord(), "oppo-access-token");
+            List<Map<String, Object>> apkInfos = objectMapper.readValue(submitForm.get().get("apk_url"), new TypeReference<>() {});
 
             assertEquals("task-123", result.storeReleaseId());
-            assertEquals("oppo-access-token", uploadConfigQuery.get().get("access_token"));
-            assertEquals(sign(without(uploadConfigQuery.get(), "api_sign"), "demo-client-secret"), uploadConfigQuery.get().get("api_sign"));
-            assertEquals("single-use-sign", uploadParts.get().get("sign"));
-            assertEquals("apk", uploadParts.get().get("type"));
-            assertEquals("demo.apk", uploadParts.get().get("file.filename"));
+            assertEquals("com.demo.oppo.app", multiInfoQuery.get().get("pkg_name"));
+            assertEquals("oppo-access-token", multiInfoQuery.get().get("access_token"));
+            assertEquals(sign(without(multiInfoQuery.get(), "api_sign"), "demo-client-secret"), multiInfoQuery.get().get("api_sign"));
+            assertEquals(2, uploadConfigQueries.size());
+            assertEquals("oppo-access-token", uploadConfigQueries.get(0).get("access_token"));
+            assertEquals(sign(without(uploadConfigQueries.get(0), "api_sign"), "demo-client-secret"), uploadConfigQueries.get(0).get("api_sign"));
+            assertEquals(sign(without(uploadConfigQueries.get(1), "api_sign"), "demo-client-secret"), uploadConfigQueries.get(1).get("api_sign"));
+            assertEquals(2, uploadParts.size());
+            assertEquals("single-use-sign", uploadParts.get(0).get("sign"));
+            assertEquals("apk", uploadParts.get(0).get("type"));
+            assertEquals("demo-32.apk", uploadParts.get(0).get("file.filename"));
+            assertEquals("demo-64.apk", uploadParts.get(1).get("file.filename"));
             assertEquals("com.demo.oppo.app", submitForm.get().get("pkg_name"));
             assertEquals("101", submitForm.get().get("version_code"));
-            assertEquals("https://cdn.example.com/demo.apk", submitForm.get().get("apk_url"));
+            assertEquals("Store Oppo App", submitForm.get().get("app_name"));
+            assertEquals("StoreSub", submitForm.get().get("app_subname"));
+            assertEquals("2001", submitForm.get().get("second_category_id"));
+            assertEquals("3001", submitForm.get().get("third_category_id"));
+            assertEquals("StoreSummary", submitForm.get().get("summary"));
+            assertEquals("Store detail description", submitForm.get().get("detail_desc"));
+            assertEquals("Store old update desc", submitForm.get().get("update_desc"));
+            assertEquals("https://example.com/store-privacy", submitForm.get().get("privacy_source_url"));
+            assertEquals("https://cdn.example.com/icon.png", submitForm.get().get("icon_url"));
+            assertEquals("https://cdn.example.com/shot1.png,https://cdn.example.com/shot2.png,https://cdn.example.com/shot3.png", submitForm.get().get("pic_url"));
+            assertEquals("https://cdn.example.com/land-1.png,https://cdn.example.com/land-2.png,https://cdn.example.com/land-3.png", submitForm.get().get("landscape_pic_url"));
+            assertEquals("1", submitForm.get().get("online_type"));
+            assertEquals("Store test description", submitForm.get().get("test_desc"));
+            assertEquals("https://cdn.example.com/copyright.png", submitForm.get().get("copyright_url"));
+            assertEquals("https://cdn.example.com/cert.pdf", submitForm.get().get("electronic_cert_url"));
+            assertEquals("ICP-2026-001", submitForm.get().get("icp_url"));
+            assertEquals("https://cdn.example.com/special.png", submitForm.get().get("special_url"));
+            assertEquals("Store Contact", submitForm.get().get("business_username"));
+            assertEquals("store-contact@example.com", submitForm.get().get("business_email"));
+            assertEquals("13800138000", submitForm.get().get("business_mobile"));
+            assertEquals("3", submitForm.get().get("age_level"));
+            assertEquals("4", submitForm.get().get("adaptive_equipment"));
+            assertEquals("1", submitForm.get().get("adaptive_type"));
+            assertEquals("[{\"contact_method\":\"1\",\"contact_info\":\"400-800-9000\",\"working_hours\":\"09:00-18:00\",\"weekend_hours\":\"10:00-17:00\"}]", submitForm.get().get("customer_contact"));
             assertEquals(sign(without(submitForm.get(), "api_sign"), "demo-client-secret"), submitForm.get().get("api_sign"));
+            assertEquals(2, apkInfos.size());
+            assertEquals("https://cdn.example.com/demo-32.apk", apkInfos.get(0).get("url"));
+            assertEquals("https://cdn.example.com/demo-64.apk", apkInfos.get(1).get("url"));
+            assertEquals(32, ((Number) apkInfos.get(0).get("cpu_code")).intValue());
+            assertEquals(64, ((Number) apkInfos.get(1).get("cpu_code")).intValue());
+            assertEquals("upload-md5-demo-32.apk", apkInfos.get(0).get("md5"));
+            assertEquals("upload-md5-demo-64.apk", apkInfos.get(1).get("md5"));
             assertTrue(result.responseLog().contains("task-123"));
         } finally {
             server.stop(0);
@@ -163,27 +263,9 @@ class ConfigurableStorePublisherOppoTest {
     }
 
     @Test
-    void shouldQueryOppoReviewByAppInfoAndTaskState() throws Exception {
-        AtomicReference<Map<String, String>> infoQuery = new AtomicReference<>();
+    void shouldQueryOppoReviewByTaskStateOnly() throws Exception {
         AtomicReference<Map<String, String>> taskStateForm = new AtomicReference<>();
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
-        server.createContext("/resource/v1/app/info", exchange -> {
-            assertEquals("GET", exchange.getRequestMethod());
-            infoQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
-            byte[] response = """
-                    {
-                      "errno": 0,
-                      "data": {
-                        "audit_status": 2,
-                        "audit_status_name": "\u5ba1\u6838\u901a\u8fc7"
-                      }
-                    }
-                    """.getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(200, response.length);
-            exchange.getResponseBody().write(response);
-            exchange.close();
-        });
         server.createContext("/resource/v1/app/task-state", exchange -> {
             assertEquals("POST", exchange.getRequestMethod());
             String contentType = exchange.getRequestHeaders().getFirst("Content-Type");
@@ -213,11 +295,9 @@ class ConfigurableStorePublisherOppoTest {
             StoreReviewResult result = publisher.queryReview(oppoStoreConfig(), record, "oppo-access-token");
 
             assertEquals(ReleaseStatus.PASS, result.releaseStatus());
-            assertEquals("com.demo.oppo.app", infoQuery.get().get("pkg_name"));
-            assertEquals("101", infoQuery.get().get("version_code"));
             assertEquals("com.demo.oppo.app", taskStateForm.get().get("pkg_name"));
             assertEquals("101", taskStateForm.get().get("version_code"));
-            assertTrue(result.responseLog().contains("audit_status_name"));
+            assertTrue(result.responseLog().contains("task_state"));
         } finally {
             server.stop(0);
         }
@@ -244,7 +324,7 @@ class ConfigurableStorePublisherOppoTest {
         return storeConfig;
     }
 
-    private AppVersion appVersion(Path packagePath) {
+    private AppVersion appVersion(Path packagePath32, Path packagePath64) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
         appInfo.setAppName("Demo Oppo App");
@@ -257,7 +337,8 @@ class ConfigurableStorePublisherOppoTest {
         version.setVersionName("1.0.1");
         version.setVersionCode("101");
         version.setUpdateLog("Oppo publish update");
-        version.setPackageUrl(packagePath.toString());
+        version.setPackageUrl32(packagePath32.toString());
+        version.setPackageUrl64(packagePath64.toString());
         version.setCreateTime(LocalDateTime.now());
         return version;
     }
@@ -352,5 +433,9 @@ class ConfigurableStorePublisherOppoTest {
             builder.append(hex);
         }
         return builder.toString();
+    }
+
+    private String md5(String content) throws Exception {
+        return toHex(java.security.MessageDigest.getInstance("MD5").digest(content.getBytes(StandardCharsets.UTF_8)));
     }
 }

@@ -2,7 +2,13 @@
 
 set -euo pipefail
 
-PROFILE="${1:-dev}"
+DEFAULT_PROFILE="__DEFAULT_PROFILE__"
+PROFILE_PLACEHOLDER="__DEFAULT"
+PROFILE_PLACEHOLDER+="_PROFILE__"
+if [[ "${DEFAULT_PROFILE}" == "${PROFILE_PLACEHOLDER}" ]]; then
+  DEFAULT_PROFILE="dev"
+fi
+PROFILE="${1:-${DEFAULT_PROFILE}}"
 
 case "$PROFILE" in
   dev|sit|prod) ;;

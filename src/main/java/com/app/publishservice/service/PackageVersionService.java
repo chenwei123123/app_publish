@@ -12,8 +12,6 @@ import com.app.publishservice.repository.AppVersionRepository;
 import com.app.publishservice.service.model.PackageMetadata;
 import com.app.publishservice.util.ApkDownloadUtil;
 import com.app.publishservice.util.VersionCodeUtil;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.core.env.Environment;
 import org.slf4j.Logger;
@@ -24,9 +22,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
@@ -36,19 +31,18 @@ import java.util.Map;
 public class PackageVersionService {
 
     private static final Logger log = LoggerFactory.getLogger(PackageVersionService.class);
-    private static final String PROJECT_METADATA_FILE_NAME = "app-publish-metadata.json";
     static final String APK32_DOWNLOAD_FAILED_MESSAGE = "32\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
     static final String APK64_DOWNLOAD_FAILED_MESSAGE = "64\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
-    static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9app-publish-metadata.json\u4E2D\u7684apk32Path";
-    static final String APK64_LOCAL_FILE_FAILED_MESSAGE = "64\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9app-publish-metadata.json\u4E2D\u7684apk64Path";
+    static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk32Path";
+    static final String APK64_LOCAL_FILE_FAILED_MESSAGE = "64\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk64Path";
 
     private final AppManagementService appManagementService;
     private final AppVersionRepository appVersionRepository;
     private final StorageService storageService;
     private final PackageInspectorService packageInspectorService;
     private final AppProperties appProperties;
-    private final ObjectMapper objectMapper;
     private final Environment environment;
+    private final PublishMetadataResolver publishMetadataResolver;
 
     public PackageVersionService(
             AppManagementService appManagementService,
@@ -56,7 +50,6 @@ public class PackageVersionService {
             StorageService storageService,
             PackageInspectorService packageInspectorService,
             AppProperties appProperties,
-            ObjectMapper objectMapper,
             Environment environment
     ) {
         this.appManagementService = appManagementService;
@@ -64,8 +57,8 @@ public class PackageVersionService {
         this.storageService = storageService;
         this.packageInspectorService = packageInspectorService;
         this.appProperties = appProperties;
-        this.objectMapper = objectMapper;
         this.environment = environment;
+        this.publishMetadataResolver = new PublishMetadataResolver(appProperties);
     }
 
     @Transactional
@@ -263,7 +256,7 @@ public class PackageVersionService {
     }
 
     private void prepareLocalSubmitPackagesFromMetadata(AppVersion version) {
-        ProjectMetadataContext metadataContext = resolveProjectMetadataContext(version);
+        ProjectMetadataContext metadataContext = resolveProjectMetadataContext();
         Map<String, Object> metadata = metadataContext.metadata();
 
         Path apk32Path = resolveProjectAssetPath(
@@ -317,92 +310,19 @@ public class PackageVersionService {
                 .thenComparing(AppVersion::getId, Comparator.nullsLast(Comparator.reverseOrder()));
     }
 
-    private ProjectMetadataContext resolveProjectMetadataContext(AppVersion version) {
-        String packageLocation = firstNonBlank(version.getPackageUrl(), version.getPackageUrl32(), version.getPackageUrl64());
-        if (StringUtils.hasText(packageLocation)) {
-            Path packagePath = toPath(packageLocation.trim());
-            if (packagePath != null && Files.exists(packagePath)) {
-                return readProjectMetadata(packagePath);
-            }
-        }
-        return readProjectMetadata(Path.of("."));
-    }
-
-    private ProjectMetadataContext readProjectMetadata(Path packagePath) {
-        Path metadataPath = findProjectMetadataPath(packagePath);
-        if (metadataPath == null) {
-            return new ProjectMetadataContext(null, Map.of());
-        }
-        try (InputStream inputStream = Files.newInputStream(metadataPath)) {
-            return new ProjectMetadataContext(
-                    metadataPath,
-                    objectMapper.readValue(inputStream, new TypeReference<>() {
-                    })
-            );
-        } catch (IOException ex) {
-            throw new IllegalStateException("Failed to read project metadata: " + metadataPath, ex);
-        }
-    }
-
-    private Path findProjectMetadataPath(Path packagePath) {
-        Path current = packagePath.toAbsolutePath().normalize();
-        if (!Files.isDirectory(current)) {
-            current = current.getParent();
-        }
-        while (current != null) {
-            Path candidate = current.resolve(PROJECT_METADATA_FILE_NAME);
-            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
-                return candidate;
-            }
-            current = current.getParent();
-        }
-        Path fallback = Path.of(PROJECT_METADATA_FILE_NAME).toAbsolutePath().normalize();
-        if (Files.exists(fallback) && Files.isRegularFile(fallback)) {
-            return fallback;
-        }
-        return null;
+    private ProjectMetadataContext resolveProjectMetadataContext() {
+        return new ProjectMetadataContext(
+                publishMetadataResolver.metadataPath(),
+                publishMetadataResolver.metadata()
+        );
     }
 
     private Path resolveProjectAssetPath(Path metadataPath, Object assetLocation) {
-        if (assetLocation == null) {
-            return null;
-        }
-        String location = String.valueOf(assetLocation).trim();
-        if (!StringUtils.hasText(location)) {
-            return null;
-        }
-
-        Path directPath = toPath(location);
-        if (directPath == null) {
-            return null;
-        }
-        if (!directPath.isAbsolute()) {
-            Path parent = metadataPath == null ? null : metadataPath.toAbsolutePath().normalize().getParent();
-            if (parent != null) {
-                Path projectPath = parent.resolve(directPath).normalize();
-                if (Files.exists(projectPath) && Files.isRegularFile(projectPath)) {
-                    return projectPath;
-                }
-            }
-            return null;
-        }
-        return Files.exists(directPath) && Files.isRegularFile(directPath) ? directPath : null;
+        return publishMetadataResolver.resolveAssetPath(metadataPath, assetLocation);
     }
 
     private Object metadataLookup(Map<String, Object> metadata, String sectionKey, String key) {
-        if (metadata == null || !StringUtils.hasText(key)) {
-            return null;
-        }
-        if (StringUtils.hasText(sectionKey)) {
-            Object sectionValue = metadata.get(sectionKey);
-            if (sectionValue instanceof Map<?, ?> section && !section.isEmpty()) {
-                Object value = firstNonNull(section.get(key), section.get(toSnakeCase(key)));
-                if (value != null) {
-                    return value;
-                }
-            }
-        }
-        return firstNonNull(metadata.get(key), metadata.get(toSnakeCase(key)));
+        return publishMetadataResolver.metadataLookup(metadata, sectionKey, key);
     }
 
     private Object firstNonNull(Object... values) {
@@ -415,42 +335,6 @@ public class PackageVersionService {
             }
         }
         return null;
-    }
-
-    private String firstNonBlank(String... values) {
-        if (values == null) {
-            return "";
-        }
-        for (String value : values) {
-            if (StringUtils.hasText(value)) {
-                return value;
-            }
-        }
-        return "";
-    }
-
-    private String toSnakeCase(String value) {
-        StringBuilder builder = new StringBuilder();
-        for (int index = 0; index < value.length(); index++) {
-            char current = value.charAt(index);
-            if (Character.isUpperCase(current)) {
-                if (index > 0) {
-                    builder.append('_');
-                }
-                builder.append(Character.toLowerCase(current));
-            } else {
-                builder.append(current);
-            }
-        }
-        return builder.toString();
-    }
-
-    private Path toPath(String location) {
-        try {
-            return Path.of(location);
-        } catch (InvalidPathException ex) {
-            return null;
-        }
     }
 
     private record ProjectMetadataContext(Path metadataPath, Map<String, Object> metadata) {

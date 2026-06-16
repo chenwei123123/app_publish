@@ -20,7 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/apps/{appId}/versions")
-@Tag(name = "安装包管理", description = "应用安装包上传和版本查询接口")
+@Tag(name = "安装包管理", description = "安装包上传、版本解析和版本查询接口")
 public class PackageController {
 
     private final PackageVersionService packageVersionService;
@@ -52,9 +52,9 @@ public class PackageController {
             @Parameter(description = "应用 ID", required = true) @PathVariable Long appId,
             @Parameter(description = "安装包文件", required = true) @RequestParam("file") MultipartFile file,
             @Parameter(description = "版本更新说明") @RequestParam(value = "updateLog", required = false) String updateLog,
-            @Parameter(description = "期望版本名称，用于上传后校验") @RequestParam(value = "expectedVersionName", required = false) String expectedVersionName,
-            @Parameter(description = "期望版本号，用于上传后校验") @RequestParam(value = "expectedVersionCode", required = false) String expectedVersionCode,
-            @Parameter(description = "是否期望为加固包") @RequestParam(value = "expectedReinforced", required = false) Boolean expectedReinforced
+            @Parameter(description = "期望的版本名称，用于上传后校验") @RequestParam(value = "expectedVersionName", required = false) String expectedVersionName,
+            @Parameter(description = "期望的版本号，用于上传后校验") @RequestParam(value = "expectedVersionCode", required = false) String expectedVersionCode,
+            @Parameter(description = "期望是否为加固包") @RequestParam(value = "expectedReinforced", required = false) Boolean expectedReinforced
     ) throws IOException {
         return ApiResponse.success(packageVersionService.upload(
                 appId,

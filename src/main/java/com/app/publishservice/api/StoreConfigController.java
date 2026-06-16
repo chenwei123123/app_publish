@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/store-configs")
-@Tag(name = "应用商店账号管理配置", description = "应用商店账号配置的新增、修改、查询和删除接口")
+@Tag(name = "应用商店账号配置", description = "应用商店账号配置的新增、修改、查询和状态维护接口")
 public class StoreConfigController {
 
     private final AppManagementService appManagementService;
@@ -33,7 +33,7 @@ public class StoreConfigController {
     @PostMapping
     @Operation(summary = "创建应用商店账号", description = "创建应用商店账号配置")
     public ApiResponse<StoreConfigResponse> create(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "渠道配置请求")
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "应用商店账号配置请求体")
             @Valid @RequestBody StoreConfigRequest request
     ) {
         return ApiResponse.success(appManagementService.saveStoreConfig(request));
@@ -43,7 +43,7 @@ public class StoreConfigController {
     @Operation(summary = "更新应用商店账号", description = "根据配置 ID 更新应用商店账号配置")
     public ApiResponse<StoreConfigResponse> update(
             @Parameter(description = "配置 ID", required = true) @PathVariable Long configId,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "渠道配置请求")
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "应用商店账号配置更新请求体")
             @Valid @RequestBody StoreConfigRequest request
     ) {
         return ApiResponse.success(appManagementService.updateStoreConfig(configId, request));
@@ -65,9 +65,11 @@ public class StoreConfigController {
             @RequestParam(value = "current", required = false) Long current,
             @Parameter(description = "每页大小，兼容 pageSize")
             @RequestParam(value = "size", required = false) Long size,
+            @Parameter(description = "当前页别名，未传 current 时生效")
             @RequestParam(value = "pageNum", required = false) Long pageNum,
+            @Parameter(description = "每页大小别名，未传 size 时生效")
             @RequestParam(value = "pageSize", required = false) Long pageSize,
-            @Parameter(description = "关键字")
+            @Parameter(description = "关键字，支持按商店类型、账号名、邮箱或手机号模糊匹配")
             @RequestParam(value = "key", required = false) String key
     ) {
         return ApiResponse.success(appManagementService.pageStoreConfigResponses(
@@ -89,7 +91,7 @@ public class StoreConfigController {
     @Operation(summary = "更新应用商店账号状态", description = "启用或禁用应用商店账号配置")
     public ApiResponse<StoreConfigResponse> updateStatus(
             @Parameter(description = "配置 ID", required = true) @PathVariable Long configId,
-            @Parameter(description = "API 状态：1=启用，0=禁用", required = true)
+            @Parameter(description = "API 状态，1 表示启用，0 表示禁用", required = true)
             @RequestParam("apiStatus") Integer apiStatus
     ) {
         return ApiResponse.success(appManagementService.updateStoreConfigStatus(configId, apiStatus));

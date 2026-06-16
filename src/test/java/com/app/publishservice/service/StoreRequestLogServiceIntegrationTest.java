@@ -56,9 +56,9 @@ class StoreRequestLogServiceIntegrationTest {
         try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(releaseRecord.getId())) {
             storeRequestLogService.logSuccess(
                     storeConfig,
-                    "request oppo endpoint /resource/v1/app/info",
+                    "request oppo endpoint /resource/v1/upload/get-upload-url",
                     "GET",
-                    "https://example.test/resource/v1/app/info",
+                    "https://example.test/resource/v1/upload/get-upload-url",
                     Map.of("access_token", "plain-token", "pkg_name", "com.demo.log"),
                     null,
                     200,

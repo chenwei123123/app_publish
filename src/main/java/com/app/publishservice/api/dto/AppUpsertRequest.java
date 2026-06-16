@@ -6,51 +6,51 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-@Schema(description = "App create or update request")
+@Schema(description = "应用新增或更新请求")
 public class AppUpsertRequest {
 
-    @Schema(description = "App ID used for updates")
+    @Schema(description = "应用 ID，更新场景可传")
     private Long id;
 
     @NotBlank
-    @Schema(description = "App name", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "应用名称", requiredMode = Schema.RequiredMode.REQUIRED)
     private String appName;
 
     @NotBlank
-    @Schema(description = "Package name", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "应用包名", requiredMode = Schema.RequiredMode.REQUIRED)
     private String packageName;
 
     @NotNull
     @Min(1)
     @Max(2)
-    @Schema(description = "App type: 1=Android 2=iOS", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "应用类型，1 表示 Android，2 表示 iOS", requiredMode = Schema.RequiredMode.REQUIRED)
     private Integer appType;
 
-    @Schema(description = "App description")
+    @Schema(description = "应用描述")
     private String appDescription;
 
-    @Schema(description = "Copyright number")
+    @Schema(description = "软件著作权登记号")
     private String copyrightNo;
 
-    @Schema(description = "ICP filing number")
+    @Schema(description = "ICP 备案号")
     private String icpNo;
 
-    @Schema(description = "App record number")
+    @Schema(description = "应用备案号")
     private String appRecordNo;
 
-    @Schema(description = "Privacy policy URL")
+    @Schema(description = "隐私政策地址")
     private String privacyUrl;
 
-    @Schema(description = "User agreement URL")
+    @Schema(description = "用户协议地址")
     private String userAgreementUrl;
 
-    @Schema(description = "Status: 1=enabled 0=disabled")
+    @Schema(description = "状态，1 表示启用，0 表示禁用")
     private Integer status = 1;
 
-    @Schema(description = "Version code")
+    @Schema(description = "版本号")
     private String versionCode;
 
-    @Schema(description = "Build code")
+    @Schema(description = "构建号")
     private String buildCode;
 
     public Long getId() {

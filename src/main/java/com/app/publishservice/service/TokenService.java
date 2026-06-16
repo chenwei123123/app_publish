@@ -67,7 +67,10 @@ public class TokenService {
     }
 
     private String expectedTokenType(AppStoreConfig storeConfig) {
-        if (storeConfig.getStoreType() == StoreType.VIVO应用商店 || StringUtils.hasText(storeConfig.getToken())) {
+        if (storeConfig.getStoreType() == StoreType.VIVO应用商店
+                || storeConfig.getStoreType() == StoreType.应用宝
+                || storeConfig.getStoreType() == StoreType.小米应用市场
+                || StringUtils.hasText(storeConfig.getToken())) {
             return TokenType.STATIC.getCode();
         }
         return TokenType.ACCESS_TOKEN.getCode();

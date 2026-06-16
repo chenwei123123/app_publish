@@ -50,7 +50,7 @@ class ConfigurableStorePublisherVivoTest {
     @Test
     void shouldSubmitVivoFullReleaseWithUpdateRequest() throws Exception {
         Path apk = buildVivoPackage("demo-32.apk", "demo-64.apk");
-        writeVivoProjectMetadata(tempDir, tempDir.resolve("packages").resolve("demo-32.apk"), apk, false, 0);
+        Map<String, Object> publishMetadata = buildVivoPublishMetadata(tempDir, tempDir.resolve("packages").resolve("demo-32.apk"), apk, false, 0);
 
         AtomicInteger requestCount = new AtomicInteger();
         AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
@@ -78,7 +78,7 @@ class ConfigurableStorePublisherVivoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server, publishMetadata));
             StoreSubmitResult result = publisher.submitRelease(vivoStoreConfig(), appVersion(apk), new AppReleaseRecord(), "");
 
             assertEquals("serial-64", result.storeReleaseId());
@@ -207,7 +207,7 @@ class ConfigurableStorePublisherVivoTest {
     @Test
     void shouldSubmitVivoStageReleaseWithCreateUpdateRequest() throws Exception {
         Path apk = buildVivoPackage("stage-demo-32.apk", "stage-demo-64.apk");
-        writeVivoProjectMetadata(tempDir, tempDir.resolve("packages").resolve("stage-demo-32.apk"), apk, false, 0);
+        Map<String, Object> publishMetadata = buildVivoPublishMetadata(tempDir, tempDir.resolve("packages").resolve("stage-demo-32.apk"), apk, false, 0);
 
         AtomicInteger requestCount = new AtomicInteger();
         AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
@@ -234,7 +234,7 @@ class ConfigurableStorePublisherVivoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server, publishMetadata));
             AppReleaseRecord record = stagedRecord();
             StoreSubmitResult result = publisher.submitRelease(vivoStoreConfig(), appVersion(apk), record, "");
 
@@ -298,7 +298,7 @@ class ConfigurableStorePublisherVivoTest {
     @Test
     void shouldCreateVivoAppWhenAppDetailsQueryReturns11001() throws Exception {
         Path apk = buildVivoCreatePackage();
-        writeVivoProjectMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, true, 3);
+        Map<String, Object> publishMetadata = buildVivoPublishMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, true, 3);
 
         AtomicInteger requestCount = new AtomicInteger();
         AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
@@ -337,7 +337,7 @@ class ConfigurableStorePublisherVivoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server, publishMetadata));
             StoreSubmitResult result = publisher.submitRelease(vivoStoreConfig(), appVersion(apk), new AppReleaseRecord(), "");
 
             assertEquals("com.demo.app", result.storeReleaseId());
@@ -370,7 +370,7 @@ class ConfigurableStorePublisherVivoTest {
     @Test
     void shouldCreateVivoAppWithFiveScreenshots() throws Exception {
         Path apk = buildVivoCreatePackage();
-        writeVivoProjectMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, true, 5);
+        Map<String, Object> publishMetadata = buildVivoPublishMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, true, 5);
 
         AtomicInteger requestCount = new AtomicInteger();
         List<Map<String, String>> screenshotUploadParts = new ArrayList<>();
@@ -405,7 +405,7 @@ class ConfigurableStorePublisherVivoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server, publishMetadata));
             StoreSubmitResult result = publisher.submitRelease(vivoStoreConfig(), appVersion(apk), new AppReleaseRecord(), "");
 
             assertEquals("com.demo.app", result.storeReleaseId());
@@ -424,7 +424,7 @@ class ConfigurableStorePublisherVivoTest {
     @Test
     void shouldFailVivoCreateWhenAssetsAreMissing() throws Exception {
         Path apk = buildVivoCreatePackage();
-        writeVivoProjectMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, false, 0);
+        Map<String, Object> publishMetadata = buildVivoPublishMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, false, 0);
 
         AtomicInteger requestCount = new AtomicInteger();
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
@@ -435,7 +435,7 @@ class ConfigurableStorePublisherVivoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server, publishMetadata));
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
@@ -452,7 +452,7 @@ class ConfigurableStorePublisherVivoTest {
     @Test
     void shouldRejectVivoCreateWhenScreenshotCountIsLessThanThree() throws Exception {
         Path apk = buildVivoCreatePackage();
-        writeVivoProjectMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, true, 2);
+        Map<String, Object> publishMetadata = buildVivoPublishMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, true, 2);
 
         AtomicInteger requestCount = new AtomicInteger();
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
@@ -463,7 +463,7 @@ class ConfigurableStorePublisherVivoTest {
         server.start();
 
         try {
-            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server));
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties(server, publishMetadata));
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
@@ -481,7 +481,7 @@ class ConfigurableStorePublisherVivoTest {
     @Test
     void shouldRejectVivoCreateOutsideSandbox() throws Exception {
         Path apk = buildVivoCreatePackage();
-        writeVivoProjectMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, true, 3);
+        Map<String, Object> publishMetadata = buildVivoPublishMetadata(tempDir, tempDir.resolve("packages").resolve("create-demo-32.apk"), apk, true, 3);
 
         AtomicInteger requestCount = new AtomicInteger();
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
@@ -492,7 +492,7 @@ class ConfigurableStorePublisherVivoTest {
         server.start();
 
         try {
-            AppProperties appProperties = appProperties(server);
+            AppProperties appProperties = appProperties(server, publishMetadata);
             appProperties.getStoreApi().getStore("vivo").setSandboxEnabled(false);
             ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), new ObjectMapper(), appProperties);
 
@@ -572,18 +572,8 @@ class ConfigurableStorePublisherVivoTest {
         byte[] apkBytes = "repo-apk-binary".getBytes(StandardCharsets.UTF_8);
         Path apk32 = tempDir.resolve("repo-32.apk");
         Files.writeString(apk32, "repo 32 bit apk", StandardCharsets.UTF_8);
-        Path metadataPath = Path.of("app-publish-metadata.json").toAbsolutePath();
-        byte[] originalMetadata = Files.exists(metadataPath) ? Files.readAllBytes(metadataPath) : null;
-        Files.writeString(
-                metadataPath,
-                """
-                        {
-                          "vivo": {
-                            "apk32Path": "%s"
-                          }
-                        }
-                        """.formatted(apk32.toAbsolutePath().toString().replace('\\', '/')),
-                StandardCharsets.UTF_8
+        Map<String, Object> publishMetadata = Map.of(
+                "vivo", Map.of("apk32Path", apk32.toAbsolutePath().toString().replace('\\', '/'))
         );
         AtomicInteger requestCount = new AtomicInteger();
         AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
@@ -621,7 +611,7 @@ class ConfigurableStorePublisherVivoTest {
             ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(
                     RestClient.create(),
                     new ObjectMapper(),
-                    appProperties(server, "http://127.0.0.1:" + server.getAddress().getPort() + "/repository")
+                    appProperties(server, "http://127.0.0.1:" + server.getAddress().getPort() + "/repository", publishMetadata)
             );
 
             StoreSubmitResult result = publisher.submitRelease(
@@ -643,11 +633,6 @@ class ConfigurableStorePublisherVivoTest {
             assertEquals("serial-64", submitForm.get().get("apk64"));
         } finally {
             server.stop(0);
-            if (originalMetadata == null) {
-                Files.deleteIfExists(metadataPath);
-            } else {
-                Files.write(metadataPath, originalMetadata);
-            }
         }
     }
 
@@ -867,8 +852,14 @@ class ConfigurableStorePublisherVivoTest {
     }
 
     private AppProperties appProperties(HttpServer server) {
+        return appProperties(server, Map.of());
+    }
+
+    private AppProperties appProperties(HttpServer server, Map<String, Object> publishMetadata) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
+        appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
+        appProperties.getPublishMetadata().setValues(publishMetadata);
         StoreApiProperties.StoreEndpointProperties vivo = new StoreApiProperties.StoreEndpointProperties();
         vivo.setMockEnabled(false);
         vivo.setSandboxEnabled(true);
@@ -878,7 +869,11 @@ class ConfigurableStorePublisherVivoTest {
     }
 
     private AppProperties appProperties(HttpServer server, String packageRepositoryBaseUrl) {
-        AppProperties appProperties = appProperties(server);
+        return appProperties(server, packageRepositoryBaseUrl, Map.of());
+    }
+
+    private AppProperties appProperties(HttpServer server, String packageRepositoryBaseUrl, Map<String, Object> publishMetadata) {
+        AppProperties appProperties = appProperties(server, publishMetadata);
         appProperties.getPackageRepository().setBaseUrl(packageRepositoryBaseUrl);
         return appProperties;
     }
@@ -939,7 +934,7 @@ class ConfigurableStorePublisherVivoTest {
         return apk64;
     }
 
-    private void writeVivoProjectMetadata(Path projectRoot, Path apk32Path, Path apk64Path, boolean includeIcon, int screenshotCount) throws Exception {
+    private Map<String, Object> buildVivoPublishMetadata(Path projectRoot, Path apk32Path, Path apk64Path, boolean includeIcon, int screenshotCount) throws Exception {
         Path assetsDir = projectRoot.resolve("assets").resolve("vivo");
         Files.createDirectories(assetsDir);
         if (includeIcon) {
@@ -949,38 +944,26 @@ class ConfigurableStorePublisherVivoTest {
             Files.writeString(assetsDir.resolve("screenshot-" + index + ".png"), "shot-" + index, StandardCharsets.UTF_8);
         }
 
-        String iconConfig = includeIcon ? """
-                        "iconPath": "assets/vivo/icon.png",
-                """ : "";
-        String apk64Config = apk64Path == null ? "" : """
-                        "apk64Path": "%s",
-                """.formatted(relativePath(projectRoot, apk64Path));
-        String screenshotConfig = screenshotCount > 0
-                ? """
-                        "screenshotPaths": [
-                %s
-                        ],
-                """.formatted(buildScreenshotMetadataConfig(screenshotCount))
-                : "";
-        Files.writeString(
-                projectRoot.resolve("app-publish-metadata.json"),
-                """
-                        {
-                          "versionName": "1.0.0",
-                          "versionCode": 100,
-                          "reinforced": false,
-                          "vivo": {
-                            "apk32Path": "%s",
-                %s
-                            "appClassify": 5,
-                            "subAppClassify": 501,
-                            "rateAge": 12,
-                %s
-                %s            "compatibleDevice": 1
-                          }
-                        }
-                        """.formatted(relativePath(projectRoot, apk32Path), apk64Config, iconConfig, screenshotConfig),
-                StandardCharsets.UTF_8
+        Map<String, Object> vivo = new LinkedHashMap<>();
+        vivo.put("apk32Path", relativePath(projectRoot, apk32Path));
+        if (apk64Path != null) {
+            vivo.put("apk64Path", relativePath(projectRoot, apk64Path));
+        }
+        vivo.put("appClassify", 5);
+        vivo.put("subAppClassify", 501);
+        vivo.put("rateAge", 12);
+        if (includeIcon) {
+            vivo.put("iconPath", "assets/vivo/icon.png");
+        }
+        if (screenshotCount > 0) {
+            vivo.put("screenshotPaths", buildScreenshotMetadataConfig(screenshotCount));
+        }
+        vivo.put("compatibleDevice", 1);
+        return Map.of(
+                "versionName", "1.0.0",
+                "versionCode", 100,
+                "reinforced", false,
+                "vivo", vivo
         );
     }
 
@@ -988,13 +971,12 @@ class ConfigurableStorePublisherVivoTest {
         return projectRoot.toAbsolutePath().normalize().relativize(filePath.toAbsolutePath().normalize()).toString().replace('\\', '/');
     }
 
-    private String buildScreenshotMetadataConfig(int screenshotCount) {
+    private List<String> buildScreenshotMetadataConfig(int screenshotCount) {
         List<String> lines = new ArrayList<>();
         for (int index = 1; index <= screenshotCount; index++) {
-            String suffix = index == screenshotCount ? "" : ",";
-            lines.add("                          \"assets/vivo/screenshot-" + index + ".png\"" + suffix);
+            lines.add("assets/vivo/screenshot-" + index + ".png");
         }
-        return String.join(System.lineSeparator(), lines);
+        return lines;
     }
 
     private AppReleaseRecord stagedRecord() {
