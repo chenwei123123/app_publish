@@ -1,0 +1,17 @@
+@echo off
+setlocal
+
+set "DEFAULT_PROFILE=__DEFAULT_PROFILE__"
+set "PROFILE_PLACEHOLDER=__DEFAULT"
+set "PROFILE_PLACEHOLDER=%PROFILE_PLACEHOLDER%_PROFILE__"
+if "%DEFAULT_PROFILE%"=="%PROFILE_PLACEHOLDER%" set "DEFAULT_PROFILE=dev"
+set "PROFILE=%~1"
+if "%PROFILE%"=="" set "PROFILE=%DEFAULT_PROFILE%"
+set "JAR_PATH=%~2"
+set "SCRIPT_DIR=%~dp0"
+
+call "%SCRIPT_DIR%stop.bat" "%PROFILE%"
+call "%SCRIPT_DIR%start.bat" "%PROFILE%" "%JAR_PATH%"
+
+endlocal
+exit /b %errorlevel%
