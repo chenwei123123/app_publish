@@ -37,7 +37,8 @@ import static org.mockito.Mockito.when;
 
 class ReleaseOrchestrationServiceTest {
 
-    private static final String APK32_DOWNLOAD_FAILED_MESSAGE = "32\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
+    private static final String APK32_DOWNLOAD_FAILED_MESSAGE =
+            PackageVersionService.apk32DownloadFailedMessage("https://download.example.com/demo-32.apk");
 
     /**
      * 测试Reject 灰度发布 OPPO 小米场景。

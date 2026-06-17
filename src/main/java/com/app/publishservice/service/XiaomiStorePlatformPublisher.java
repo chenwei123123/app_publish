@@ -370,8 +370,6 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         appInfoPayload.put("appName", appInfo.getAppName().trim());
         appInfoPayload.put("packageName", appInfo.getPackageName().trim());
         addIfHasText(appInfoPayload, "updateDesc", firstNonBlank(
-                version.getUpdateLog(),
-                stringValue(metadataLookup(metadata, "xiaomi", "updateDesc")),
                 appInfo.getAppDescription(),
                 appInfo.getAppName()
         ));

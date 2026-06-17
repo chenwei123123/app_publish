@@ -165,9 +165,7 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      * 查询华为审核。
      */
     private StoreReviewResult queryHuaweiReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
-        String appId = StringUtils.hasText(record.getStoreReleaseId())
-                ? record.getStoreReleaseId()
-                : queryHuaweiAppId(storeConfig, token, record.getPackageName());
+        String appId = queryHuaweiAppId(storeConfig, token, record.getPackageName());
         Map<String, Object> response = queryHuaweiAppInfo(storeConfig, token, appId, isStagedRelease(record));
         Map<String, Object> appInfo = asMap(response.get("appInfo"));
         Map<String, Object> auditInfo = asMap(response.get("auditInfo"));
@@ -479,7 +477,7 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         AppInfo appInfo = version.getAppInfo();
         String remark = firstNonBlank(
                 stringValue(metadataLookup(metadata, "huawei", "remark")),
-                normalizeStageText(10, 300, version.getUpdateLog(), appInfo == null ? null : appInfo.getAppDescription(), appInfo == null ? null : appInfo.getAppName(), appInfo == null ? null : appInfo.getPackageName(), "Huawei submit remark")
+                normalizeStageText(10, 300,  appInfo == null ? null : appInfo.getAppDescription(), appInfo == null ? null : appInfo.getAppName(), appInfo == null ? null : appInfo.getPackageName(), "Huawei submit remark")
         );
         if (StringUtils.hasText(remark)) {
             queryParams.put("remark", remark);
@@ -504,7 +502,6 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                 normalizeStageText(
                         10,
                         500,
-                        version.getUpdateLog(),
                         appInfo == null ? null : appInfo.getAppDescription(),
                         appInfo == null ? null : appInfo.getAppName(),
                         appInfo == null ? null : appInfo.getPackageName(),

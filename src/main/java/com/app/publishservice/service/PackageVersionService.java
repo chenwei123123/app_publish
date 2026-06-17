@@ -31,8 +31,6 @@ import java.util.Map;
 public class PackageVersionService {
 
     private static final Logger log = LoggerFactory.getLogger(PackageVersionService.class);
-    static final String APK32_DOWNLOAD_FAILED_MESSAGE = "32\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
-    static final String APK64_DOWNLOAD_FAILED_MESSAGE = "64\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
     static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk32Path";
     static final String APK64_LOCAL_FILE_FAILED_MESSAGE = "64\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk64Path";
 
@@ -138,7 +136,7 @@ public class PackageVersionService {
     /**
      * 处理prepare 版本提交相关逻辑。
      */
-    @Transactional
+    @Transactional(noRollbackFor = SubmitPackageDownloadException.class)
     public AppVersion prepareVersionForSubmit(AppVersion version) {
         if (StringUtils.hasText(version.getBuildCode())) {
             if (environment.matchesProfiles("dev")) {
@@ -168,13 +166,13 @@ public class PackageVersionService {
             Path apk64Target = allocateSubmitPackagePath(version.getVersionCode(), version.getBuildCode(), ApkDownloadUtil.extractFileName(apk64Url));
             try {
                 ApkDownloadUtil.downloadApk32(version.getVersionCode(), version.getBuildCode(), apk32Target.toString());
-            } catch (IOException ex) {
-                throw new SubmitPackageDownloadException(APK32_DOWNLOAD_FAILED_MESSAGE, ex);
+            } catch (Exception ex) {
+                throw new SubmitPackageDownloadException(apk32DownloadFailedMessage(apk32Url), ex);
             }
             try {
                 ApkDownloadUtil.downloadApk64(version.getVersionCode(), version.getBuildCode(), apk64Target.toString());
-            } catch (IOException ex) {
-                throw new SubmitPackageDownloadException(APK64_DOWNLOAD_FAILED_MESSAGE, ex);
+            } catch (Exception ex) {
+                throw new SubmitPackageDownloadException(apk64DownloadFailedMessage(apk64Url), ex);
             }
             version.setPackageUrl32(apk32Target.toString());
             version.setPackageUrl64(apk64Target.toString());
@@ -389,6 +387,14 @@ public class PackageVersionService {
             }
         }
         return null;
+    }
+
+    static String apk32DownloadFailedMessage(String downloadUrl) {
+        return "\u4ECE" + downloadUrl + "\u4E0B\u8F7D32\u4F4Dapk\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7\u662F\u5426\u6B63\u786E";
+    }
+
+    static String apk64DownloadFailedMessage(String downloadUrl) {
+        return "\u4ECE" + downloadUrl + "\u4E0B\u8F7D64\u4F4Dapk\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7\u662F\u5426\u6B63\u786E";
     }
 
     private record ProjectMetadataContext(Path metadataPath, Map<String, Object> metadata) {

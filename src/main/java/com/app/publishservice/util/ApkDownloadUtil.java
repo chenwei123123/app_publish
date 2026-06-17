@@ -35,14 +35,14 @@ public final class ApkDownloadUtil {
     /**
      * 下载Apk32。
      */
-    public static void downloadApk32(String versionCode, String buildCode, String savePath) throws IOException {
+    public static void downloadApk32(String versionCode, String buildCode, String savePath) throws Exception {
         downloadApk(buildApk32Url(versionCode, buildCode), savePath);
     }
 
     /**
      * 下载Apk64。
      */
-    public static void downloadApk64(String versionCode, String buildCode, String savePath) throws IOException {
+    public static void downloadApk64(String versionCode, String buildCode, String savePath) throws Exception {
         downloadApk(buildApk64Url(versionCode, buildCode), savePath);
     }
 
@@ -85,7 +85,7 @@ public final class ApkDownloadUtil {
     /**
      * 下载APK。
      */
-    private static void downloadApk(String downloadUrl, String savePath) throws IOException {
+    private static void downloadApk(String downloadUrl, String savePath) throws Exception {
         Path target = Path.of(savePath);
         if (Files.exists(target) && Files.isRegularFile(target)) {
             return;

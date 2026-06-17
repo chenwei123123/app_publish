@@ -28,8 +28,10 @@ import static org.mockito.Mockito.when;
 
 class PackageVersionServiceTest {
 
-    private static final String APK32_DOWNLOAD_FAILED_MESSAGE = "32\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
-    private static final String APK64_DOWNLOAD_FAILED_MESSAGE = "64\u4F4Dapk\u6587\u4EF6\u4E0B\u8F7D\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7";
+    private static final String APK32_URL = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/123_cmschina_armeabi_b456/cms_yht_32.apk";
+    private static final String APK64_URL = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/123_cmschina_arm64_b456/cms_yht_64.apk";
+    private static final String APK32_DOWNLOAD_FAILED_MESSAGE = PackageVersionService.apk32DownloadFailedMessage(APK32_URL);
+    private static final String APK64_DOWNLOAD_FAILED_MESSAGE = PackageVersionService.apk64DownloadFailedMessage(APK64_URL);
     private static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk32Path";
 
     /**
@@ -60,8 +62,8 @@ class PackageVersionServiceTest {
 
         AppVersion prepared = service.prepareVersionForSubmit(version);
 
-        assertEquals("https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/123_cmschina_armeabi_b456/cms_yht_32.apk", prepared.getPackageUrl32());
-        assertEquals("https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/123_cmschina_arm64_b456/cms_yht_64.apk", prepared.getPackageUrl64());
+        assertEquals(APK32_URL, prepared.getPackageUrl32());
+        assertEquals(APK64_URL, prepared.getPackageUrl64());
         verify(repository).updateById(version);
     }
 
