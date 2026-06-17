@@ -82,7 +82,7 @@ class ApkDownloadUtilTest {
      * 测试Skip 下载 When Target 文件 Already Exists场景。
      */
     @Test
-    void shouldSkipDownloadWhenTargetFileAlreadyExists() throws IOException {
+    void shouldSkipDownloadWhenTargetFileAlreadyExists() throws Exception {
         Path tempFile = Files.createTempFile("apk-download-util-", ".apk");
         Files.writeString(tempFile, "existing");
 
