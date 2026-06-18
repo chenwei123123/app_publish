@@ -41,6 +41,7 @@ public class ConfigurableStorePublisher extends AbstractStorePlatformPublisher {
                 new VivoStorePlatformPublisher(restClient, objectMapper, appProperties, storeRequestLogService),
                 new OppoStorePlatformPublisher(restClient, objectMapper, appProperties, storeRequestLogService),
                 new HuaweiStorePlatformPublisher(restClient, objectMapper, appProperties, storeRequestLogService),
+                new RongyaoStorePlatformPublisher(restClient, objectMapper, appProperties, storeRequestLogService),
                 new XiaomiStorePlatformPublisher(restClient, objectMapper, appProperties, storeRequestLogService),
                 new SanxingStorePlatformPublisher(restClient, objectMapper, appProperties, storeRequestLogService),
                 new YingyongbaoStorePlatformPublisher(restClient, objectMapper, appProperties, storeRequestLogService)

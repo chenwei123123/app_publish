@@ -349,6 +349,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      * 上传华为文件。
      */
     private void uploadHuaweiFile(AppStoreConfig storeConfig, Map<String, Object> uploadUrlInfo, Path packagePath) {
+        if (endpoint(storeConfig).isMockEnabled()) {
+            return;
+        }
         String url = firstString(uploadUrlInfo, "url");
         @SuppressWarnings("unchecked")
         Map<String, Object> headerMap = uploadUrlInfo.get("headers") instanceof Map<?, ?> map
