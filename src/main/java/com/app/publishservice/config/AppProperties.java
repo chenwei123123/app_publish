@@ -15,6 +15,7 @@ public class AppProperties {
     private PackageRepositoryProperties packageRepository = new PackageRepositoryProperties();
     private StoreApiProperties storeApi = new StoreApiProperties();
     private PublishMetadataProperties publishMetadata = new PublishMetadataProperties();
+    private JwtAuthProperties jwtAuth = new JwtAuthProperties();
 
     /**
      * 获取存储 Root。
@@ -112,6 +113,14 @@ public class AppProperties {
      */
     public void setPublishMetadata(PublishMetadataProperties publishMetadata) {
         this.publishMetadata = publishMetadata;
+    }
+
+    public JwtAuthProperties getJwtAuth() {
+        return jwtAuth;
+    }
+
+    public void setJwtAuth(JwtAuthProperties jwtAuth) {
+        this.jwtAuth = jwtAuth;
     }
 
     public static class PackageRepositoryProperties {
@@ -239,6 +248,100 @@ public class AppProperties {
          */
         public void setValues(Map<String, Object> values) {
             this.values = values;
+        }
+    }
+
+    public static class JwtAuthProperties {
+
+        private boolean enabled = true;
+        private String headerName = "Authentication";
+        private String secret;
+        private String cookieName = "Authentication";
+        private String cookiePath = "/";
+        private boolean cookieHttpOnly = true;
+        private boolean cookieSecure;
+        private String cookieSameSite = "Lax";
+        private String audienceAesKey = "K6MIDdFi1NGk685H";
+        private String audienceAesIv;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getHeaderName() {
+            return headerName;
+        }
+
+        public void setHeaderName(String headerName) {
+            this.headerName = headerName;
+        }
+
+        public String getSecret() {
+            return secret;
+        }
+
+        public void setSecret(String secret) {
+            this.secret = secret;
+        }
+
+        public String getCookieName() {
+            return cookieName;
+        }
+
+        public void setCookieName(String cookieName) {
+            this.cookieName = cookieName;
+        }
+
+        public String getCookiePath() {
+            return cookiePath;
+        }
+
+        public void setCookiePath(String cookiePath) {
+            this.cookiePath = cookiePath;
+        }
+
+        public boolean isCookieHttpOnly() {
+            return cookieHttpOnly;
+        }
+
+        public void setCookieHttpOnly(boolean cookieHttpOnly) {
+            this.cookieHttpOnly = cookieHttpOnly;
+        }
+
+        public boolean isCookieSecure() {
+            return cookieSecure;
+        }
+
+        public void setCookieSecure(boolean cookieSecure) {
+            this.cookieSecure = cookieSecure;
+        }
+
+        public String getCookieSameSite() {
+            return cookieSameSite;
+        }
+
+        public void setCookieSameSite(String cookieSameSite) {
+            this.cookieSameSite = cookieSameSite;
+        }
+
+        public String getAudienceAesKey() {
+            return audienceAesKey;
+        }
+
+        public void setAudienceAesKey(String audienceAesKey) {
+            this.audienceAesKey = audienceAesKey;
+        }
+
+        public String getAudienceAesIv() {
+            return audienceAesIv;
+        }
+
+        public void setAudienceAesIv(String audienceAesIv) {
+            this.audienceAesIv = audienceAesIv;
         }
     }
 }
