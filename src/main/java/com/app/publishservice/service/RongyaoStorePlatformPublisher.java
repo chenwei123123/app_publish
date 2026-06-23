@@ -69,13 +69,6 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            return new TokenPayload(
-                    TokenType.ACCESS_TOKEN.getCode(),
-                    "mock-rongyao-" + UUID.randomUUID(),
-                    LocalDateTime.now().plusHours(1)
-            );
-        }
         if (!StringUtils.hasText(storeConfig.getClientId()) || !StringUtils.hasText(storeConfig.getClientSecret())) {
             throw new IllegalArgumentException("Rongyao token refresh requires clientId and clientSecret");
         }
@@ -93,7 +86,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockRongyaoTokenResponse())
         );
         Map<String, Object> response = readJson(responseBody);
         String token = firstString(response, "access_token", "accessToken", "token");
@@ -122,20 +116,6 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
         AppInfo appInfo = version.getAppInfo();
         if (appInfo == null || !StringUtils.hasText(appInfo.getPackageName())) {
             throw new IllegalArgumentException("Rongyao submit requires app packageName");
-        }
-
-        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> requestLog = new LinkedHashMap<>();
-            requestLog.put("mock", true);
-            requestLog.put("packageName", appInfo.getPackageName());
-            requestLog.put("releaseType", isStagedRelease(record) ? 3 : 1);
-            String storeReleaseId = "mock-rongyao-" + UUID.randomUUID();
-            Map<String, Object> responseLog = new LinkedHashMap<>();
-            responseLog.put("mock", true);
-            responseLog.put("status", ReleaseStatus.AUDITING.getCode());
-            responseLog.put("storeReleaseId", storeReleaseId);
-            return new StoreSubmitResult(storeReleaseId, writeJson(requestLog), writeJson(responseLog), "mock submit success");
         }
 
         String appId = queryRongyaoAppId(storeConfig, token, appInfo.getPackageName());
@@ -176,14 +156,6 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
     }
 
     private StoreReviewResult queryRongyaoReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
-        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            ReleaseStatus status = record.getReleaseTime() != null
-                    && record.getReleaseTime().isBefore(LocalDateTime.now().minusSeconds(appProperties.getReviewAutoPassSeconds()))
-                    ? ReleaseStatus.PASS
-                    : ReleaseStatus.AUDITING;
-            return new StoreReviewResult(status, writeJson(Map.of("mock", true, "status", status.getCode())), null);
-        }
         if (!StringUtils.hasText(record.getPackageName())) {
             throw new IllegalArgumentException("Rongyao review query requires packageName");
         }
@@ -249,7 +221,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .uri(url)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockRongyaoAppIdResponse(packageName))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureRongyaoSuccess(response, "query app id");
@@ -307,7 +280,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockRongyaoFileUploadUrlResponse(packagePaths))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureRongyaoSuccess(response, "get file upload url");
@@ -371,7 +345,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                             .contentType(MediaType.MULTIPART_FORM_DATA)
                             .body(body)
                             .retrieve()
-                            .body(String.class)
+                            .body(String.class),
+                    () -> writeJson(mockRongyaoUploadFileResponse(packagePath, objectId))
             );
             Map<String, Object> response = readJson(responseBody);
             ensureRongyaoSuccess(response, "upload file");
@@ -405,7 +380,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockRongyaoSuccessResponse())
         );
         Map<String, Object> response = readJson(responseBody);
         ensureRongyaoSuccess(response, "update file info");
@@ -491,7 +467,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockRongyaoSubmitAuditResponse())
         );
         Map<String, Object> response = readJson(responseBody);
         ensureRongyaoSuccess(response, "submit audit");
@@ -515,7 +492,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockRongyaoAuditResultResponse(releaseId))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureRongyaoSuccess(response, "query audit result");
@@ -530,7 +508,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .uri(url)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockRongyaoCurrentReleaseResponse())
         );
         Map<String, Object> response = readJson(responseBody);
         ensureRongyaoSuccessOrBarePayload(response, "query current release", "releaseId");
@@ -545,7 +524,8 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .uri(url)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockRongyaoPhasedReleaseInfoResponse())
         );
         Map<String, Object> response = readJson(responseBody);
         ensureRongyaoSuccessOrBarePayload(response, "query phased release info", "releaseStatus");
@@ -593,6 +573,91 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
             case 3, 5 -> ReleaseStatus.OFFLINE;
             default -> ReleaseStatus.AUDITING;
         };
+    }
+
+    private Map<String, Object> mockRongyaoTokenResponse() {
+        return Map.of(
+                "access_token", "mock-rongyao-" + UUID.randomUUID(),
+                "expires_in", 3600
+        );
+    }
+
+    private Map<String, Object> mockRongyaoAppIdResponse(String packageName) {
+        return Map.of(
+                "code", 0,
+                "msg", "success",
+                "data", List.of(Map.of(
+                        "appId", "mock-rongyao-appid",
+                        "pkgName", packageName
+                ))
+        );
+    }
+
+    private Map<String, Object> mockRongyaoFileUploadUrlResponse(List<Path> packagePaths) {
+        List<Map<String, Object>> data = new ArrayList<>();
+        for (int index = 0; index < packagePaths.size(); index++) {
+            Path packagePath = packagePaths.get(index);
+            data.add(Map.of(
+                    "fileName", packagePath.getFileName().toString(),
+                    "objectId", String.valueOf(index + 1),
+                    "uploadUrl", "https://mock.rongyao.local/upload/" + packagePath.getFileName()
+            ));
+        }
+        return Map.of(
+                "code", 0,
+                "msg", "success",
+                "data", data
+        );
+    }
+
+    private Map<String, Object> mockRongyaoUploadFileResponse(Path packagePath, String objectId) {
+        return Map.of(
+                "code", 0,
+                "msg", "success",
+                "data", Map.of(
+                        "objectId", objectId,
+                        "fileName", packagePath.getFileName().toString()
+                )
+        );
+    }
+
+    private Map<String, Object> mockRongyaoSuccessResponse() {
+        return Map.of(
+                "code", 0,
+                "msg", "success"
+        );
+    }
+
+    private Map<String, Object> mockRongyaoSubmitAuditResponse() {
+        return Map.of(
+                "code", 0,
+                "msg", "success",
+                "data", "mock-rongyao-" + UUID.randomUUID()
+        );
+    }
+
+    private Map<String, Object> mockRongyaoAuditResultResponse(String releaseId) {
+        return Map.of(
+                "code", 0,
+                "msg", "success",
+                "data", List.of(Map.of(
+                        "releaseId", releaseId,
+                        "auditResult", 1
+                ))
+        );
+    }
+
+    private Map<String, Object> mockRongyaoCurrentReleaseResponse() {
+        return Map.of(
+                "releaseId", "mock-rongyao-current",
+                "auditResult", 1
+        );
+    }
+
+    private Map<String, Object> mockRongyaoPhasedReleaseInfoResponse() {
+        return Map.of(
+                "releaseStatus", 1
+        );
     }
 
     private void ensureRongyaoSuccess(Map<String, Object> response, String action) {

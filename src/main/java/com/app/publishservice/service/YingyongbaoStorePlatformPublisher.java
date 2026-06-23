@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -92,8 +93,10 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
      * 提交应用宝发布。
      */
     private StoreSubmitResult submitYingyongbaoRelease(AppStoreConfig storeConfig, AppVersion version) {
-        YingyongbaoContext context = resolveYingyongbaoContext(version, null);
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+        YingyongbaoContext context = endpoint.isMockEnabled()
+                ? mockYingyongbaoContext(version, null)
+                : resolveYingyongbaoContext(version, null);
 
         Map<String, Object> appDetailResponse = yingyongbaoSignedRequest(
                 storeConfig,
@@ -242,24 +245,23 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
             throw new IllegalStateException("Yingyongbao upload info response is missing pre_sign_url or serial_number");
         }
 
-        if (!endpoint(storeConfig).isMockEnabled()) {
-            executeStoreRequest(
-                    trace(
-                            storeConfig,
-                            "upload yingyongbao file " + filePath.getFileName(),
-                            "PUT",
-                            preSignUrl,
-                            null,
-                            Map.of("fileType", fileType, "fileName", filePath.getFileName().toString())
-                    ),
-                    () -> restClient.put()
-                            .uri(preSignUrl)
-                            .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                            .body(new FileSystemResource(filePath))
-                            .retrieve()
-                            .toBodilessEntity()
-            );
-        }
+        executeStoreRequest(
+                trace(
+                        storeConfig,
+                        "upload yingyongbao file " + filePath.getFileName(),
+                        "PUT",
+                        preSignUrl,
+                        null,
+                        Map.of("fileType", fileType, "fileName", filePath.getFileName().toString())
+                ),
+                () -> restClient.put()
+                        .uri(preSignUrl)
+                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .body(new FileSystemResource(filePath))
+                        .retrieve()
+                        .toBodilessEntity(),
+                () -> ResponseEntity.ok().build()
+        );
 
         Map<String, Object> uploadResponse = Map.of("status", "uploaded", "serial_number", serialNumber, "file_name", filePath.getFileName().toString());
         Map<String, Object> logEntry = new LinkedHashMap<>();
@@ -281,9 +283,6 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
             throw new IllegalArgumentException("Yingyongbao request requires clientId as user_id and clientSecret as access_secret");
         }
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            return mockYingyongbaoSignedResponse(endpointPath, businessParams);
-        }
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user_id", storeConfig.getClientId().trim());
@@ -308,7 +307,8 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockYingyongbaoSignedResponse(endpointPath, businessParams))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureYingyongbaoSuccess(response, action);
@@ -396,6 +396,23 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
     /**
      * 解析应用宝包名称。
      */
+    private YingyongbaoContext mockYingyongbaoContext(AppVersion version, AppReleaseRecord record) {
+        String packageName = resolveYingyongbaoPackageName(version, record);
+        String packageLocation = firstNonBlank(
+                version == null ? null : version.getPackageUrl64(),
+                version == null ? null : version.getPackageUrl32(),
+                version == null ? null : version.getPackageUrl()
+        );
+        ProjectMetadataContext metadataContext = resolveProjectMetadataContext(packageLocation);
+        Map<String, Object> metadata = metadataContext.metadata();
+        String appId = firstNonBlank(
+                record == null ? null : record.getStoreReleaseId(),
+                stringValue(yingyongbaoMetadata(metadata, "appId")),
+                "mock-app-id"
+        );
+        return new YingyongbaoContext(appId.trim(), packageName, metadataContext, metadata);
+    }
+
     private String resolveYingyongbaoPackageName(AppReleaseRecord record) {
         return resolveYingyongbaoPackageName(null, record);
     }

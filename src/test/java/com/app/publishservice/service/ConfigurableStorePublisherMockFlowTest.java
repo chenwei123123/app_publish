@@ -67,7 +67,7 @@ class ConfigurableStorePublisherMockFlowTest {
             AppReleaseRecord reviewRecord = reviewRecord(storeTypeCode, version, submitResult.storeReleaseId());
             StoreReviewResult reviewResult = publisher.queryReview(storeConfig, reviewRecord, "");
 
-            assertEquals(ReleaseStatus.PASS, reviewResult.releaseStatus());
+            assertEquals(ReleaseStatus.PASS, reviewResult.releaseStatus(), storeTypeCode);
             assertFalse(reviewResult.responseLog().isBlank());
         }
     }

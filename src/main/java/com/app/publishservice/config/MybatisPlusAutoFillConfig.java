@@ -1,5 +1,6 @@
 package com.app.publishservice.config;
 
+import com.app.publishservice.auth.CurrentUserContextHolder;
 import com.baomidou.mybatisplus.core.handlers.MetaObjectHandler;
 import org.apache.ibatis.reflection.MetaObject;
 import org.springframework.stereotype.Component;
@@ -9,24 +10,35 @@ import java.time.LocalDateTime;
 @Component
 public class MybatisPlusAutoFillConfig implements MetaObjectHandler {
 
+    private final CurrentUserContextHolder currentUserContextHolder;
+
+    public MybatisPlusAutoFillConfig(CurrentUserContextHolder currentUserContextHolder) {
+        this.currentUserContextHolder = currentUserContextHolder;
+    }
+
     /**
-     * 新增Fill。
+     * 鏂板Fill銆?
      */
     @Override
     public void insertFill(MetaObject metaObject) {
         LocalDateTime now = LocalDateTime.now();
+        String username = currentUsername();
         strictInsertFill(metaObject, "createTime", LocalDateTime.class, now);
         strictInsertFill(metaObject, "updateTime", LocalDateTime.class, now);
-        strictInsertFill(metaObject, "createUser", String.class, "system");
-        strictInsertFill(metaObject, "updateUser", String.class, "system");
+        strictInsertFill(metaObject, "createUser", String.class, username);
+        strictInsertFill(metaObject, "updateUser", String.class, username);
     }
 
     /**
-     * 更新Fill。
+     * 鏇存柊Fill銆?
      */
     @Override
     public void updateFill(MetaObject metaObject) {
         strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-        strictUpdateFill(metaObject, "updateUser", String.class, "system");
+        strictUpdateFill(metaObject, "updateUser", String.class, currentUsername());
+    }
+
+    private String currentUsername() {
+        return currentUserContextHolder.getCurrentUsername().orElse("system");
     }
 }

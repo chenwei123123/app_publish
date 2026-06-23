@@ -20,6 +20,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
@@ -83,16 +84,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            return new TokenPayload(
-                    TokenType.ACCESS_TOKEN.getCode(),
-                    "mock-sanxing-" + UUID.randomUUID(),
-                    LocalDateTime.now().plusMinutes(55)
-            );
-        }
-
         String serviceAccountId = resolveSanxingServiceAccountId(storeConfig);
-        String jwt = createSanxingJwt(storeConfig, serviceAccountId);
+        String jwt = resolveSanxingJwt(storeConfig, endpoint, serviceAccountId);
         String tokenUrl = sanxingBaseUrl(endpoint) + sanxingTokenEndpoint(endpoint);
         String responseBody;
         if (sanxingOauthTokenMode(endpoint)) {
@@ -106,7 +99,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                             .contentType(MediaType.APPLICATION_JSON)
                             .body(body)
                             .retrieve()
-                            .body(String.class)
+                            .body(String.class),
+                    () -> writeJson(mockSanxingTokenResponse())
             );
         } else {
             responseBody = executeStoreRequest(
@@ -123,7 +117,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                             .header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt)
                             .contentType(MediaType.APPLICATION_JSON)
                             .retrieve()
-                            .body(String.class)
+                            .body(String.class),
+                    () -> writeJson(mockSanxingTokenResponse())
             );
         }
 
@@ -164,22 +159,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
      * 提交三星发布。
      */
     private StoreSubmitResult submitSanxingRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
-        SanxingContext context = resolveSanxingContext(version, record);
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> requestLog = new LinkedHashMap<>();
-            requestLog.put("contentId", context.contentId());
-            requestLog.put("gms", context.gms());
-            requestLog.put("releaseType", record == null ? null : record.getReleaseType());
-            Map<String, Object> responseLog = new LinkedHashMap<>();
-            responseLog.put("contentInfo", List.of(Map.of(
-                    "contentId", context.contentId(),
-                    "contentStatus", "FOR_SALE",
-                    "binaryList", List.of(Map.of("versionCode", version.getVersionCode()))
-            )));
-            responseLog.put("submit", Map.of("status", 204));
-            return new StoreSubmitResult(context.contentId(), writeJson(requestLog), writeJson(responseLog), "mock submit success");
-        }
+        SanxingContext context = resolveSanxingSubmitContext(version, record, endpoint);
 
         List<Map<String, Object>> contentInfoList = querySanxingContentInfo(storeConfig, token, context.contentId());
         Map<String, Object> currentContentInfo = firstSanxingContentInfo(contentInfoList, context.contentId());
@@ -257,19 +238,30 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return new StoreSubmitResult(context.contentId(), writeJson(requestLog), writeJson(responseLog), "submit success");
     }
 
+    private String resolveSanxingJwt(
+            AppStoreConfig storeConfig,
+            StoreApiProperties.StoreEndpointProperties endpoint,
+            String serviceAccountId
+    ) {
+        return endpoint.isMockEnabled()
+                ? "mock-sanxing-jwt"
+                : createSanxingJwt(storeConfig, serviceAccountId);
+    }
+
+    private SanxingContext resolveSanxingSubmitContext(
+            AppVersion version,
+            AppReleaseRecord record,
+            StoreApiProperties.StoreEndpointProperties endpoint
+    ) {
+        return endpoint.isMockEnabled()
+                ? mockSanxingContext(version, record)
+                : resolveSanxingContext(version, record);
+    }
+
     /**
      * 查询三星审核。
      */
     private StoreReviewResult querySanxingReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
-        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            ReleaseStatus status = record.getReleaseTime() != null
-                    && record.getReleaseTime().isBefore(LocalDateTime.now().minusSeconds(appProperties.getReviewAutoPassSeconds()))
-                    ? ReleaseStatus.PASS
-                    : ReleaseStatus.AUDITING;
-            return new StoreReviewResult(status, "{\"mockStatus\":\"" + status.getCode() + "\"}", null);
-        }
-
         String contentId = resolveSanxingContentId(record, null);
         List<Map<String, Object>> contentInfoList = querySanxingContentInfo(storeConfig, token, contentId);
         Map<String, Object> contentInfo = firstSanxingContentInfo(contentInfoList, contentId);
@@ -315,7 +307,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                         .header("service-account-id", resolveSanxingServiceAccountId(storeConfig))
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockSanxingContentInfo(contentId))
         );
         return readSanxingContentInfo(responseBody);
     }
@@ -334,7 +327,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .header("service-account-id", resolveSanxingServiceAccountId(storeConfig))
                         .contentType(MediaType.APPLICATION_JSON)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockSanxingUploadSession())
         );
         Map<String, Object> response = readJson(responseBody);
         ensureSanxingSuccess(response, "create upload session");
@@ -374,7 +368,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockSanxingUploadResult(filePath))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureSanxingSuccess(response, "file upload");
@@ -397,7 +392,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(payload)
                         .retrieve()
-                        .toBodilessEntity()
+                        .toBodilessEntity(),
+                () -> ResponseEntity.ok().build()
         );
     }
 
@@ -428,7 +424,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                             .body(payload)
                             .retrieve()
                             .body(String.class);
-                }
+                },
+                () -> writeJson(mockSanxingJsonResponse(action, payload))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureSanxingSuccess(response, action);
@@ -595,6 +592,82 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     /**
      * 读取三星内容 Info。
      */
+    private SanxingContext mockSanxingContext(AppVersion version, AppReleaseRecord record) {
+        String packageLocation = firstNonBlank(version.getPackageUrl64(), version.getPackageUrl32(), version.getPackageUrl());
+        ProjectMetadataContext metadataContext = resolveProjectMetadataContext(packageLocation);
+        String contentId = firstNonBlank(
+                record == null ? null : record.getStoreReleaseId(),
+                version == null || version.getAppInfo() == null ? null : version.getAppInfo().getPackageName(),
+                "mock-sanxing-" + UUID.randomUUID()
+        );
+        Path packagePath = requireLocalPackage(packageLocation, "Sanxing submit requires apk path");
+        return new SanxingContext(
+                contentId,
+                "N",
+                "",
+                metadataContext,
+                Map.of(),
+                packagePath
+        );
+    }
+
+    private List<Map<String, Object>> mockSanxingContentInfo(String contentId) {
+        Map<String, Object> contentInfo = new LinkedHashMap<>();
+        contentInfo.put("contentId", contentId);
+        contentInfo.put("contentStatus", "FOR_SALE");
+        contentInfo.put("appTitle", "Mock Sanxing App");
+        contentInfo.put("defaultLanguageCode", "EN");
+        contentInfo.put("applicationType", "android");
+        contentInfo.put("longDescription", "Mock Sanxing long description");
+        contentInfo.put("shortDescription", "Mock Sanxing short description");
+        contentInfo.put("newFeature", "Mock Sanxing new feature");
+        contentInfo.put("paid", "N");
+        contentInfo.put("publicationType", "01");
+        contentInfo.put("privatePolicyURL", "https://mock.sanxing.local/privacy");
+        contentInfo.put("binaryList", List.of(Map.of(
+                "versionCode", "100",
+                "binarySeq", "1"
+        )));
+        return List.of(contentInfo);
+    }
+
+    private Map<String, Object> mockSanxingUploadSession() {
+        return Map.of(
+                "sessionId", "mock-sanxing-session",
+                "url", SANXING_UPLOAD_URL
+        );
+    }
+
+    private Map<String, Object> mockSanxingUploadResult(Path filePath) {
+        return Map.of(
+                "resultCode", "0000",
+                "fileKey", "mock-file-key-" + filePath.getFileName()
+        );
+    }
+
+    private Map<String, Object> mockSanxingJsonResponse(String action, Map<String, Object> payload) {
+        if ("add sanxing binary".equals(action)) {
+            return Map.of(
+                    "resultCode", "0000",
+                    "fileKey", firstString(payload, "filekey")
+            );
+        }
+        if ("update sanxing content".equals(action)) {
+            return Map.of(
+                    "resultCode", "0000",
+                    "contentId", firstString(payload, "contentId")
+            );
+        }
+        if ("update sanxing staged rollout".equals(action)) {
+            return Map.of(
+                    "resultCode", "0000",
+                    "contentId", firstString(payload, "contentId"),
+                    "rolloutRate", payload.get("rolloutRate")
+            );
+        }
+        return Map.of("resultCode", "0000");
+    }
+
     private List<Map<String, Object>> readSanxingContentInfo(String body) {
         if (!StringUtils.hasText(body)) {
             return List.of();
@@ -849,6 +922,13 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     /**
      * 确保三星 Success。
      */
+    private Map<String, Object> mockSanxingTokenResponse() {
+        return Map.of(
+                "resultCode", "0000",
+                "createdItem", Map.of("accessToken", "mock-sanxing-" + UUID.randomUUID())
+        );
+    }
+
     private void ensureSanxingSuccess(Map<String, Object> response, String action) {
         if (response == null || response.isEmpty()) {
             return;

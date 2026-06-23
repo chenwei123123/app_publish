@@ -17,6 +17,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
@@ -71,15 +72,8 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            log.info("Use mock huawei token refresh, storeConfigId={}", storeConfig.getId());
-            return new TokenPayload(
-                    TokenType.ACCESS_TOKEN.getCode(),
-                    "mock-huawei-" + UUID.randomUUID(),
-                    LocalDateTime.now().plusHours(48)
-            );
-        }
-        if (!StringUtils.hasText(storeConfig.getClientId()) || !StringUtils.hasText(storeConfig.getClientSecret())) {
+        if (!endpoint.isMockEnabled()
+                && (!StringUtils.hasText(storeConfig.getClientId()) || !StringUtils.hasText(storeConfig.getClientSecret()))) {
             throw new IllegalArgumentException("Huawei token refresh requires clientId and clientSecret");
         }
 
@@ -96,7 +90,8 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockHuaweiTokenResponse())
         );
         Map<String, Object> response = readJson(responseBody);
         String token = firstString(response, "access_token", "accessToken", "token");
@@ -188,10 +183,6 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      */
     private String queryHuaweiAppId(AppStoreConfig storeConfig, String token, String packageName) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            return "mock-huawei-appid";
-        }
-
         Map<String, Object> queryParams = new LinkedHashMap<>();
         queryParams.put("packageName", packageName);
         String url = huaweiBaseUrl(endpoint) + huaweiAppIdListEndpoint();
@@ -202,7 +193,8 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .header("Authorization", "Bearer " + token)
                         .header("client_id", storeConfig.getClientId())
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockHuaweiAppIdResponse(packageName))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureHuaweiSuccess(response, "query app id");
@@ -225,16 +217,6 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      */
     private Map<String, Object> queryHuaweiAppInfo(AppStoreConfig storeConfig, String token, String appId, boolean stagedRelease) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> mockResponse = new LinkedHashMap<>();
-            mockResponse.put("ret", Map.of("code", 0, "msg", "success"));
-            mockResponse.put("appInfo", Map.of("releaseState", stagedRelease ? 0 : 4));
-            if (stagedRelease) {
-                mockResponse.put("phasedReleaseInfo", Map.of("state", "RELEASE"));
-            }
-            return mockResponse;
-        }
-
         Map<String, Object> queryParams = new LinkedHashMap<>();
         queryParams.put("appId", appId);
         queryParams.put("releaseType", stagedRelease ? 3 : 1);
@@ -246,7 +228,8 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .header("Authorization", "Bearer " + token)
                         .header("client_id", storeConfig.getClientId())
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockHuaweiAppInfoResponse(appId, stagedRelease))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureHuaweiSuccess(response, "query app info");
@@ -306,15 +289,6 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
             AppReleaseRecord record
     ) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            return Map.of(
-                    "objectId", packagePath.getFileName().toString() + ".object",
-                    "url", "mock-upload-url",
-                    "method", "PUT",
-                    "headers", Map.of("Content-Type", MediaType.APPLICATION_OCTET_STREAM_VALUE)
-            );
-        }
-
         Map<String, Object> queryParams = new LinkedHashMap<>();
         queryParams.put("appId", appId);
         queryParams.put("fileName", packagePath.getFileName().toString());
@@ -334,7 +308,8 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .header("Authorization", "Bearer " + token)
                         .header("client_id", storeConfig.getClientId())
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockHuaweiUploadUrlResponse(packagePath))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureHuaweiSuccess(response, "get upload url");
@@ -349,9 +324,6 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      * 上传华为文件。
      */
     private void uploadHuaweiFile(AppStoreConfig storeConfig, Map<String, Object> uploadUrlInfo, Path packagePath) {
-        if (endpoint(storeConfig).isMockEnabled()) {
-            return;
-        }
         String url = firstString(uploadUrlInfo, "url");
         @SuppressWarnings("unchecked")
         Map<String, Object> headerMap = uploadUrlInfo.get("headers") instanceof Map<?, ?> map
@@ -382,7 +354,8 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .headers(httpHeaders -> httpHeaders.addAll(headers))
                         .body(new FileSystemResource(packagePath))
                         .retrieve()
-                        .toBodilessEntity()
+                        .toBodilessEntity(),
+                () -> ResponseEntity.ok().build()
         );
     }
 
@@ -401,10 +374,6 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         body.put("files", uploadedFiles);
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            return new HuaweiFileInfoUpdateResult(body, Map.of("ret", Map.of("code", 0, "msg", "success"), "pkgVersion", List.of("mock-pkg-version")));
-        }
-
         Map<String, Object> queryParams = new LinkedHashMap<>();
         queryParams.put("appId", appId);
         queryParams.put("releaseType", isStagedRelease(record) ? 3 : 1);
@@ -418,7 +387,8 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockHuaweiFileInfoUpdateResponse())
         );
         Map<String, Object> response = readJson(responseBody);
         ensureHuaweiSuccess(response, "update app file info");
@@ -439,10 +409,6 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         Map<String, Object> queryParams = buildHuaweiSubmitQueryParams(version, record, appId);
         Map<String, Object> body = buildHuaweiSubmitBody(version, record);
 
-        if (endpoint.isMockEnabled()) {
-            return Map.of("ret", Map.of("code", 0, "msg", "success"));
-        }
-
         String url = huaweiBaseUrl(endpoint) + huaweiAppSubmitEndpoint(endpoint);
         String responseBody = executeStoreRequest(
                 trace(storeConfig, "submit huawei app", "POST", url, queryParams, body),
@@ -453,11 +419,80 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .contentType(MediaType.APPLICATION_JSON)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockHuaweiSubmitResponse())
         );
         Map<String, Object> response = readJson(responseBody);
         ensureHuaweiSuccess(response, "submit app");
         return response;
+    }
+
+    /**
+     * 澶勭悊鍗庝负 AppId Mock 鍝嶅簲鐩稿叧閫昏緫銆?
+     */
+    private Map<String, Object> mockHuaweiAppIdResponse(String packageName) {
+        return Map.of(
+                "ret", Map.of("code", 0, "msg", "success"),
+                "appids", List.of(Map.of(
+                        "value", "mock-huawei-appid",
+                        "packageName", packageName
+                ))
+        );
+    }
+
+    private Map<String, Object> mockHuaweiTokenResponse() {
+        return Map.of(
+                "access_token", "mock-huawei-" + UUID.randomUUID(),
+                "expires_in", 48 * 60 * 60
+        );
+    }
+
+    /**
+     * 澶勭悊鍗庝负 AppInfo Mock 鍝嶅簲鐩稿叧閫昏緫銆?
+     */
+    private Map<String, Object> mockHuaweiAppInfoResponse(String appId, boolean stagedRelease) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("ret", Map.of("code", 0, "msg", "success"));
+        response.put("appInfo", Map.of(
+                "appId", appId,
+                "releaseState", 0
+        ));
+        if (stagedRelease) {
+            response.put("phasedReleaseInfo", Map.of("state", "RELEASE"));
+        }
+        return response;
+    }
+
+    /**
+     * 澶勭悊鍗庝负 Upload URL Mock 鍝嶅簲鐩稿叧閫昏緫銆?
+     */
+    private Map<String, Object> mockHuaweiUploadUrlResponse(Path packagePath) {
+        return Map.of(
+                "ret", Map.of("code", 0, "msg", "success"),
+                "urlInfo", Map.of(
+                        "objectId", packagePath.getFileName().toString() + ".object",
+                        "url", "https://mock.huawei.local/upload/" + packagePath.getFileName(),
+                        "method", "PUT",
+                        "headers", Map.of("Content-Type", MediaType.APPLICATION_OCTET_STREAM_VALUE)
+                )
+        );
+    }
+
+    /**
+     * 澶勭悊鍗庝负 FileInfo Mock 鍝嶅簲鐩稿叧閫昏緫銆?
+     */
+    private Map<String, Object> mockHuaweiFileInfoUpdateResponse() {
+        return Map.of(
+                "ret", Map.of("code", 0, "msg", "success"),
+                "pkgVersion", List.of("mock-pkg-version")
+        );
+    }
+
+    /**
+     * 澶勭悊鍗庝负 Submit Mock 鍝嶅簲鐩稿叧閫昏緫銆?
+     */
+    private Map<String, Object> mockHuaweiSubmitResponse() {
+        return Map.of("ret", Map.of("code", 0, "msg", "success"));
     }
 
     /**

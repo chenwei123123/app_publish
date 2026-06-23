@@ -120,12 +120,19 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         Path secondApkPath = resolveXiaomiSecondApkPath(version);
         ProjectMetadataContext metadataContext = resolveProjectMetadataContext(firstNonBlank(apkLocation, version.getPackageUrl64(), version.getPackageUrl()));
         XiaomiPackageQueryResult packageQuery = queryXiaomiPackage(storeConfig, appInfo.getPackageName(), userName);
-        XiaomiSubmitContext submitContext = resolveXiaomiSubmitContext(version, metadataContext, packageQuery, apkPath, secondApkPath);
+        XiaomiSubmitContext submitContext = resolveXiaomiSubmitContext(
+                storeConfig,
+                version,
+                metadataContext,
+                packageQuery,
+                apkPath,
+                secondApkPath
+        );
 
         Map<String, Object> requestData = buildXiaomiSubmitRequestData(userName, submitContext);
         String requestDataJson = writeJson(requestData);
         LinkedHashMap<String, Path> fileParts = buildXiaomiFileParts(submitContext);
-        String sig = signXiaomiPayload(storeConfig, requestDataJson, fileParts);
+        String sig = resolveXiaomiSignature(storeConfig, requestDataJson, fileParts);
 
         Map<String, Object> pushRequestLog = new LinkedHashMap<>();
         pushRequestLog.put("RequestData", requestData);
@@ -151,34 +158,26 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      * 查询小米包。
      */
     private XiaomiPackageQueryResult queryXiaomiPackage(AppStoreConfig storeConfig, String packageName, String userName) {
+        return queryXiaomiPackage(storeConfig, packageName, userName, null);
+    }
+
+    private XiaomiPackageQueryResult queryXiaomiPackage(
+            AppStoreConfig storeConfig,
+            String packageName,
+            String userName,
+            String mockVersionCode
+    ) {
         Map<String, Object> requestData = new LinkedHashMap<>();
         requestData.put("packageName", packageName);
         requestData.put("userName", userName);
         String requestDataJson = writeJson(requestData);
-        String sig = signXiaomiPayload(storeConfig, requestDataJson, Map.of());
+        String sig = resolveXiaomiSignature(storeConfig, requestDataJson, Map.of());
 
         Map<String, Object> requestLog = new LinkedHashMap<>();
         requestLog.put("RequestData", requestData);
         requestLog.put("SIG", sig);
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> mockResponse = new LinkedHashMap<>();
-            mockResponse.put("result", 0);
-            mockResponse.put("message", "mock query success");
-            mockResponse.put("create", false);
-            mockResponse.put("updateVersion", true);
-            mockResponse.put("updateInfo", true);
-            mockResponse.put("packageInfo", Map.of("packageName", packageName));
-            return new XiaomiPackageQueryResult(
-                    true,
-                    false,
-                    true,
-                    writeJson(requestLog),
-                    writeJson(mockResponse)
-            );
-        }
-
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("RequestData", requestDataJson);
         body.add("SIG", sig);
@@ -191,7 +190,8 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockXiaomiPackageQueryResponse(packageName, mockVersionCode))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureXiaomiSuccess(response, "query package");
@@ -209,18 +209,13 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      * 查询小米审核。
      */
     private StoreReviewResult queryXiaomiReview(AppStoreConfig storeConfig, AppReleaseRecord record) {
-        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            ReleaseStatus status = record.getReleaseTime() != null
-                    && record.getReleaseTime().isBefore(LocalDateTime.now().minusSeconds(appProperties.getReviewAutoPassSeconds()))
-                    ? ReleaseStatus.PASS
-                    : ReleaseStatus.AUDITING;
-            return new StoreReviewResult(status, "{\"mockStatus\":\"" + status.getCode() + "\"}", null);
-        }
-
         String packageName = resolveXiaomiReviewPackageName(record);
         String userName = resolveXiaomiUserName(storeConfig);
-        XiaomiPackageQueryResult packageQuery = queryXiaomiPackage(storeConfig, packageName, userName);
+        String mockVersionCode = record.getReleaseTime() != null
+                && record.getReleaseTime().isBefore(LocalDateTime.now().minusSeconds(appProperties.getReviewAutoPassSeconds()))
+                ? resolveXiaomiExpectedVersionCode(record)
+                : null;
+        XiaomiPackageQueryResult packageQuery = queryXiaomiPackage(storeConfig, packageName, userName, mockVersionCode);
         Map<String, Object> response = readJson(packageQuery.responseLog());
         Map<String, Object> packageInfo = asMap(response.get("packageInfo"));
         ReleaseStatus releaseStatus = resolveXiaomiReviewStatus(response, packageInfo, record);
@@ -262,10 +257,6 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
             Map<String, Object> requestLog
     ) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            return Map.of("result", 0, "message", "mock submit success");
-        }
-
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("RequestData", requestDataJson);
         body.add("SIG", sig);
@@ -281,11 +272,31 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(Map.of("result", 0, "message", "mock submit success"))
         );
         Map<String, Object> response = readJson(responseBody);
         ensureXiaomiSuccess(response, "submit release");
         return response;
+    }
+
+    /**
+     * 澶勭悊灏忕背鍖呮煡璇?Mock 鍝嶅簲鐩稿叧閫昏緫銆?
+     */
+    private Map<String, Object> mockXiaomiPackageQueryResponse(String packageName, String versionCode) {
+        Map<String, Object> mockResponse = new LinkedHashMap<>();
+        mockResponse.put("result", 0);
+        mockResponse.put("message", "mock query success");
+        mockResponse.put("create", false);
+        mockResponse.put("updateVersion", true);
+        mockResponse.put("updateInfo", true);
+        Map<String, Object> packageInfo = new LinkedHashMap<>();
+        packageInfo.put("packageName", packageName);
+        if (StringUtils.hasText(versionCode)) {
+            packageInfo.put("versionCode", versionCode.trim());
+        }
+        mockResponse.put("packageInfo", packageInfo);
+        return mockResponse;
     }
 
     /**
@@ -321,6 +332,19 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     /**
      * 解析小米提交上下文。
      */
+    private XiaomiSubmitContext resolveXiaomiSubmitContext(
+            AppStoreConfig storeConfig,
+            AppVersion version,
+            ProjectMetadataContext metadataContext,
+            XiaomiPackageQueryResult packageQuery,
+            Path apkPath,
+            Path secondApkPath
+    ) {
+        return endpoint(storeConfig).isMockEnabled()
+                ? mockXiaomiSubmitContext(version, packageQuery, apkPath, secondApkPath)
+                : resolveXiaomiSubmitContext(version, metadataContext, packageQuery, apkPath, secondApkPath);
+    }
+
     private XiaomiSubmitContext resolveXiaomiSubmitContext(
             AppVersion version,
             ProjectMetadataContext metadataContext,
@@ -398,6 +422,36 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     /**
      * 解析小米 User 名称。
      */
+    private XiaomiSubmitContext mockXiaomiSubmitContext(
+            AppVersion version,
+            XiaomiPackageQueryResult packageQuery,
+            Path apkPath,
+            Path secondApkPath
+    ) {
+        AppInfo appInfo = version.getAppInfo();
+        boolean create = !packageQuery.packageExists() && packageQuery.createAllowed();
+        Path mockAssetPath = secondApkPath == null ? apkPath : secondApkPath;
+
+        Map<String, Object> appInfoPayload = new LinkedHashMap<>();
+        appInfoPayload.put("appName", appInfo.getAppName().trim());
+        appInfoPayload.put("packageName", appInfo.getPackageName().trim());
+        addIfHasText(appInfoPayload, "updateDesc", firstNonBlank(
+                appInfo.getAppDescription(),
+                appInfo.getAppName()
+        ));
+        appInfoPayload.put("privacyUrl", firstNonBlank(appInfo.getPrivacyUrl(), "https://mock.xiaomi.local/privacy"));
+
+        return new XiaomiSubmitContext(
+                create ? 0 : 1,
+                apkPath,
+                secondApkPath,
+                mockAssetPath,
+                create ? List.of(mockAssetPath, mockAssetPath, mockAssetPath) : List.of(),
+                create ? List.of(mockAssetPath, mockAssetPath, mockAssetPath, mockAssetPath) : List.of(),
+                appInfoPayload
+        );
+    }
+
     private String resolveXiaomiUserName(AppStoreConfig storeConfig) {
         String userName = firstNonBlank(storeConfig.getEmail(), storeConfig.getAccountName());
         if (!StringUtils.hasText(userName)) {
@@ -549,7 +603,18 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     /**
      * 签名小米载荷。
      */
+    private String resolveXiaomiSignature(
+            AppStoreConfig storeConfig,
+            String requestDataJson,
+            Map<String, Path> fileParts
+    ) {
+        return signXiaomiPayload(storeConfig, requestDataJson, fileParts);
+    }
+
     private String signXiaomiPayload(AppStoreConfig storeConfig, String requestDataJson, Map<String, Path> fileParts) {
+        if (endpoint(storeConfig).isMockEnabled()) {
+            return "mock-xiaomi-sign";
+        }
         if (!StringUtils.hasText(storeConfig.getPrivateKey())) {
             throw new IllegalArgumentException("Xiaomi submit requires privateKey as access password");
         }

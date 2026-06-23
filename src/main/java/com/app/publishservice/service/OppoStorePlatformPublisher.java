@@ -71,14 +71,6 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
     @Override
     public TokenPayload refreshToken(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            log.info("Use mock oppo token refresh, storeConfigId={}", storeConfig.getId());
-            return new TokenPayload(
-                    TokenType.ACCESS_TOKEN.getCode(),
-                    "mock-oppo-" + UUID.randomUUID(),
-                    LocalDateTime.now().plusSeconds(OPPO_TOKEN_EXPIRE_SECONDS)
-            );
-        }
         if (!StringUtils.hasText(storeConfig.getClientId()) || !StringUtils.hasText(storeConfig.getClientSecret())) {
             throw new IllegalArgumentException("Oppo token refresh requires clientId and clientSecret");
         }
@@ -93,7 +85,8 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                 () -> restClient.get()
                         .uri(tokenUrl + "?" + buildQueryString(queryParams))
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockOppoTokenResponse())
         );
 
         Map<String, Object> response = readJson(responseBody);
@@ -154,25 +147,6 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         Map<String, Object> submitPayload = new LinkedHashMap<>();
-
-        if (endpoint.isMockEnabled()) {
-            String storeReleaseId = "oppo-" + UUID.randomUUID();
-            List<Map<String, Object>> apkInfos = List.of(Map.of(
-                    "url", "mock-apk-url",
-                    "md5", "mock-upload-md5",
-                    "cpu_code", 0
-            ));
-            Map<String, Object> responseLog = Map.of(
-                    "uploadConfigs", List.of(Map.of("errno", 0, "data", Map.of("upload_url", "mock-upload-url"))),
-                    "uploads", List.of(Map.of("errno", 0, "data", Map.of("apk_url", "mock-apk-url", "md5", "mock-upload-md5"))),
-                    "submit", Map.of("errno", 0, "data", Map.of("task_id", storeReleaseId))
-            );
-            submitPayload.put("pkg_name", appInfo.getPackageName());
-            submitPayload.put("version_code", version.getVersionCode());
-            submitPayload.put("apk_url", writeJson(apkInfos));
-            return new StoreSubmitResult(storeReleaseId, writeJson(submitPayload), writeJson(responseLog), "mock submit success");
-        }
-
         Map<String, Object> multiInfoResponse = oppoSignedRequest(
                 storeConfig,
                 token,
@@ -237,13 +211,6 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
     private StoreReviewResult queryOppoReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         Map<String, Object> queryParams = buildOppoReviewQuery(record);
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> mockResponse = Map.of(
-                    "taskState", Map.of("errno", 0, "data", Map.of("task_state", 2))
-            );
-            return new StoreReviewResult(ReleaseStatus.PASS, writeJson(mockResponse), null);
-        }
-
         Map<String, Object> taskStateResponse = oppoSignedRequest(storeConfig, token, oppoStatusEndpoint(endpoint), queryParams, false);
         Map<String, Object> taskStateData = asMap(taskStateResponse.get("data"));
         ReleaseStatus releaseStatus = mapOppoStatus(taskStateData);
@@ -431,7 +398,8 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                             .contentType(MediaType.APPLICATION_OCTET_STREAM)
                             .body(new FileSystemResource(packagePath))
                             .retrieve()
-                            .body(String.class)
+                            .body(String.class),
+                    () -> writeJson(mockOppoUploadResponse(packagePath))
             );
         } else {
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -458,7 +426,8 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                             .contentType(MediaType.MULTIPART_FORM_DATA)
                             .body(body)
                             .retrieve()
-                            .body(String.class)
+                            .body(String.class),
+                    () -> writeJson(mockOppoUploadResponse(packagePath))
             );
         }
 
@@ -521,7 +490,8 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                     () -> restClient.get()
                             .uri(url + "?" + buildQueryString(payload))
                             .retrieve()
-                            .body(String.class)
+                            .body(String.class),
+                    () -> writeJson(mockOppoEndpointResponse(endpointPath, payload))
             );
         }
 
@@ -538,13 +508,78 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .body(body)
                         .retrieve()
-                        .body(String.class)
+                        .body(String.class),
+                () -> writeJson(mockOppoEndpointResponse(endpointPath, payload))
         );
     }
 
     /**
      * 映射OPPO 状态。
      */
+    private Map<String, Object> mockOppoTokenResponse() {
+        return Map.of(
+                "errno", 0,
+                "data", Map.of(
+                        "access_token", "mock-oppo-" + UUID.randomUUID(),
+                        "expire_in", OPPO_TOKEN_EXPIRE_SECONDS
+                )
+        );
+    }
+
+    private Map<String, Object> mockOppoEndpointResponse(String endpointPath, Map<String, Object> payload) {
+        if (OPPO_MULTI_INFO_ENDPOINT.equals(endpointPath)) {
+            String packageName = firstString(payload, "pkg_name");
+            Map<String, Object> versionInfo = new LinkedHashMap<>();
+            versionInfo.put("version_code", "100");
+            versionInfo.put("app_name", firstNonBlank(packageName, "mock-oppo-app"));
+            versionInfo.put("update_desc", "mock oppo update");
+            versionInfo.put("privacy_source_url", "https://mock.oppo.local/privacy");
+            versionInfo.put("online_type", 1);
+            versionInfo.put("adaptive_equipment", 0);
+            return Map.of(
+                    "errno", 0,
+                    "data", Map.of(
+                            "pkg_name", packageName,
+                            "apk_info", Map.of("100", versionInfo)
+                    )
+            );
+        }
+        if (OPPO_UPLOAD_CONFIG_ENDPOINT.equals(endpointPath)) {
+            return Map.of(
+                    "errno", 0,
+                    "data", Map.of(
+                            "upload_url", "https://mock.oppo.local/upload",
+                            "policy", "mock-policy",
+                            "signature", "mock-signature"
+                    )
+            );
+        }
+        if (OPPO_SUBMIT_ENDPOINT.equals(endpointPath)) {
+            return Map.of(
+                    "errno", 0,
+                    "data", Map.of("task_id", "oppo-" + UUID.randomUUID())
+            );
+        }
+        if (OPPO_STATUS_ENDPOINT.equals(endpointPath)) {
+            return Map.of(
+                    "errno", 0,
+                    "data", Map.of("task_state", 2)
+            );
+        }
+        throw new IllegalStateException("Unsupported Oppo mock endpoint: " + endpointPath);
+    }
+
+    private Map<String, Object> mockOppoUploadResponse(Path packagePath) {
+        return Map.of(
+                "errno", 0,
+                "data", Map.of(
+                        "apk_url", "https://mock.oppo.local/package/" + packagePath.getFileName(),
+                        "md5", "mock-md5-" + packagePath.getFileName(),
+                        "file_name", packagePath.getFileName().toString()
+                )
+        );
+    }
+
     private ReleaseStatus mapOppoStatus(Map<String, Object> taskStateData) {
         int taskState = intValue(taskStateData.get("task_state"));
         if (taskState == -1) {

@@ -265,10 +265,24 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
     }
 
     /**
+     * 澶勭悊execute 鍟嗗簵璇锋眰 Mock鐩稿叧閫昏緫銆?
+     */
+    protected <T> T executeStoreRequest(String action, Supplier<T> request, Supplier<T> mockResponse) {
+        return executeStoreRequest(null, action, request, mockResponse);
+    }
+
+    /**
      * 处理execute 商店请求相关逻辑。
      */
     protected <T> T executeStoreRequest(StoreRequestTrace trace, Supplier<T> request) {
         return executeStoreRequest(trace, trace == null ? null : trace.action(), request);
+    }
+
+    /**
+     * 澶勭悊execute 鍟嗗簵璇锋眰 Mock鐩稿叧閫昏緫銆?
+     */
+    protected <T> T executeStoreRequest(StoreRequestTrace trace, Supplier<T> request, Supplier<T> mockResponse) {
+        return executeStoreRequest(trace, trace == null ? null : trace.action(), request, mockResponse);
     }
 
     /**
@@ -300,6 +314,25 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
             logStoreRequestFailure(trace, HttpStatus.BAD_GATEWAY.value(), message, null, System.currentTimeMillis() - startTime);
             throw new StoreApiException(HttpStatus.BAD_GATEWAY, message, ex);
         }
+    }
+
+    /**
+     * 澶勭悊execute 鍟嗗簵璇锋眰鍙€塎ock鍝嶅簲鐩稿叧閫昏緫銆?
+     */
+    protected <T> T executeStoreRequest(StoreRequestTrace trace, String action, Supplier<T> request, Supplier<T> mockResponse) {
+        if (shouldMockStoreRequest(trace, mockResponse)) {
+            long startTime = System.currentTimeMillis();
+            try {
+                T response = mockResponse.get();
+                log.info("Use mock store request, storeType={}, action={}", storeTypeCode(trace), action);
+                logStoreRequestSuccess(trace, response, System.currentTimeMillis() - startTime);
+                return response;
+            } catch (RuntimeException ex) {
+                logStoreRequestFailure(trace, HttpStatus.BAD_GATEWAY.value(), ex.getMessage(), null, System.currentTimeMillis() - startTime);
+                throw ex;
+            }
+        }
+        return executeStoreRequest(trace, action, request);
     }
 
     /**
@@ -382,6 +415,20 @@ abstract class AbstractStorePlatformPublisher implements StorePublisher {
     /**
      * 转换响应。
      */
+    private boolean shouldMockStoreRequest(StoreRequestTrace trace, Supplier<?> mockResponse) {
+        return trace != null
+                && trace.storeConfig() != null
+                && mockResponse != null
+                && endpoint(trace.storeConfig()).isMockEnabled();
+    }
+
+    private String storeTypeCode(StoreRequestTrace trace) {
+        if (trace == null || trace.storeConfig() == null || trace.storeConfig().getStoreType() == null) {
+            return "unknown";
+        }
+        return trace.storeConfig().getStoreType().getCode();
+    }
+
     private String stringifyResponse(String action, Object response) {
         if (response == null) {
             return null;

@@ -149,20 +149,6 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         String sign = signVivoPayload(payload, storeConfig.getClientSecret());
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> mockResponse = new LinkedHashMap<>();
-            mockResponse.put("code", 0);
-            mockResponse.put("subCode", "0");
-            mockResponse.put("msg", "mock success");
-            mockResponse.put("data", Map.of(
-                    "packageName", record.getPackageName(),
-                    "auditStatus", 2,
-                    "effectStatus", 1,
-                    "stagedProportion", record.getGrayPercent() == null ? 0 : record.getGrayPercent()
-            ));
-            return new StoreReviewResult(ReleaseStatus.PASS, writeJson(mockResponse), null);
-        }
-
         String responseBody = postVivoForm(storeConfig, endpoint, payload, sign);
         Map<String, Object> response = readJson(responseBody);
         ensureVivoSuccess(response);
@@ -216,25 +202,6 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         submitRequestLog.put("sign", sign);
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> requestLog = new LinkedHashMap<>();
-            requestLog.put("appDetailsQuery", readJson(appDetails.requestLog()));
-            requestLog.put("apk32Upload", readJson(uploadBundle.apk32UploadResult().requestLog()));
-            requestLog.put("apk64Upload", readJson(uploadBundle.apk64UploadResult().requestLog()));
-            requestLog.put("appSubmit", submitRequestLog);
-            Map<String, Object> responseLog = new LinkedHashMap<>();
-            responseLog.put("appDetailsQuery", readJson(appDetails.responseLog()));
-            responseLog.put("apk32Upload", readJson(uploadBundle.apk32UploadResult().responseLog()));
-            responseLog.put("apk64Upload", readJson(uploadBundle.apk64UploadResult().responseLog()));
-            responseLog.put("appSubmit", Map.of("code", 0, "subCode", "0", "msg", "mock app submit success"));
-            return new StoreSubmitResult(
-                    uploadBundle.apk64UploadResult().serialNumber(),
-                    writeJson(requestLog),
-                    writeJson(responseLog),
-                    "mock app submit success"
-            );
-        }
-
         log.info(
                 "Submit vivo subpackage app update, versionId={}, packageName={}, versionName={}, versionCode={}",
                 version.getId(),
@@ -282,25 +249,6 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         stageRequestLog.put("sign", sign);
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> requestLog = new LinkedHashMap<>();
-            requestLog.put("appDetailsQuery", readJson(appDetails.requestLog()));
-            requestLog.put("apk32Upload", readJson(uploadBundle.apk32UploadResult().requestLog()));
-            requestLog.put("apk64Upload", readJson(uploadBundle.apk64UploadResult().requestLog()));
-            requestLog.put("stageSubmit", stageRequestLog);
-            Map<String, Object> responseLog = new LinkedHashMap<>();
-            responseLog.put("appDetailsQuery", readJson(appDetails.responseLog()));
-            responseLog.put("apk32Upload", readJson(uploadBundle.apk32UploadResult().responseLog()));
-            responseLog.put("apk64Upload", readJson(uploadBundle.apk64UploadResult().responseLog()));
-            responseLog.put("stageSubmit", Map.of("code", 0, "subCode", "0", "msg", "mock stage submit success"));
-            return new StoreSubmitResult(
-                    uploadBundle.apk64UploadResult().serialNumber(),
-                    writeJson(requestLog),
-                    writeJson(responseLog),
-                    "mock stage submit success"
-            );
-        }
-
         log.info(
                 "Submit vivo staged release, versionId={}, packageName={}, grayPercent={}, grayStartTime={}, grayEndTime={}",
                 version.getId(),
@@ -368,10 +316,10 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
             AppVersion version,
             VivoAppDetailsLookupResult appDetailsLookup
     ) {
-        VivoPackageBundle packageBundle = resolveVivoPackageBundle(version);
-        VivoCreateContext createContext = resolveVivoCreateContext(version, packageBundle.metadataContext());
-        VivoPackageUploadBundle uploadBundle = uploadVivoPackageBundle(storeConfig, version, packageBundle, false);
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+        VivoPackageBundle packageBundle = resolveVivoPackageBundle(version);
+        VivoCreateContext createContext = resolveVivoCreateContext(version, packageBundle, endpoint);
+        VivoPackageUploadBundle uploadBundle = uploadVivoPackageBundle(storeConfig, version, packageBundle, false);
 
         waitForVivoPackageParsing(endpoint);
 
@@ -399,29 +347,6 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         String sign = signVivoPayload(payload, storeConfig.getClientSecret());
         Map<String, Object> createRequestLog = new LinkedHashMap<>(payload);
         createRequestLog.put("sign", sign);
-
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> requestLog = new LinkedHashMap<>();
-            requestLog.put("appDetailsQuery", readJson(appDetailsLookup.requestLog()));
-            requestLog.put("apk32Upload", readJson(uploadBundle.apk32UploadResult().requestLog()));
-            requestLog.put("apk64Upload", readJson(uploadBundle.apk64UploadResult().requestLog()));
-            requestLog.put("iconUpload", readJson(iconUploadResult.requestLog()));
-            requestLog.put("screenshotUpload", screenshotUploadResults.stream().map(result -> readJson(result.requestLog())).toList());
-            requestLog.put("appCreate", createRequestLog);
-            Map<String, Object> responseLog = new LinkedHashMap<>();
-            responseLog.put("appDetailsQuery", readJson(appDetailsLookup.responseLog()));
-            responseLog.put("apk32Upload", readJson(uploadBundle.apk32UploadResult().responseLog()));
-            responseLog.put("apk64Upload", readJson(uploadBundle.apk64UploadResult().responseLog()));
-            responseLog.put("iconUpload", readJson(iconUploadResult.responseLog()));
-            responseLog.put("screenshotUpload", screenshotUploadResults.stream().map(result -> readJson(result.responseLog())).toList());
-            responseLog.put("appCreate", Map.of("code", 0, "subCode", "0", "msg", "mock app create success"));
-            return new StoreSubmitResult(
-                    createContext.packageName(),
-                    writeJson(requestLog),
-                    writeJson(responseLog),
-                    "mock app create success"
-            );
-        }
 
         log.info(
                 "Create vivo subpackage app, versionId={}, packageName={}, versionName={}, versionCode={}",
@@ -523,16 +448,6 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         }
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            log.info("Use mock vivo {} upload, versionId={}, fileName={}, stageUpload={}", uploadLabel, version.getId(), fileName, stageUpload);
-            String storeReleaseId = "vivo-" + UUID.randomUUID();
-            return new VivoUploadResult(
-                    storeReleaseId,
-                    writeJson(requestLog),
-                    "{\"code\":0,\"subCode\":\"0\",\"msg\":\"mock upload success\",\"data\":{\"serialnumber\":\"" + storeReleaseId + "\"}}"
-            );
-        }
-
         log.info(
                 "Submit vivo {} upload, versionId={}, fileName={}, packageName={}, stageUpload={}",
                 uploadLabel,
@@ -556,7 +471,8 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .body(body)
                         .retrieve()
-                        .body(byte[].class)
+                        .body(byte[].class),
+                () -> mockVivoUploadResponseBytes("vivo-" + UUID.randomUUID(), "mock upload success")
         );
         String responseBody = decodeVivoResponseBody(responseBytes);
 
@@ -588,19 +504,6 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         requestLog.put("sign", sign);
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> mockResponse = new LinkedHashMap<>();
-            mockResponse.put("code", 0);
-            mockResponse.put("subCode", "0");
-            mockResponse.put("msg", "mock success");
-            mockResponse.put("data", Map.of(
-                    "packageName", packageName,
-                    "status", 3,
-                    "saleStatus", 1
-            ));
-            return new VivoAppDetailsResult(3, 1, ReleaseStatus.PASS, null, writeJson(requestLog), writeJson(mockResponse));
-        }
-
         String responseBody = postVivoForm(storeConfig, endpoint, payload, sign);
         Map<String, Object> response = readJson(responseBody);
         ensureVivoSuccess(response);
@@ -625,20 +528,6 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         requestLog.put("sign", sign);
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            Map<String, Object> mockResponse = new LinkedHashMap<>();
-            mockResponse.put("code", 0);
-            mockResponse.put("subCode", "0");
-            mockResponse.put("msg", "mock success");
-            mockResponse.put("data", Map.of(
-                    "packageName", packageName,
-                    "status", 3,
-                    "saleStatus", 1
-            ));
-            VivoAppDetailsResult appDetails = new VivoAppDetailsResult(3, 1, ReleaseStatus.PASS, null, writeJson(requestLog), writeJson(mockResponse));
-            return new VivoAppDetailsLookupResult(false, appDetails, writeJson(requestLog), writeJson(mockResponse));
-        }
-
         String responseBody = postVivoForm(storeConfig, endpoint, payload, sign);
         Map<String, Object> response = readJson(responseBody);
         if (isVivoAppNotFoundResponse(response)) {
@@ -809,15 +698,6 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         requestLog.put("fileName", filePath.getFileName().toString());
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isMockEnabled()) {
-            String serialNumber = assetType + "-" + UUID.randomUUID();
-            return new VivoUploadResult(
-                    serialNumber,
-                    writeJson(requestLog),
-                    "{\"code\":0,\"subCode\":\"0\",\"msg\":\"mock " + assetType + " upload success\",\"data\":{\"serialnumber\":\"" + serialNumber + "\"}}"
-            );
-        }
-
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         payload.forEach((key, value) -> body.add(key, value == null ? "" : String.valueOf(value)));
         body.add("sign", sign);
@@ -833,7 +713,8 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                         .contentType(MediaType.MULTIPART_FORM_DATA)
                         .body(body)
                         .retrieve()
-                        .body(byte[].class)
+                        .body(byte[].class),
+                () -> mockVivoUploadResponseBytes(assetType + "-" + UUID.randomUUID(), "mock " + assetType + " upload success")
         );
         String responseBody = decodeVivoResponseBody(responseBytes);
         Map<String, Object> response = readJson(responseBody);
@@ -924,10 +805,51 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
     }
 
+    private VivoCreateContext resolveVivoCreateContext(
+            AppVersion version,
+            VivoPackageBundle packageBundle,
+            StoreApiProperties.StoreEndpointProperties endpoint
+    ) {
+        return endpoint.isMockEnabled()
+                ? mockVivoCreateContext(version, packageBundle)
+                : resolveVivoCreateContext(version, packageBundle.metadataContext());
+    }
+
+    private VivoCreateContext mockVivoCreateContext(AppVersion version, VivoPackageBundle packageBundle) {
+        AppInfo appInfo = version.getAppInfo();
+        if (appInfo == null || !StringUtils.hasText(appInfo.getPackageName())) {
+            throw new IllegalArgumentException("Vivo create app requires app packageName");
+        }
+
+        Path mockAssetPath = packageBundle.apk64Source().localPath();
+        if (mockAssetPath == null && packageBundle.apk32Source() != null) {
+            mockAssetPath = packageBundle.apk32Source().localPath();
+        }
+        if (mockAssetPath == null) {
+            mockAssetPath = requireLocalPackage(
+                    firstNonBlank(version.getPackageUrl64(), version.getPackageUrl32(), version.getPackageUrl()),
+                    "Vivo mock create requires local package path"
+            );
+        }
+
+        return new VivoCreateContext(
+                appInfo.getPackageName(),
+                mockAssetPath,
+                List.of(mockAssetPath, mockAssetPath, mockAssetPath),
+                1,
+                1,
+                VIVO_DEFAULT_COMPATIBLE_DEVICE,
+                VIVO_DEFAULT_RATE_AGE
+        );
+    }
+
     /**
      * 处理wait VIVO 包 Parsing相关逻辑。
      */
     private void waitForVivoPackageParsing(StoreApiProperties.StoreEndpointProperties endpoint) {
+        if (endpoint.isMockEnabled()) {
+            return;
+        }
         String baseUrl = vivoBaseUrl(endpoint);
         if (baseUrl.startsWith("http://127.0.0.1") || baseUrl.startsWith("http://localhost")) {
             return;
@@ -955,7 +877,8 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                         .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                         .body(body)
                         .retrieve()
-                        .body(byte[].class)
+                        .body(byte[].class),
+                () -> mockVivoMethodResponseBytes(payload)
         );
         return decodeVivoResponseBody(responseBody);
     }
@@ -1053,7 +976,7 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
      */
     private void ensureVivoCreateAllowed(AppStoreConfig storeConfig) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        if (endpoint.isSandboxEnabled()) {
+        if (endpoint.isMockEnabled() || endpoint.isSandboxEnabled()) {
             return;
         }
         throw new IllegalStateException("Vivo app create is limited to sandbox environment. Set app.store-api.stores.vivo.sandbox-enabled=true before retrying.");
@@ -1088,6 +1011,9 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
      * 签名VIVO 载荷。
      */
     private String signVivoPayload(Map<String, Object> payload, String accessSecret) {
+        if (!StringUtils.hasText(accessSecret)) {
+            return "mock-vivo-sign";
+        }
         String source = payload.entrySet().stream()
                 .filter(entry -> entry.getValue() != null)
                 .sorted(Map.Entry.comparingByKey())
@@ -1095,6 +1021,44 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                 .reduce((left, right) -> left + "&" + right)
                 .orElse("");
         return hmacSha256Hex(source, accessSecret);
+    }
+
+    private byte[] mockVivoMethodResponseBytes(Map<String, Object> payload) {
+        String method = firstString(payload, "method");
+        Map<String, Object> data = new LinkedHashMap<>();
+        String message = "mock success";
+        if (VIVO_METHOD_QUERY_APP_DETAILS.equals(method)) {
+            data.put("packageName", firstString(payload, "packageName"));
+            data.put("status", 3);
+            data.put("saleStatus", 1);
+        } else if (VIVO_METHOD_QUERY_STAGE_DETAILS.equals(method)) {
+            data.put("packageName", firstString(payload, "packageName"));
+            data.put("auditStatus", 2);
+            data.put("effectStatus", 1);
+        }
+        if (VIVO_METHOD_UPDATE_SUBPACKAGE_APP.equals(method)) {
+            message = "mock app submit success";
+        } else if (VIVO_METHOD_CREATE_UPDATE_STAGE.equals(method)) {
+            message = "mock stage submit success";
+        } else if (VIVO_METHOD_CREATE_SUBPACKAGE_APP.equals(method)) {
+            message = "mock app create success";
+        }
+        return mockVivoResponseBytes(message, data);
+    }
+
+    private byte[] mockVivoUploadResponseBytes(String serialNumber, String message) {
+        return mockVivoResponseBytes(message, Map.of("serialnumber", serialNumber));
+    }
+
+    private byte[] mockVivoResponseBytes(String message, Map<String, Object> data) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("code", 0);
+        response.put("subCode", "0");
+        response.put("msg", message);
+        if (data != null && !data.isEmpty()) {
+            response.put("data", data);
+        }
+        return writeJson(response).getBytes(StandardCharsets.UTF_8);
     }
 
     /**
