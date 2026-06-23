@@ -34,8 +34,8 @@ public class MybatisPlusAutoFillConfig implements MetaObjectHandler {
      */
     @Override
     public void updateFill(MetaObject metaObject) {
-        strictUpdateFill(metaObject, "updateTime", LocalDateTime.class, LocalDateTime.now());
-        strictUpdateFill(metaObject, "updateUser", String.class, currentUsername());
+        setFieldValByName("updateTime", LocalDateTime.now(), metaObject);
+        setFieldValByName("updateUser", currentUsername(), metaObject);
     }
 
     private String currentUsername() {
