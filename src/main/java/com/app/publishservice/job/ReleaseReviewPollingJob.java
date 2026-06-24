@@ -23,7 +23,7 @@ public class ReleaseReviewPollingJob {
     /**
      * 处理poll相关逻辑。
      */
-    @Scheduled(fixedDelayString = "${app.review-poll-delay-ms:600000000}")
+    @Scheduled(fixedDelayString = "${app.review-poll-delay-ms:60000}")
     public void poll() {
         log.debug("Trigger release review polling job");
         releaseOrchestrationService.pollAuditResults();

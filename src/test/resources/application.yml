@@ -21,6 +21,8 @@ app:
   token-refresh-ahead-seconds: 300
   review-poll-delay-ms: 60000
   review-auto-pass-seconds: 1
+  jwt-auth:
+    enabled: false
   store-api:
     default-timeout-seconds: 1
     stores:

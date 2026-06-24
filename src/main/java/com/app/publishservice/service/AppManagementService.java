@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Comparator;
 import java.util.Objects;
@@ -96,6 +97,24 @@ public class AppManagementService {
     @Transactional
     public void deleteApp(Long appId) {
         requireApp(appId);
+        List<AppReleaseRecord> releaseRecords = releaseRecordRepository.selectList(
+                Wrappers.<AppReleaseRecord>lambdaQuery()
+                        .eq(AppReleaseRecord::getAppId, appId)
+        );
+        if (!releaseRecords.isEmpty()) {
+            List<Long> releaseRecordIds = new ArrayList<>(releaseRecords.size());
+            for (AppReleaseRecord releaseRecord : releaseRecords) {
+                if (releaseRecord.getId() != null) {
+                    releaseRecordIds.add(releaseRecord.getId());
+                }
+            }
+            if (!releaseRecordIds.isEmpty()) {
+                appStoreRequestLogRepository.delete(
+                        Wrappers.<com.app.publishservice.domain.entity.AppStoreRequestLog>lambdaQuery()
+                                .in(com.app.publishservice.domain.entity.AppStoreRequestLog::getReleaseRecordId, releaseRecordIds)
+                );
+            }
+        }
         releaseRecordRepository.delete(Wrappers.<AppReleaseRecord>lambdaQuery().eq(AppReleaseRecord::getAppId, appId));
         appVersionRepository.delete(Wrappers.<AppVersion>lambdaQuery().eq(AppVersion::getAppId, appId));
         appInfoRepository.deleteById(appId);

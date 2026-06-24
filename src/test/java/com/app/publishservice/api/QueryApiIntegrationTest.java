@@ -246,7 +246,7 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.records[0].appDescription").value("updated description"))
                 .andExpect(jsonPath("$.data.records[0].versionCode").value("release-101"))
                 .andExpect(jsonPath("$.data.records[0].storeType").value("huawei"))
-                .andExpect(jsonPath("$.data.records[0].releaseStatus").value("reject"));
+                .andExpect(jsonPath("$.data.records[0].releaseStatus").value("auditing"));
 
         mockMvc.perform(get("/api/releases/{releaseId}", releaseRecord.id()))
                 .andExpect(status().isOk())

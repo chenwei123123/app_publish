@@ -71,11 +71,12 @@ class ReleaseWorkflowIntegrationTest {
         submitRequest.setStoreTypes(List.of("huawei"));
         submitRequest.setReleaseMode("api");
         List<ReleaseRecordResponse> releaseRecords = releaseOrchestrationService.submit(submitRequest);
-        assertEquals("reject", releaseRecords.get(0).releaseStatus());
+        assertEquals("auditing", releaseRecords.get(0).releaseStatus());
 
+        Thread.sleep(1100);
         releaseOrchestrationService.pollAuditResults();
         ReleaseRecordResponse refreshed = releaseOrchestrationService.getReleaseRecord(releaseRecords.get(0).id());
-        assertEquals("reject", refreshed.releaseStatus());
+        assertEquals("pass", refreshed.releaseStatus());
     }
 
     /**

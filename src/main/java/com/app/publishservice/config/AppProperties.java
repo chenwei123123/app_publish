@@ -253,7 +253,7 @@ public class AppProperties {
 
     public static class JwtAuthProperties {
 
-        private boolean enabled = true;
+        private boolean enabled;
         private String headerName = "Authentication";
         private String secret;
         private String cookieName = "Authentication";
