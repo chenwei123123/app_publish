@@ -25,7 +25,7 @@ public class RestClientConfig {
      */
     @Bean
     public RestClient restClient() {
-        Duration timeout = Duration.ofSeconds(Math.max(appProperties.getStoreApi().getDefaultTimeoutSeconds(), 1));
+        Duration timeout = Duration.ofSeconds(Math.max(appProperties.getStoreApi().getDefaultTimeoutSeconds(), 1)*1000);
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(timeout)
                 .build();

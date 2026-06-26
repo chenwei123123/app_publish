@@ -95,8 +95,8 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
     private StoreSubmitResult submitYingyongbaoRelease(AppStoreConfig storeConfig, AppVersion version) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         YingyongbaoContext context = endpoint.isMockEnabled()
-                ? mockYingyongbaoContext(version, null)
-                : resolveYingyongbaoContext(version, null);
+                ? mockYingyongbaoContext(storeConfig, version, null)
+                : resolveYingyongbaoContext(storeConfig, version, null);
 
         Map<String, Object> appDetailResponse = yingyongbaoSignedRequest(
                 storeConfig,
@@ -138,7 +138,7 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
     private StoreReviewResult queryYingyongbaoReview(AppStoreConfig storeConfig, AppReleaseRecord record) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         String packageName = resolveYingyongbaoPackageName(record);
-        String appId = resolveYingyongbaoAppId(record);
+        String appId = resolveYingyongbaoAppId(storeConfig, record);
 
         Map<String, Object> response = yingyongbaoSignedRequest(
                 storeConfig,
@@ -378,17 +378,18 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
     /**
      * 解析应用宝上下文。
      */
-    private YingyongbaoContext resolveYingyongbaoContext(AppVersion version, AppReleaseRecord record) {
+    private YingyongbaoContext resolveYingyongbaoContext(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record) {
         String packageName = resolveYingyongbaoPackageName(version, record);
         String packageLocation = firstNonBlank(version == null ? null : version.getPackageUrl64(), version == null ? null : version.getPackageUrl32(), version == null ? null : version.getPackageUrl());
         ProjectMetadataContext metadataContext = resolveProjectMetadataContext(packageLocation);
         Map<String, Object> metadata = metadataContext.metadata();
         String appId = firstNonBlank(
                 record == null ? null : record.getStoreReleaseId(),
+                storeConfig == null ? null : storeConfig.getAppId(),
                 stringValue(yingyongbaoMetadata(metadata, "appId"))
         );
         if (!StringUtils.hasText(appId)) {
-            throw new IllegalStateException("Yingyongbao submit requires app.publish-metadata.values.yingyongbao.appId in application.yml.");
+            throw new IllegalStateException("Yingyongbao submit requires store config appId or app.publish-metadata.values.yingyongbao.appId in application.yml.");
         }
         return new YingyongbaoContext(appId.trim(), packageName, metadataContext, metadata);
     }
@@ -396,7 +397,7 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
     /**
      * 解析应用宝包名称。
      */
-    private YingyongbaoContext mockYingyongbaoContext(AppVersion version, AppReleaseRecord record) {
+    private YingyongbaoContext mockYingyongbaoContext(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record) {
         String packageName = resolveYingyongbaoPackageName(version, record);
         String packageLocation = firstNonBlank(
                 version == null ? null : version.getPackageUrl64(),
@@ -407,6 +408,7 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         Map<String, Object> metadata = metadataContext.metadata();
         String appId = firstNonBlank(
                 record == null ? null : record.getStoreReleaseId(),
+                storeConfig == null ? null : storeConfig.getAppId(),
                 stringValue(yingyongbaoMetadata(metadata, "appId")),
                 "mock-app-id"
         );
@@ -434,14 +436,17 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
     /**
      * 解析应用宝应用 Id。
      */
-    private String resolveYingyongbaoAppId(AppReleaseRecord record) {
+    private String resolveYingyongbaoAppId(AppStoreConfig storeConfig, AppReleaseRecord record) {
         if (record != null && StringUtils.hasText(record.getStoreReleaseId())) {
             return record.getStoreReleaseId().trim();
         }
-        if (record != null && record.getAppVersion() != null) {
-            return resolveYingyongbaoContext(record.getAppVersion(), record).appId();
+        if (storeConfig != null && StringUtils.hasText(storeConfig.getAppId())) {
+            return storeConfig.getAppId().trim();
         }
-        throw new IllegalStateException("Yingyongbao review query requires storeReleaseId as appId");
+        if (record != null && record.getAppVersion() != null) {
+            return resolveYingyongbaoContext(storeConfig, record.getAppVersion(), record).appId();
+        }
+        throw new IllegalStateException("Yingyongbao review query requires storeReleaseId or store config appId");
     }
 
     /**

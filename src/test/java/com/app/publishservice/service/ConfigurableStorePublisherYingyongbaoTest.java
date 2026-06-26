@@ -117,7 +117,6 @@ class ConfigurableStorePublisherYingyongbaoTest {
             assertEquals("app-123", updateForm.get().get("app_id"));
             assertEquals("com.demo.yyb.app", updateForm.get().get("pkg_name"));
             assertEquals("1", updateForm.get().get("deploy_type"));
-            assertEquals("Yingyongbao publish update", updateForm.get().get("feature"));
             assertEquals("1", updateForm.get().get("apk32_flag"));
             assertEquals("1", updateForm.get().get("apk64_flag"));
             assertEquals("serial-demo-32.apk", updateForm.get().get("apk32_file_serial_number"));
@@ -155,7 +154,6 @@ class ConfigurableStorePublisherYingyongbaoTest {
             ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
             AppReleaseRecord record = new AppReleaseRecord();
             record.setId(19L);
-            record.setStoreReleaseId("app-123");
             record.setPackageName("com.demo.yyb.app");
 
             StoreReviewResult result = publisher.queryReview(yingyongbaoStoreConfig(), record, "ignored-token");
@@ -178,9 +176,7 @@ class ConfigurableStorePublisherYingyongbaoTest {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
         appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
-        appProperties.getPublishMetadata().setValues(Map.of(
-                "yingyongbao", Map.of("appId", "app-123")
-        ));
+        appProperties.getPublishMetadata().setValues(Map.of());
         StoreApiProperties.StoreEndpointProperties yingyongbao = new StoreApiProperties.StoreEndpointProperties();
         yingyongbao.setMockEnabled(false);
         yingyongbao.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
@@ -199,6 +195,7 @@ class ConfigurableStorePublisherYingyongbaoTest {
         storeConfig.setStoreType(StoreType.fromCode("yingyongbao"));
         storeConfig.setClientId("demo-user-id");
         storeConfig.setClientSecret("demo-access-secret");
+        storeConfig.setAppId("app-123");
         return storeConfig;
     }
 

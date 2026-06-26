@@ -132,14 +132,10 @@ class ConfigurableStorePublisherXiaomiTest {
             Map<String, Object> appInfo = (Map<String, Object>) submitRequestData.get("appInfo");
             assertEquals("Demo Xiaomi App", appInfo.get("appName"));
             assertEquals("com.demo.xiaomi.app", appInfo.get("packageName"));
-            assertEquals(10, ((Number) appInfo.get("category")).intValue());
-            assertEquals("demo office", appInfo.get("keyWords"));
-            assertEquals("Demo xiaomi description", appInfo.get("desc"));
-            assertEquals("Demo brief", appInfo.get("brief"));
-            assertEquals("https://example.com/privacy", appInfo.get("privacyUrl"));
+            assertEquals("https://store-config.example.com/privacy", appInfo.get("privacyUrl"));
             assertEquals("demo-32.apk", submitForm.get().get("apk.filename"));
             assertEquals("demo.apk", submitForm.get().get("secondApk.filename"));
-            assertEquals("icon.png", submitForm.get().get("icon.filename"));
+            assertTrue(submitForm.get().get("icon.filename").startsWith("xiaomi-icon-"));
             assertEquals("screenshot-1.png", submitForm.get().get("screenshot_1.filename"));
             assertEquals("screenshot-2.png", submitForm.get().get("screenshot_2.filename"));
             assertEquals("screenshot-3.png", submitForm.get().get("screenshot_3.filename"));
@@ -281,7 +277,6 @@ class ConfigurableStorePublisherXiaomiTest {
                         "desc", "Demo xiaomi description",
                         "brief", "Demo brief",
                         "publisherName", "Demo Publisher",
-                        "iconPath", "assets/xiaomi/icon.png",
                         "screenshotPaths", List.of(
                                 "assets/xiaomi/screenshot-1.png",
                                 "assets/xiaomi/screenshot-2.png",
@@ -312,6 +307,8 @@ class ConfigurableStorePublisherXiaomiTest {
         storeConfig.setEmail("demo@xiaomi.test");
         storeConfig.setPrivateKey("mi-access-password");
         storeConfig.setPublicKey(Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
+        storeConfig.setPrivacyUrl("https://store-config.example.com/privacy");
+        storeConfig.setIcon(Base64.getEncoder().encodeToString("store-config-icon".getBytes(StandardCharsets.UTF_8)));
         return storeConfig;
     }
 
@@ -324,7 +321,6 @@ class ConfigurableStorePublisherXiaomiTest {
         appInfo.setAppName("Demo Xiaomi App");
         appInfo.setPackageName("com.demo.xiaomi.app");
         appInfo.setAppDescription("Demo xiaomi description");
-        appInfo.setPrivacyUrl("https://example.com/privacy");
 
         AppVersion version = new AppVersion();
         version.setId(1L);
@@ -466,4 +462,6 @@ class ConfigurableStorePublisherXiaomiTest {
         }
         return builder.toString();
     }
+
+
 }

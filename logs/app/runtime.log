@@ -1,109 +1,177 @@
-2026-06-22 08:19:50.864 [HikariPool-1 housekeeper] WARN  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Thread starvation or clock leap detected (housekeeper delta=3d14h52m26s704ms971µs300ns).
-2026-06-22 08:20:21.564 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 08:20:21.596 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 08:21:21.612 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 08:21:21.625 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:51:10.215 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
-2026-06-22 14:51:10.316 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 32656 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
-2026-06-22 14:51:10.317 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
-2026-06-22 14:51:10.318 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
-2026-06-22 14:51:15.605 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
-2026-06-22 14:51:15.644 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 14:51:15.656 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
-2026-06-22 14:51:15.657 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
-2026-06-22 14:51:16.015 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2026-06-22 14:51:16.016 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 5593 ms
-2026-06-22 14:51:16.470 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
-2026-06-22 14:51:16.484 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
-2026-06-22 14:51:18.335 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-22 14:51:19.607 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@64b73e0a
-2026-06-22 14:51:19.618 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
-2026-06-22 14:51:22.098 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 14:51:22.156 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
-2026-06-22 14:51:22.182 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 13.18 seconds (process running for 14.156)
-2026-06-22 14:51:22.191 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:51:22.495 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:52:22.512 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:52:22.519 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:53:22.524 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:53:22.532 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:54:22.538 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:54:22.547 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:55:22.562 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:55:22.571 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:56:22.577 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:56:22.586 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:57:22.594 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:57:22.604 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:58:22.618 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:58:22.623 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 14:59:22.626 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 14:59:22.633 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:00:22.639 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:00:22.644 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:01:22.647 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:01:22.655 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:02:06.447 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-06-22 15:02:06.448 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
-2026-06-22 15:02:06.449 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
-2026-06-22 15:02:06.457 [http-nio-0.0.0.0-8080-exec-1] INFO  [32a489b034564a5b9947268725f73275] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/index.html, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:06.513 [http-nio-0.0.0.0-8080-exec-1] INFO  [32a489b034564a5b9947268725f73275] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/index.html, status=304, durationMs=59
-2026-06-22 15:02:06.534 [http-nio-0.0.0.0-8080-exec-2] INFO  [cf3f02220bb545e0b68a844e02b1d497] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/swagger-initializer.js, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:06.534 [http-nio-0.0.0.0-8080-exec-3] INFO  [a67b771dad7e4a0aa63b6b9e8e206608] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/swagger-ui.css, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:06.538 [http-nio-0.0.0.0-8080-exec-3] INFO  [a67b771dad7e4a0aa63b6b9e8e206608] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/swagger-ui.css, status=304, durationMs=4
-2026-06-22 15:02:06.541 [http-nio-0.0.0.0-8080-exec-5] INFO  [4d9be131305840e9b27c95639fba61aa] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/swagger-ui-bundle.js, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:06.541 [http-nio-0.0.0.0-8080-exec-4] INFO  [90e2f361290c448396e7714b75d3bf3f] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/index.css, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:06.541 [http-nio-0.0.0.0-8080-exec-7] INFO  [700d6f6cdaeb4a069ee2bce1717ac75d] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/swagger-ui-standalone-preset.js, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:06.544 [http-nio-0.0.0.0-8080-exec-7] INFO  [700d6f6cdaeb4a069ee2bce1717ac75d] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/swagger-ui-standalone-preset.js, status=304, durationMs=3
-2026-06-22 15:02:06.544 [http-nio-0.0.0.0-8080-exec-5] INFO  [4d9be131305840e9b27c95639fba61aa] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/swagger-ui-bundle.js, status=304, durationMs=3
-2026-06-22 15:02:06.547 [http-nio-0.0.0.0-8080-exec-4] INFO  [90e2f361290c448396e7714b75d3bf3f] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/index.css, status=304, durationMs=6
-2026-06-22 15:02:06.599 [http-nio-0.0.0.0-8080-exec-2] INFO  [cf3f02220bb545e0b68a844e02b1d497] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/swagger-initializer.js, status=200, durationMs=65
-2026-06-22 15:02:06.731 [http-nio-0.0.0.0-8080-exec-10] INFO  [7d62c3cd07564170860de80c175b80e5] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/v3/api-docs/swagger-config, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:06.769 [http-nio-0.0.0.0-8080-exec-10] INFO  [7d62c3cd07564170860de80c175b80e5] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/v3/api-docs/swagger-config, status=200, durationMs=38
-2026-06-22 15:02:06.782 [http-nio-0.0.0.0-8080-exec-8] INFO  [435a917c20754f2fab151e7a61398bc2] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/openapi.yaml, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:06.785 [http-nio-0.0.0.0-8080-exec-8] INFO  [435a917c20754f2fab151e7a61398bc2] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/openapi.yaml, status=304, durationMs=3
-2026-06-22 15:02:22.658 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:02:22.666 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:02:35.527 [http-nio-0.0.0.0-8080-exec-7] INFO  [75924c487acb4a58974b0d5f1dbdea2c] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:02:35.581 [http-nio-0.0.0.0-8080-exec-7] INFO  [75924c487acb4a58974b0d5f1dbdea2c] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=401, durationMs=54
-2026-06-22 15:02:55.553 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
-2026-06-22 15:02:55.567 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
-2026-06-22 15:03:02.071 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
-2026-06-22 15:03:02.146 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 24792 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
-2026-06-22 15:03:02.147 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
-2026-06-22 15:03:02.148 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
-2026-06-22 15:03:04.534 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
-2026-06-22 15:03:04.545 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 15:03:04.549 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
-2026-06-22 15:03:04.550 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
-2026-06-22 15:03:04.632 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2026-06-22 15:03:04.633 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2366 ms
-2026-06-22 15:03:04.739 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
-2026-06-22 15:03:04.746 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
-2026-06-22 15:03:05.310 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-22 15:03:05.686 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@3be80ece
-2026-06-22 15:03:05.689 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
-2026-06-22 15:03:06.440 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 15:03:06.465 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
-2026-06-22 15:03:06.479 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 5.274 seconds (process running for 5.904)
-2026-06-22 15:03:06.482 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:03:06.563 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:03:23.162 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-06-22 15:03:23.162 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
-2026-06-22 15:03:23.163 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
-2026-06-22 15:03:23.167 [http-nio-0.0.0.0-8080-exec-1] INFO  [d4856839aeb746dbbb03f695f40710a6] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/apps, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:03:23.382 [http-nio-0.0.0.0-8080-exec-1] INFO  [d4856839aeb746dbbb03f695f40710a6] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/apps, status=200, durationMs=216
-2026-06-22 15:03:31.253 [http-nio-0.0.0.0-8080-exec-2] INFO  [013b22b8532944bdb3623d39ab58be42] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:03:31.359 [http-nio-0.0.0.0-8080-exec-2] ERROR [013b22b8532944bdb3623d39ab58be42] c.a.p.handler.GlobalExceptionHandler - Unhandled exception, method=POST, uri=/api/releases/submit
-org.springframework.http.converter.HttpMessageNotReadableException: JSON parse error: Cannot deserialize value of type `java.time.LocalDateTime` from String "2026-06-22 07:02:16.002Z": Failed to deserialize java.time.LocalDateTime: (java.time.format.DateTimeParseException) Text '2026-06-22 07:02:16.002Z' could not be parsed, unparsed text found at index 19
-	at org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter.readJavaType(AbstractJackson2HttpMessageConverter.java:406)
-	at org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter.read(AbstractJackson2HttpMessageConverter.java:354)
-	at org.springframework.web.servlet.mvc.method.annotation.AbstractMessageConverterMethodArgumentResolver.readWithMessageConverters(AbstractMessageConverterMethodArgumentResolver.java:184)
-	at org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor.readWithMessageConverters(RequestResponseBodyMethodProcessor.java:161)
-	at org.springframework.web.servlet.mvc.method.annotation.RequestResponseBodyMethodProcessor.resolveArgument(RequestResponseBodyMethodProcessor.java:135)
-	at org.springframework.web.method.support.HandlerMethodArgumentResolverComposite.resolveArgument(HandlerMethodArgumentResolverComposite.java:122)
-	at org.springframework.web.method.support.InvocableHandlerMethod.getMethodArgumentValues(InvocableHandlerMethod.java:224)
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:178)
+2026-06-26 08:45:43.837 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
+2026-06-26 08:45:43.896 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 20376 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
+2026-06-26 08:45:43.897 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "sit"
+2026-06-26 08:45:45.673 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8090 (http)
+2026-06-26 08:45:45.710 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8090"]
+2026-06-26 08:45:45.724 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-06-26 08:45:45.726 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-06-26 08:45:45.904 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-06-26 08:45:45.904 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1951 ms
+2026-06-26 08:45:47.424 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-06-26 08:45:50.035 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8090"]
+2026-06-26 08:45:50.067 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8090 (http) with context path '/'
+2026-06-26 08:45:50.097 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 6.842 seconds (process running for 7.385)
+2026-06-26 08:45:50.108 [scheduling-1] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-06-26 08:45:51.120 [scheduling-1] ERROR [] o.s.s.s.TaskUtils$LoggingErrorHandler - Unexpected error occurred in scheduled task
+org.springframework.transaction.CannotCreateTransactionException: Could not open JDBC Connection for transaction
+	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:313)
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.startTransaction(AbstractPlatformTransactionManager.java:532)
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.getTransaction(AbstractPlatformTransactionManager.java:405)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.createTransactionIfNecessary(TransactionAspectSupport.java:604)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:373)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
+	at com.app.publishservice.service.ReleaseOrchestrationService$$SpringCGLIB$$0.pollAuditResults(<generated>)
+	at com.app.publishservice.job.ReleaseReviewPollingJob.poll(ReleaseReviewPollingJob.java:29)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130)
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124)
+	at io.micrometer.observation.Observation.observe(Observation.java:499)
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124)
+	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:305)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.sql.SQLException: error parsing url : The autoReconnect parameter is no longer supported since version 2.4.16. Please remove it from the URL.
+	at com.oceanbase.jdbc.UrlParser.parseInternal(UrlParser.java:239)
+	at com.oceanbase.jdbc.UrlParser.parse(UrlParser.java:189)
+	at com.oceanbase.jdbc.Driver.connect(Driver.java:87)
+	at com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:137)
+	at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:360)
+	at com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:202)
+	at com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:461)
+	at com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:550)
+	at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:98)
+	at com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111)
+	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:269)
+	... 25 common frames omitted
+Caused by: java.lang.IllegalArgumentException: The autoReconnect parameter is no longer supported since version 2.4.16. Please remove it from the URL.
+	at com.oceanbase.jdbc.util.DefaultOptions.postOptionProcess(DefaultOptions.java:1625)
+	at com.oceanbase.jdbc.UrlParser.defineUrlParserParameters(UrlParser.java:276)
+	at com.oceanbase.jdbc.UrlParser.parseInternal(UrlParser.java:234)
+	... 35 common frames omitted
+2026-06-26 08:46:51.137 [scheduling-1] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-06-26 08:46:52.152 [scheduling-1] ERROR [] o.s.s.s.TaskUtils$LoggingErrorHandler - Unexpected error occurred in scheduled task
+org.springframework.transaction.CannotCreateTransactionException: Could not open JDBC Connection for transaction
+	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:313)
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.startTransaction(AbstractPlatformTransactionManager.java:532)
+	at org.springframework.transaction.support.AbstractPlatformTransactionManager.getTransaction(AbstractPlatformTransactionManager.java:405)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.createTransactionIfNecessary(TransactionAspectSupport.java:604)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:373)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
+	at com.app.publishservice.service.ReleaseOrchestrationService$$SpringCGLIB$$0.pollAuditResults(<generated>)
+	at com.app.publishservice.job.ReleaseReviewPollingJob.poll(ReleaseReviewPollingJob.java:29)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130)
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124)
+	at io.micrometer.observation.Observation.observe(Observation.java:499)
+	at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124)
+	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:305)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+Caused by: java.sql.SQLException: error parsing url : The autoReconnect parameter is no longer supported since version 2.4.16. Please remove it from the URL.
+	at com.oceanbase.jdbc.UrlParser.parseInternal(UrlParser.java:239)
+	at com.oceanbase.jdbc.UrlParser.parse(UrlParser.java:189)
+	at com.oceanbase.jdbc.Driver.connect(Driver.java:87)
+	at com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:137)
+	at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:360)
+	at com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:202)
+	at com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:461)
+	at com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:550)
+	at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:98)
+	at com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111)
+	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:269)
+	... 25 common frames omitted
+Caused by: java.lang.IllegalArgumentException: The autoReconnect parameter is no longer supported since version 2.4.16. Please remove it from the URL.
+	at com.oceanbase.jdbc.util.DefaultOptions.postOptionProcess(DefaultOptions.java:1625)
+	at com.oceanbase.jdbc.UrlParser.defineUrlParserParameters(UrlParser.java:276)
+	at com.oceanbase.jdbc.UrlParser.parseInternal(UrlParser.java:234)
+	... 35 common frames omitted
+2026-06-26 08:47:56.201 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
+2026-06-26 08:47:56.269 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 8096 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
+2026-06-26 08:47:56.269 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
+2026-06-26 08:47:56.270 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
+2026-06-26 08:47:58.186 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-06-26 08:47:58.198 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
+2026-06-26 08:47:58.203 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-06-26 08:47:58.203 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-06-26 08:47:58.277 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-06-26 08:47:58.278 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1913 ms
+2026-06-26 08:47:58.416 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-06-26 08:47:58.420 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
+2026-06-26 08:47:59.048 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-06-26 08:47:59.445 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@60a01cb
+2026-06-26 08:47:59.447 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-06-26 08:48:00.293 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
+2026-06-26 08:48:00.317 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-06-26 08:48:00.329 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 4.935 seconds (process running for 5.591)
+2026-06-26 08:48:00.333 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-06-26 08:48:00.449 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-06-26 08:48:16.169 [http-nio-0.0.0.0-8080-exec-2] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-06-26 08:48:16.170 [http-nio-0.0.0.0-8080-exec-2] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-06-26 08:48:16.172 [http-nio-0.0.0.0-8080-exec-2] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2026-06-26 08:48:16.182 [http-nio-0.0.0.0-8080-exec-2] INFO  [94d2ef0146304412a419700d658a5956] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/swagger-initializer.js, clientIp=0:0:0:0:0:0:0:1
+2026-06-26 08:48:16.299 [http-nio-0.0.0.0-8080-exec-2] INFO  [94d2ef0146304412a419700d658a5956] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/swagger-initializer.js, status=200, durationMs=120
+2026-06-26 08:48:16.614 [http-nio-0.0.0.0-8080-exec-1] INFO  [13a827a68c2245a68343a20aedda8f8c] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/v3/api-docs/swagger-config, clientIp=0:0:0:0:0:0:0:1
+2026-06-26 08:48:16.647 [http-nio-0.0.0.0-8080-exec-1] INFO  [13a827a68c2245a68343a20aedda8f8c] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/v3/api-docs/swagger-config, status=200, durationMs=33
+2026-06-26 08:48:16.667 [http-nio-0.0.0.0-8080-exec-3] INFO  [81ba284f1767487a85e38b137c556e8d] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/openapi.yaml, clientIp=0:0:0:0:0:0:0:1
+2026-06-26 08:48:16.672 [http-nio-0.0.0.0-8080-exec-3] INFO  [81ba284f1767487a85e38b137c556e8d] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/openapi.yaml, status=304, durationMs=5
+2026-06-26 08:48:53.103 [http-nio-0.0.0.0-8080-exec-4] INFO  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
+2026-06-26 08:48:53.289 [http-nio-0.0.0.0-8080-exec-4] INFO  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[oppo]
+2026-06-26 08:48:53.458 [http-nio-0.0.0.0-8080-exec-4] INFO  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=98, appId=1, versionId=1, storeType=oppo
+2026-06-26 08:48:53.592 [http-nio-0.0.0.0-8080-exec-4] ERROR [d767d64921e34a8587b703c9ce7f75e4] c.a.p.s.ReleaseOrchestrationService - Submit package preparation failed, releaseId=98, storeType=oppo
+com.app.publishservice.common.exception.SubmitPackageDownloadException: 从https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/10.18.3_cmschina_armeabi_13231/cms_yht_32.apk下载32位apk失败，请核对版本号和构建号是否正确
+	at com.app.publishservice.service.PackageVersionService.prepareVersionForSubmit(PackageVersionService.java:170)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:379)
+	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
+	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
+	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
+	at com.app.publishservice.service.PackageVersionService$$SpringCGLIB$$0.prepareVersionForSubmit(<generated>)
+	at com.app.publishservice.service.ReleaseOrchestrationService.prepareSubmit(ReleaseOrchestrationService.java:155)
+	at com.app.publishservice.service.ReleaseOrchestrationService.lambda$submit$0(ReleaseOrchestrationService.java:73)
+	at org.springframework.transaction.support.TransactionTemplate.execute(TransactionTemplate.java:140)
+	at com.app.publishservice.service.ReleaseOrchestrationService.submit(ReleaseOrchestrationService.java:73)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355)
+	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:716)
+	at com.app.publishservice.service.ReleaseOrchestrationService$$SpringCGLIB$$0.submit(<generated>)
+	at com.app.publishservice.api.ReleaseController.submit(ReleaseController.java:46)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
+	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188)
 	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
 	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926)
 	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831)
@@ -155,522 +223,44 @@ org.springframework.http.converter.HttpMessageNotReadableException: JSON parse e
 	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
 	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
 	at java.base/java.lang.Thread.run(Thread.java:840)
-Caused by: com.fasterxml.jackson.databind.exc.InvalidFormatException: Cannot deserialize value of type `java.time.LocalDateTime` from String "2026-06-22 07:02:16.002Z": Failed to deserialize java.time.LocalDateTime: (java.time.format.DateTimeParseException) Text '2026-06-22 07:02:16.002Z' could not be parsed, unparsed text found at index 19
- at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 9, column: 20] (through reference chain: com.app.publishservice.api.dto.ReleaseSubmitRequest["grayStartTime"])
-	at com.fasterxml.jackson.databind.exc.InvalidFormatException.from(InvalidFormatException.java:67)
-	at com.fasterxml.jackson.databind.DeserializationContext.weirdStringException(DeserializationContext.java:1958)
-	at com.fasterxml.jackson.databind.DeserializationContext.handleWeirdStringValue(DeserializationContext.java:1245)
-	at com.fasterxml.jackson.datatype.jsr310.deser.JSR310DeserializerBase._handleDateTimeException(JSR310DeserializerBase.java:176)
-	at com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer._fromString(LocalDateTimeDeserializer.java:216)
-	at com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer.deserialize(LocalDateTimeDeserializer.java:114)
-	at com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer.deserialize(LocalDateTimeDeserializer.java:41)
-	at com.fasterxml.jackson.databind.deser.impl.MethodProperty.deserializeAndSet(MethodProperty.java:129)
-	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserializeFromObject(BeanDeserializer.java:399)
-	at com.fasterxml.jackson.databind.deser.BeanDeserializer.deserialize(BeanDeserializer.java:185)
-	at com.fasterxml.jackson.databind.deser.DefaultDeserializationContext.readRootValue(DefaultDeserializationContext.java:342)
-	at com.fasterxml.jackson.databind.ObjectReader._bindAndClose(ObjectReader.java:2125)
-	at com.fasterxml.jackson.databind.ObjectReader.readValue(ObjectReader.java:1501)
-	at org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter.readJavaType(AbstractJackson2HttpMessageConverter.java:395)
-	... 58 common frames omitted
-Caused by: java.time.format.DateTimeParseException: Text '2026-06-22 07:02:16.002Z' could not be parsed, unparsed text found at index 19
-	at java.base/java.time.format.DateTimeFormatter.parseResolved0(DateTimeFormatter.java:2055)
-	at java.base/java.time.format.DateTimeFormatter.parse(DateTimeFormatter.java:1954)
-	at java.base/java.time.LocalDateTime.parse(LocalDateTime.java:494)
-	at com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer._fromString(LocalDateTimeDeserializer.java:214)
-	... 67 common frames omitted
-2026-06-22 15:03:31.370 [http-nio-0.0.0.0-8080-exec-2] INFO  [013b22b8532944bdb3623d39ab58be42] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=500, durationMs=117
-2026-06-22 15:03:51.086 [http-nio-0.0.0.0-8080-exec-4] INFO  [62808bd77fa94ccb83806769678eb9e8] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:03:51.175 [http-nio-0.0.0.0-8080-exec-4] INFO  [62808bd77fa94ccb83806769678eb9e8] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[vivo]
-2026-06-22 15:03:51.340 [http-nio-0.0.0.0-8080-exec-4] INFO  [62808bd77fa94ccb83806769678eb9e8] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=64, appId=1, versionId=1, storeType=vivo
-2026-06-22 15:03:51.368 [http-nio-0.0.0.0-8080-exec-4] INFO  [62808bd77fa94ccb83806769678eb9e8] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 15:03:51.429 [release-submit-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=1, storeType=vivo, expireTime=2036-06-09T16:14:11
-2026-06-22 15:03:54.035 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Submit vivo 32-bit apk upload, versionId=1, fileName=cms_yht_32.apk, packageName=com.cmschina.stock, stageUpload=false
-2026-06-22 15:04:06.567 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:04:06.571 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:05:06.580 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:05:06.588 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:06:06.596 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:06:06.601 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:07:06.616 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:07:06.621 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:07:46.305 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Submit vivo 64-bit apk upload, versionId=1, fileName=cms_yht_64.apk, packageName=com.cmschina.stock, stageUpload=false
-2026-06-22 15:08:06.635 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:08:06.640 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:09:06.669 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:09:06.676 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:10:06.679 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:10:06.689 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:11:06.700 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:11:06.704 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:11:50.616 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Submit vivo subpackage app update, versionId=1, packageName=com.cmschina.stock, versionName=10.18.3, versionCode=10.18.3
-2026-06-22 15:11:50.826 [release-submit-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=64, storeType=vivo, storeReleaseId=37d9d8c80bdbaa77567df6efca6fb3e3, status=auditing
-2026-06-22 15:11:50.830 [http-nio-0.0.0.0-8080-exec-4] INFO  [62808bd77fa94ccb83806769678eb9e8] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=479744
-2026-06-22 15:12:06.708 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:12:06.712 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 15:12:06.717 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=1, storeType=vivo, expireTime=2036-06-09T16:14:11
-2026-06-22 15:12:06.914 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=64, storeType=vivo, before=auditing, after=pass
-2026-06-22 15:13:06.932 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:13:06.937 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:14:06.939 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:14:06.946 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:15:06.948 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:15:06.953 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:16:06.967 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:16:06.974 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:17:03.842 [http-nio-0.0.0.0-8080-exec-6] INFO  [8679cfc2b81b414a9803a6ddba9bf95f] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:17:03.850 [http-nio-0.0.0.0-8080-exec-6] INFO  [8679cfc2b81b414a9803a6ddba9bf95f] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[oppo]
-2026-06-22 15:17:03.869 [http-nio-0.0.0.0-8080-exec-6] INFO  [8679cfc2b81b414a9803a6ddba9bf95f] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=65, appId=1, versionId=1, storeType=oppo
-2026-06-22 15:17:03.874 [http-nio-0.0.0.0-8080-exec-6] INFO  [8679cfc2b81b414a9803a6ddba9bf95f] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 15:17:04.180 [release-submit-2] INFO  [] c.a.p.service.TokenService - Refresh token, storeConfigId=2, storeType=oppo
-2026-06-22 15:17:04.182 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=oppo, action=refresh oppo token
-2026-06-22 15:17:04.211 [release-submit-2] INFO  [] c.a.p.service.TokenService - Token refreshed, storeConfigId=2, storeType=oppo, expireTime=2026-06-24T15:17:04.197118200
-2026-06-22 15:17:04.224 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=oppo, action=request oppo endpoint /resource/v1/app/multi-info
-2026-06-22 15:17:04.326 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=oppo, action=request oppo endpoint /resource/v1/upload/get-upload-url
-2026-06-22 15:17:04.368 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=oppo, action=upload oppo package
-2026-06-22 15:17:04.518 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=oppo, action=request oppo endpoint /resource/v1/upload/get-upload-url
-2026-06-22 15:17:04.626 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=oppo, action=upload oppo package
-2026-06-22 15:17:04.777 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=oppo, action=request oppo endpoint /resource/v1/app/upd
-2026-06-22 15:17:04.813 [release-submit-2] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=65, storeType=oppo, storeReleaseId=oppo-378e5bf8-b4a8-4140-bced-62775b0f9096, status=auditing
-2026-06-22 15:17:04.814 [http-nio-0.0.0.0-8080-exec-6] INFO  [8679cfc2b81b414a9803a6ddba9bf95f] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=973
-2026-06-22 15:17:06.987 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:17:06.994 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 15:17:07.004 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=2, storeType=oppo, expireTime=2026-06-24T15:17:04
-2026-06-22 15:17:07.005 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=oppo, action=request oppo endpoint /resource/v1/app/task-state
-2026-06-22 15:17:07.021 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=65, storeType=oppo, before=auditing, after=pass
-2026-06-22 15:18:07.052 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:18:07.057 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:19:07.058 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:19:07.064 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:20:07.076 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:20:07.082 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:21:07.084 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:21:07.089 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:22:07.093 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:22:07.098 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:23:07.103 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:23:07.110 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:24:07.117 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:24:07.121 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:25:07.128 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:25:07.133 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:25:18.939 [http-nio-0.0.0.0-8080-exec-7] INFO  [b4e2032fda6f446d9572d5fb8dcaa423] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:25:18.942 [http-nio-0.0.0.0-8080-exec-7] INFO  [b4e2032fda6f446d9572d5fb8dcaa423] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[huawei]
-2026-06-22 15:25:18.968 [http-nio-0.0.0.0-8080-exec-7] INFO  [b4e2032fda6f446d9572d5fb8dcaa423] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=66, appId=1, versionId=1, storeType=huawei
-2026-06-22 15:25:18.977 [http-nio-0.0.0.0-8080-exec-7] INFO  [b4e2032fda6f446d9572d5fb8dcaa423] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 15:25:19.011 [release-submit-3] INFO  [] c.a.p.service.TokenService - Refresh token, storeConfigId=3, storeType=huawei
-2026-06-22 15:25:19.011 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock huawei token refresh, storeConfigId=3
-2026-06-22 15:25:19.016 [release-submit-3] INFO  [] c.a.p.service.TokenService - Token refreshed, storeConfigId=3, storeType=huawei, expireTime=2026-06-24T15:25:19.012542300
-2026-06-22 15:25:19.028 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=query huawei app id
-2026-06-22 15:25:24.334 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=get huawei upload url
-2026-06-22 15:25:24.370 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=upload huawei package
-2026-06-22 15:25:28.770 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=get huawei upload url
-2026-06-22 15:25:28.782 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=upload huawei package
-2026-06-22 15:25:28.794 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=update huawei app file info
-2026-06-22 15:25:28.809 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=submit huawei app
-2026-06-22 15:25:28.830 [release-submit-3] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=66, storeType=huawei, storeReleaseId=mock-huawei-appid, status=auditing
-2026-06-22 15:25:28.831 [http-nio-0.0.0.0-8080-exec-7] INFO  [b4e2032fda6f446d9572d5fb8dcaa423] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=9892
-2026-06-22 15:26:07.141 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:26:07.147 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 15:26:07.155 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=3, storeType=huawei, expireTime=2026-06-24T15:25:19
-2026-06-22 15:26:07.155 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=query huawei app id
-2026-06-22 15:26:07.166 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=query huawei app info
-2026-06-22 15:26:07.179 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=66, storeType=huawei, before=auditing, after=pass
-2026-06-22 15:27:07.197 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:27:07.202 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:28:07.216 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:28:07.222 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:28:21.022 [http-nio-0.0.0.0-8080-exec-3] INFO  [1441073e4269421584e289bbbeba0d15] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:28:21.023 [http-nio-0.0.0.0-8080-exec-3] INFO  [1441073e4269421584e289bbbeba0d15] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[huawei]
-2026-06-22 15:28:21.042 [http-nio-0.0.0.0-8080-exec-3] INFO  [1441073e4269421584e289bbbeba0d15] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=67, appId=1, versionId=1, storeType=huawei
-2026-06-22 15:28:21.050 [http-nio-0.0.0.0-8080-exec-3] INFO  [1441073e4269421584e289bbbeba0d15] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 15:28:21.089 [release-submit-4] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=3, storeType=huawei, expireTime=2026-06-24T15:25:19
-2026-06-22 15:28:21.090 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=query huawei app id
-2026-06-22 15:28:26.277 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=get huawei upload url
-2026-06-22 15:28:26.297 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=upload huawei package
-2026-06-22 15:28:30.916 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=get huawei upload url
-2026-06-22 15:28:30.949 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=upload huawei package
-2026-06-22 15:28:30.971 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=update huawei app file info
-2026-06-22 15:28:30.998 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=submit huawei app
-2026-06-22 15:28:31.029 [release-submit-4] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=67, storeType=huawei, storeReleaseId=mock-huawei-appid, status=auditing
-2026-06-22 15:28:31.031 [http-nio-0.0.0.0-8080-exec-3] INFO  [1441073e4269421584e289bbbeba0d15] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=10010
-2026-06-22 15:29:07.235 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:29:07.244 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 15:29:07.252 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=3, storeType=huawei, expireTime=2026-06-24T15:25:19
-2026-06-22 15:29:07.253 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=query huawei app id
-2026-06-22 15:29:07.264 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=huawei, action=query huawei app info
-2026-06-22 15:29:07.282 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=67, storeType=huawei, before=auditing, after=pass
-2026-06-22 15:30:07.307 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:30:07.311 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:31:07.319 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:31:07.323 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:32:07.328 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:32:07.330 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:32:46.096 [http-nio-0.0.0.0-8080-exec-2] INFO  [4a234ae46382454985dd2d16413116df] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:32:46.099 [http-nio-0.0.0.0-8080-exec-2] INFO  [4a234ae46382454985dd2d16413116df] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[rongyao]
-2026-06-22 15:32:46.118 [http-nio-0.0.0.0-8080-exec-2] WARN  [4a234ae46382454985dd2d16413116df] c.a.p.handler.GlobalExceptionHandler - Request not found, method=POST, uri=/api/releases/submit, message=Store config not found: rongyao
-2026-06-22 15:32:46.122 [http-nio-0.0.0.0-8080-exec-2] INFO  [4a234ae46382454985dd2d16413116df] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=404, durationMs=26
-2026-06-22 15:33:07.336 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:33:07.356 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:33:34.090 [http-nio-0.0.0.0-8080-exec-4] INFO  [e4610c48278346fb867d7af898a6f280] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:33:34.093 [http-nio-0.0.0.0-8080-exec-4] INFO  [e4610c48278346fb867d7af898a6f280] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[rongyao]
-2026-06-22 15:33:34.107 [http-nio-0.0.0.0-8080-exec-4] WARN  [e4610c48278346fb867d7af898a6f280] c.a.p.handler.GlobalExceptionHandler - Request not found, method=POST, uri=/api/releases/submit, message=Store config not found: rongyao
-2026-06-22 15:33:34.109 [http-nio-0.0.0.0-8080-exec-4] INFO  [e4610c48278346fb867d7af898a6f280] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=404, durationMs=19
-2026-06-22 15:34:07.358 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:34:07.363 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:35:07.374 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:35:07.379 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:35:53.310 [http-nio-0.0.0.0-8080-exec-6] INFO  [e71dcab03708438486d5d132de3ce804] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/store-configs, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:35:53.361 [http-nio-0.0.0.0-8080-exec-6] INFO  [e71dcab03708438486d5d132de3ce804] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/store-configs, status=200, durationMs=51
-2026-06-22 15:36:05.667 [http-nio-0.0.0.0-8080-exec-7] INFO  [d3b8918ee2394d6baa901816f9ed9346] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/store-configs, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:36:05.691 [http-nio-0.0.0.0-8080-exec-7] INFO  [d3b8918ee2394d6baa901816f9ed9346] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/store-configs, status=200, durationMs=24
-2026-06-22 15:36:07.389 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:36:07.395 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:36:19.371 [http-nio-0.0.0.0-8080-exec-3] INFO  [3148abf0a94a4fe584a2c1772ad16ec9] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:36:19.373 [http-nio-0.0.0.0-8080-exec-3] INFO  [3148abf0a94a4fe584a2c1772ad16ec9] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[rongyao]
-2026-06-22 15:36:19.393 [http-nio-0.0.0.0-8080-exec-3] INFO  [3148abf0a94a4fe584a2c1772ad16ec9] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=68, appId=1, versionId=1, storeType=rongyao
-2026-06-22 15:36:19.400 [http-nio-0.0.0.0-8080-exec-3] INFO  [3148abf0a94a4fe584a2c1772ad16ec9] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 15:36:19.434 [release-submit-5] INFO  [] c.a.p.service.TokenService - Refresh token, storeConfigId=6, storeType=rongyao
-2026-06-22 15:36:19.435 [release-submit-5] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=refresh rongyao token
-2026-06-22 15:36:19.445 [release-submit-5] INFO  [] c.a.p.service.TokenService - Token refreshed, storeConfigId=6, storeType=rongyao, expireTime=2026-06-22T16:36:19.442704200
-2026-06-22 15:36:19.456 [release-submit-5] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=query rongyao app id
-2026-06-22 15:36:29.265 [release-submit-5] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=get rongyao file upload url
-2026-06-22 15:36:29.284 [release-submit-5] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=upload rongyao package
-2026-06-22 15:36:29.301 [release-submit-5] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=upload rongyao package
-2026-06-22 15:36:29.316 [release-submit-5] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=update rongyao file info
-2026-06-22 15:36:29.335 [release-submit-5] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=submit rongyao audit
-2026-06-22 15:36:29.365 [release-submit-5] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=68, storeType=rongyao, storeReleaseId=mock-rongyao-3938916d-cccb-4aee-a617-dd40c507a125, status=auditing
-2026-06-22 15:36:29.366 [http-nio-0.0.0.0-8080-exec-3] INFO  [3148abf0a94a4fe584a2c1772ad16ec9] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=9995
-2026-06-22 15:37:07.402 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:37:07.407 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 15:37:07.414 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=6, storeType=rongyao, expireTime=2026-06-22T16:36:19
-2026-06-22 15:37:07.414 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=query rongyao app id
-2026-06-22 15:37:07.424 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=query rongyao audit result
-2026-06-22 15:37:07.432 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=query rongyao phased release info
-2026-06-22 15:37:07.442 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=68, storeType=rongyao, before=auditing, after=pass
-2026-06-22 15:38:07.464 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:38:07.469 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 15:38:40.969 [http-nio-0.0.0.0-8080-exec-2] INFO  [6e90a5c75f2c4852867b45571a2f61bb] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:38:40.971 [http-nio-0.0.0.0-8080-exec-2] INFO  [6e90a5c75f2c4852867b45571a2f61bb] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[rongyao]
-2026-06-22 15:38:40.985 [http-nio-0.0.0.0-8080-exec-2] INFO  [6e90a5c75f2c4852867b45571a2f61bb] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=69, appId=1, versionId=1, storeType=rongyao
-2026-06-22 15:38:40.988 [http-nio-0.0.0.0-8080-exec-2] INFO  [6e90a5c75f2c4852867b45571a2f61bb] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 15:38:41.015 [release-submit-6] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=6, storeType=rongyao, expireTime=2026-06-22T16:36:19
-2026-06-22 15:38:41.017 [release-submit-6] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=query rongyao app id
-2026-06-22 15:38:51.595 [release-submit-6] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=get rongyao file upload url
-2026-06-22 15:38:51.614 [release-submit-6] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=upload rongyao package
-2026-06-22 15:38:51.631 [release-submit-6] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=upload rongyao package
-2026-06-22 15:38:51.644 [release-submit-6] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=update rongyao file info
-2026-06-22 15:38:51.660 [release-submit-6] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=submit rongyao audit
-2026-06-22 15:38:51.698 [release-submit-6] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=69, storeType=rongyao, storeReleaseId=mock-rongyao-167f2ea3-5e05-4d11-ae98-1feda0aafb6f, status=auditing
-2026-06-22 15:38:51.699 [http-nio-0.0.0.0-8080-exec-2] INFO  [6e90a5c75f2c4852867b45571a2f61bb] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=10730
-2026-06-22 15:39:07.484 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:39:07.488 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 15:39:07.495 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=6, storeType=rongyao, expireTime=2026-06-22T16:36:19
-2026-06-22 15:39:07.496 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=query rongyao app id
-2026-06-22 15:39:07.504 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=rongyao, action=query rongyao audit result
-2026-06-22 15:39:07.517 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=69, storeType=rongyao, before=auditing, after=pass
-2026-06-22 15:39:43.202 [http-nio-0.0.0.0-8080-exec-4] INFO  [7e555d1cbc06454baeac97d6f3b7ee6b] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 15:39:43.203 [http-nio-0.0.0.0-8080-exec-4] INFO  [7e555d1cbc06454baeac97d6f3b7ee6b] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[sanxing]
-2026-06-22 15:39:43.218 [http-nio-0.0.0.0-8080-exec-4] INFO  [7e555d1cbc06454baeac97d6f3b7ee6b] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=70, appId=1, versionId=1, storeType=sanxing
-2026-06-22 15:39:43.225 [http-nio-0.0.0.0-8080-exec-4] INFO  [7e555d1cbc06454baeac97d6f3b7ee6b] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 15:39:43.292 [release-submit-7] INFO  [] c.a.p.service.TokenService - Refresh token, storeConfigId=7, storeType=sanxing
-2026-06-22 15:39:43.297 [release-submit-7] INFO  [] c.a.p.service.TokenService - Token refreshed, storeConfigId=7, storeType=sanxing, expireTime=2026-06-22T16:34:43.293809700
-2026-06-22 15:39:43.321 [release-submit-7] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=70, storeType=sanxing, storeReleaseId=com.cmschina.stock, status=auditing
-2026-06-22 15:39:43.326 [http-nio-0.0.0.0-8080-exec-4] INFO  [7e555d1cbc06454baeac97d6f3b7ee6b] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=124
-2026-06-22 15:40:07.536 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 15:40:07.541 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 15:40:07.550 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=7, storeType=sanxing, expireTime=2026-06-22T16:34:43
-2026-06-22 15:40:07.554 [scheduling-1] DEBUG [] c.a.p.s.ReleaseOrchestrationService - Review status unchanged, releaseId=70, storeType=sanxing, status=auditing
-2026-06-22 15:40:57.813 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
-2026-06-22 15:40:57.819 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
-2026-06-22 16:43:50.708 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
-2026-06-22 16:43:50.774 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 31612 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
-2026-06-22 16:43:50.775 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
-2026-06-22 16:43:50.775 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
-2026-06-22 16:43:52.326 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
-2026-06-22 16:43:52.337 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 16:43:52.343 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
-2026-06-22 16:43:52.343 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
-2026-06-22 16:43:52.425 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2026-06-22 16:43:52.426 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1590 ms
-2026-06-22 16:43:52.558 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
-2026-06-22 16:43:52.562 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
-2026-06-22 16:43:53.193 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-22 16:43:53.526 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@6a6d1ff3
-2026-06-22 16:43:53.528 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
-2026-06-22 16:43:54.365 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 16:43:54.387 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
-2026-06-22 16:43:54.399 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 4.348 seconds (process running for 4.815)
-2026-06-22 16:43:54.401 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:43:54.495 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 16:43:54.549 [scheduling-1] INFO  [] c.a.p.service.TokenService - Refresh token, storeConfigId=7, storeType=sanxing
-2026-06-22 16:43:54.568 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=refresh sanxing token
-2026-06-22 16:43:54.616 [scheduling-1] INFO  [] c.a.p.service.TokenService - Token refreshed, storeConfigId=7, storeType=sanxing, expireTime=2026-06-22T17:38:54.611830500
-2026-06-22 16:43:54.618 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=query sanxing content info
-2026-06-22 16:43:54.646 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=70, storeType=sanxing, before=auditing, after=pass
-2026-06-22 16:44:07.766 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-06-22 16:44:07.767 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
-2026-06-22 16:44:07.769 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
-2026-06-22 16:44:07.777 [http-nio-0.0.0.0-8080-exec-1] INFO  [046f51f40683404cbbcb6cf6447e985a] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 16:44:08.024 [http-nio-0.0.0.0-8080-exec-1] INFO  [046f51f40683404cbbcb6cf6447e985a] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[sanxing]
-2026-06-22 16:44:08.054 [http-nio-0.0.0.0-8080-exec-1] INFO  [046f51f40683404cbbcb6cf6447e985a] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=71, appId=1, versionId=1, storeType=sanxing
-2026-06-22 16:44:08.068 [http-nio-0.0.0.0-8080-exec-1] INFO  [046f51f40683404cbbcb6cf6447e985a] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 16:44:08.125 [release-submit-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=7, storeType=sanxing, expireTime=2026-06-22T17:38:55
-2026-06-22 16:44:08.131 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=query sanxing content info
-2026-06-22 16:44:08.153 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=create sanxing upload session
-2026-06-22 16:44:08.176 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=upload sanxing file
-2026-06-22 16:44:08.199 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=add sanxing binary
-2026-06-22 16:44:08.222 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=update sanxing content
-2026-06-22 16:44:08.246 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=submit sanxing content
-2026-06-22 16:44:08.287 [release-submit-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=71, storeType=sanxing, storeReleaseId=com.cmschina.stock, status=auditing
-2026-06-22 16:44:08.328 [http-nio-0.0.0.0-8080-exec-1] INFO  [046f51f40683404cbbcb6cf6447e985a] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=552
-2026-06-22 16:44:54.661 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:44:54.668 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 16:44:54.674 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=7, storeType=sanxing, expireTime=2026-06-22T17:38:55
-2026-06-22 16:44:54.675 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=query sanxing content info
-2026-06-22 16:44:54.691 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=71, storeType=sanxing, before=auditing, after=pass
-2026-06-22 16:45:39.170 [http-nio-0.0.0.0-8080-exec-3] INFO  [e5f27ffd318347d3888feeb5096976ee] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 16:45:39.173 [http-nio-0.0.0.0-8080-exec-3] INFO  [e5f27ffd318347d3888feeb5096976ee] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[sanxing]
-2026-06-22 16:45:39.210 [http-nio-0.0.0.0-8080-exec-3] INFO  [e5f27ffd318347d3888feeb5096976ee] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=72, appId=1, versionId=1, storeType=sanxing
-2026-06-22 16:45:39.215 [http-nio-0.0.0.0-8080-exec-3] INFO  [e5f27ffd318347d3888feeb5096976ee] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 16:45:39.248 [release-submit-2] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=7, storeType=sanxing, expireTime=2026-06-22T17:38:55
-2026-06-22 16:45:39.250 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=query sanxing content info
-2026-06-22 16:45:39.266 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=create sanxing upload session
-2026-06-22 16:45:39.288 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=upload sanxing file
-2026-06-22 16:45:39.303 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=add sanxing binary
-2026-06-22 16:45:39.320 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=update sanxing content
-2026-06-22 16:45:39.337 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=update sanxing staged rollout
-2026-06-22 16:45:39.353 [release-submit-2] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=submit sanxing content
-2026-06-22 16:45:39.383 [release-submit-2] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=72, storeType=sanxing, storeReleaseId=com.cmschina.stock, status=auditing
-2026-06-22 16:45:39.386 [http-nio-0.0.0.0-8080-exec-3] INFO  [e5f27ffd318347d3888feeb5096976ee] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=216
-2026-06-22 16:45:54.709 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:45:54.715 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 16:45:54.722 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=7, storeType=sanxing, expireTime=2026-06-22T17:38:55
-2026-06-22 16:45:54.722 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=sanxing, action=query sanxing content info
-2026-06-22 16:45:54.737 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=72, storeType=sanxing, before=auditing, after=pass
-2026-06-22 16:46:51.708 [http-nio-0.0.0.0-8080-exec-5] INFO  [3a8d32ce90f94c689cb5cad3a91ae178] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 16:46:51.710 [http-nio-0.0.0.0-8080-exec-5] INFO  [3a8d32ce90f94c689cb5cad3a91ae178] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[xiaomi]
-2026-06-22 16:46:51.735 [http-nio-0.0.0.0-8080-exec-5] INFO  [3a8d32ce90f94c689cb5cad3a91ae178] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=73, appId=1, versionId=1, storeType=xiaomi
-2026-06-22 16:46:51.741 [http-nio-0.0.0.0-8080-exec-5] INFO  [3a8d32ce90f94c689cb5cad3a91ae178] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 16:46:51.773 [release-submit-3] INFO  [] c.a.p.service.TokenService - Refresh token, storeConfigId=4, storeType=xiaomi
-2026-06-22 16:46:51.777 [release-submit-3] INFO  [] c.a.p.service.TokenService - Token refreshed, storeConfigId=4, storeType=xiaomi, expireTime=2036-06-22T16:46:51.773133200
-2026-06-22 16:46:51.800 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=xiaomi, action=query xiaomi package
-2026-06-22 16:46:51.821 [release-submit-3] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=xiaomi, action=submit xiaomi release
-2026-06-22 16:46:51.856 [release-submit-3] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=73, storeType=xiaomi, storeReleaseId=com.cmschina.stock:10.18.3, status=auditing
-2026-06-22 16:46:51.858 [http-nio-0.0.0.0-8080-exec-5] INFO  [3a8d32ce90f94c689cb5cad3a91ae178] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=150
-2026-06-22 16:46:54.753 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:46:54.759 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 16:46:54.767 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=4, storeType=xiaomi, expireTime=2036-06-22T16:46:52
-2026-06-22 16:46:54.767 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=xiaomi, action=query xiaomi package
-2026-06-22 16:46:54.788 [scheduling-1] DEBUG [] c.a.p.s.ReleaseOrchestrationService - Review status unchanged, releaseId=73, storeType=xiaomi, status=auditing
-2026-06-22 16:47:16.432 [http-nio-0.0.0.0-8080-exec-7] INFO  [734a10bd32b0456fa7de46072c4c717a] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 16:47:16.435 [http-nio-0.0.0.0-8080-exec-7] INFO  [734a10bd32b0456fa7de46072c4c717a] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[yingyongbao]
-2026-06-22 16:47:16.451 [http-nio-0.0.0.0-8080-exec-7] INFO  [734a10bd32b0456fa7de46072c4c717a] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=74, appId=1, versionId=1, storeType=yingyongbao
-2026-06-22 16:47:16.455 [http-nio-0.0.0.0-8080-exec-7] INFO  [734a10bd32b0456fa7de46072c4c717a] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 16:47:16.483 [release-submit-4] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=5, storeType=yingyongbao, expireTime=2036-06-15T14:18:08
-2026-06-22 16:47:16.489 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=yingyongbao, action=query yingyongbao app detail
-2026-06-22 16:47:16.503 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=yingyongbao, action=get yingyongbao upload info
-2026-06-22 16:47:16.523 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=yingyongbao, action=upload yingyongbao file cms_yht_32.apk
-2026-06-22 16:47:18.290 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=yingyongbao, action=get yingyongbao upload info
-2026-06-22 16:47:18.309 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=yingyongbao, action=upload yingyongbao file cms_yht_64.apk
-2026-06-22 16:47:20.075 [release-submit-4] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=yingyongbao, action=update yingyongbao app
-2026-06-22 16:47:20.103 [release-submit-4] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=74, storeType=yingyongbao, storeReleaseId=mock-app-id, status=auditing
-2026-06-22 16:47:20.105 [http-nio-0.0.0.0-8080-exec-7] INFO  [734a10bd32b0456fa7de46072c4c717a] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=3673
-2026-06-22 16:47:54.805 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:47:54.810 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=2
-2026-06-22 16:47:54.815 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=4, storeType=xiaomi, expireTime=2036-06-22T16:46:52
-2026-06-22 16:47:54.816 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=xiaomi, action=query xiaomi package
-2026-06-22 16:47:54.828 [scheduling-1] DEBUG [] c.a.p.s.ReleaseOrchestrationService - Review status unchanged, releaseId=73, storeType=xiaomi, status=auditing
-2026-06-22 16:47:54.834 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=5, storeType=yingyongbao, expireTime=2036-06-15T14:18:08
-2026-06-22 16:47:54.834 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=yingyongbao, action=query yingyongbao audit status
-2026-06-22 16:47:54.843 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=74, storeType=yingyongbao, before=auditing, after=pass
-2026-06-22 16:48:48.612 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
-2026-06-22 16:48:48.617 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
-2026-06-22 16:49:03.418 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
-2026-06-22 16:49:03.455 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 32560 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
-2026-06-22 16:49:03.456 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
-2026-06-22 16:49:03.456 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
-2026-06-22 16:49:04.733 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
-2026-06-22 16:49:04.742 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 16:49:04.745 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
-2026-06-22 16:49:04.745 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
-2026-06-22 16:49:04.805 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2026-06-22 16:49:04.805 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1292 ms
-2026-06-22 16:49:04.903 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
-2026-06-22 16:49:04.906 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
-2026-06-22 16:49:05.361 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-22 16:49:05.600 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@64b73e0a
-2026-06-22 16:49:05.602 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
-2026-06-22 16:49:06.312 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 16:49:06.331 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
-2026-06-22 16:49:06.341 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 3.455 seconds (process running for 3.894)
-2026-06-22 16:49:06.343 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:49:06.406 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=1
-2026-06-22 16:49:06.457 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=4, storeType=xiaomi, expireTime=2036-06-22T16:46:52
-2026-06-22 16:49:06.472 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=xiaomi, action=query xiaomi package
-2026-06-22 16:49:06.513 [scheduling-1] DEBUG [] c.a.p.s.ReleaseOrchestrationService - Review status unchanged, releaseId=73, storeType=xiaomi, status=auditing
-2026-06-22 16:49:33.684 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-06-22 16:49:33.684 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
-2026-06-22 16:49:33.686 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
-2026-06-22 16:49:33.693 [http-nio-0.0.0.0-8080-exec-1] INFO  [ac02b609e70441eeaa534de42563bdfa] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 16:49:33.914 [http-nio-0.0.0.0-8080-exec-1] INFO  [ac02b609e70441eeaa534de42563bdfa] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[vivo]
-2026-06-22 16:49:33.949 [http-nio-0.0.0.0-8080-exec-1] INFO  [ac02b609e70441eeaa534de42563bdfa] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=75, appId=1, versionId=1, storeType=vivo
-2026-06-22 16:49:33.963 [http-nio-0.0.0.0-8080-exec-1] INFO  [ac02b609e70441eeaa534de42563bdfa] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 16:49:34.032 [release-submit-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=1, storeType=vivo, expireTime=2036-06-09T16:14:11
-2026-06-22 16:49:34.037 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=vivo, action=request vivo endpoint app.query.details
-2026-06-22 16:49:35.905 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Submit vivo 32-bit apk upload, versionId=1, fileName=cms_yht_32.apk, packageName=com.cmschina.stock, stageUpload=true
-2026-06-22 16:49:35.910 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=vivo, action=upload vivo 32-bit apk
-2026-06-22 16:49:37.549 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Submit vivo 64-bit apk upload, versionId=1, fileName=cms_yht_64.apk, packageName=com.cmschina.stock, stageUpload=true
-2026-06-22 16:49:37.549 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=vivo, action=upload vivo 64-bit apk
-2026-06-22 16:49:37.589 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Submit vivo staged release, versionId=1, packageName=com.cmschina.stock, grayPercent=80, grayStartTime=2026-06-22T07:02:16, grayEndTime=2026-06-23T07:02:16
-2026-06-22 16:49:37.590 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=vivo, action=request vivo endpoint app.sync.create.update.stage.app
-2026-06-22 16:49:37.628 [release-submit-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Submit review success, releaseId=75, storeType=vivo, storeReleaseId=vivo-99696272-f73f-4bff-b268-4382eafcd309, status=auditing
-2026-06-22 16:49:37.660 [http-nio-0.0.0.0-8080-exec-1] INFO  [ac02b609e70441eeaa534de42563bdfa] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=3969
-2026-06-22 16:50:06.553 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:50:06.566 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=2
-2026-06-22 16:50:06.578 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=4, storeType=xiaomi, expireTime=2036-06-22T16:46:52
-2026-06-22 16:50:06.579 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=xiaomi, action=query xiaomi package
-2026-06-22 16:50:06.614 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=73, storeType=xiaomi, before=auditing, after=pass
-2026-06-22 16:50:06.626 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=1, storeType=vivo, expireTime=2036-06-09T16:14:11
-2026-06-22 16:50:06.626 [scheduling-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Use mock store request, storeType=vivo, action=request vivo endpoint app.query.stage.details
-2026-06-22 16:50:06.644 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=75, storeType=vivo, before=auditing, after=pass
-2026-06-22 16:51:06.665 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:51:06.672 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:52:06.676 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:52:06.683 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:52:35.845 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
-2026-06-22 16:52:35.872 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
-2026-06-22 16:52:50.163 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
-2026-06-22 16:52:50.212 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 32292 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
-2026-06-22 16:52:50.213 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
-2026-06-22 16:52:50.214 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
-2026-06-22 16:52:51.518 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
-2026-06-22 16:52:51.530 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 16:52:51.534 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
-2026-06-22 16:52:51.535 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
-2026-06-22 16:52:51.605 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2026-06-22 16:52:51.606 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1332 ms
-2026-06-22 16:52:51.694 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
-2026-06-22 16:52:51.697 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
-2026-06-22 16:52:52.135 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-22 16:52:52.365 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@6a6d1ff3
-2026-06-22 16:52:52.367 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
-2026-06-22 16:52:53.062 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 16:52:53.084 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
-2026-06-22 16:52:53.095 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 3.403 seconds (process running for 3.756)
-2026-06-22 16:52:53.097 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:52:53.163 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:53:15.492 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-06-22 16:53:15.494 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
-2026-06-22 16:53:15.497 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
-2026-06-22 16:53:15.505 [http-nio-0.0.0.0-8080-exec-1] INFO  [efaa615845394378a73886f89671ca7f] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 16:53:15.735 [http-nio-0.0.0.0-8080-exec-1] INFO  [efaa615845394378a73886f89671ca7f] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[vivo]
-2026-06-22 16:53:15.858 [http-nio-0.0.0.0-8080-exec-1] INFO  [efaa615845394378a73886f89671ca7f] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=76, appId=1, versionId=1, storeType=vivo
-2026-06-22 16:53:15.881 [http-nio-0.0.0.0-8080-exec-1] INFO  [efaa615845394378a73886f89671ca7f] c.a.p.service.PackageVersionService - Submit packages resolved from local metadata, versionId=1, versionCode=10.18.3, buildCode=13231, apk32Path=D:\下载\cms_yht_32.apk, apk64Path=D:\下载\cms_yht_64.apk
-2026-06-22 16:53:15.938 [release-submit-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=1, storeType=vivo, expireTime=2036-06-09T16:14:11
-2026-06-22 16:53:18.010 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Submit vivo 32-bit apk upload, versionId=1, fileName=cms_yht_32.apk, packageName=com.cmschina.stock, stageUpload=false
-2026-06-22 16:53:53.173 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:53:53.180 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:54:53.191 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:54:53.197 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:55:53.206 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:55:53.216 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:56:53.228 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:56:53.235 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:57:18.170 [release-submit-1] INFO  [] c.a.p.s.AbstractStorePlatformPublisher - Submit vivo 64-bit apk upload, versionId=1, fileName=cms_yht_64.apk, packageName=com.cmschina.stock, stageUpload=false
-2026-06-22 16:57:53.241 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:57:53.248 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:58:53.252 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:58:53.259 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 16:59:53.268 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 16:59:53.276 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 17:00:53.291 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 17:00:53.300 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 17:01:39.290 [release-submit-1] WARN  [] c.a.p.s.AbstractStorePlatformPublisher - Store API returned HTTP error during upload vivo 64-bit apk, status=413 PAYLOAD_TOO_LARGE
-org.springframework.web.client.HttpClientErrorException: 413 Payload Too Large: "<html><EOL><EOL><head><title>413 Request Entity Too Large</title></head><EOL><EOL><body><EOL><EOL><center><h1>413 Request Entity Too Large</h1></center><EOL><EOL><hr><center>nginx</center><EOL><EOL></body><EOL><EOL></html><EOL><EOL>"
-	at org.springframework.web.client.HttpClientErrorException.create(HttpClientErrorException.java:136)
-	at org.springframework.web.client.StatusHandler.lambda$defaultHandler$3(StatusHandler.java:86)
-	at org.springframework.web.client.StatusHandler.handle(StatusHandler.java:146)
-	at org.springframework.web.client.DefaultRestClient$DefaultResponseSpec.applyStatusHandlers(DefaultRestClient.java:707)
-	at org.springframework.web.client.DefaultRestClient.readWithMessageConverters(DefaultRestClient.java:200)
-	at org.springframework.web.client.DefaultRestClient$DefaultResponseSpec.readBody(DefaultRestClient.java:694)
-	at org.springframework.web.client.DefaultRestClient$DefaultResponseSpec.body(DefaultRestClient.java:640)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.lambda$submitVivoApkUpload$3(VivoStorePlatformPublisher.java:474)
-	at com.app.publishservice.service.AbstractStorePlatformPublisher.executeStoreRequest(AbstractStorePlatformPublisher.java:294)
-	at com.app.publishservice.service.AbstractStorePlatformPublisher.executeStoreRequest(AbstractStorePlatformPublisher.java:335)
-	at com.app.publishservice.service.AbstractStorePlatformPublisher.executeStoreRequest(AbstractStorePlatformPublisher.java:285)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.submitVivoApkUpload(VivoStorePlatformPublisher.java:467)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.uploadVivoPackageBundle(VivoStorePlatformPublisher.java:409)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.uploadVivoPackageBundle(VivoStorePlatformPublisher.java:389)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.submitVivoFullRelease(VivoStorePlatformPublisher.java:193)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.submitVivoRelease(VivoStorePlatformPublisher.java:133)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.submitRelease(VivoStorePlatformPublisher.java:104)
-	at com.app.publishservice.service.ConfigurableStorePublisher.submitRelease(ConfigurableStorePublisher.java:67)
-	at com.app.publishservice.service.ReleaseOrchestrationService.submitToStore(ReleaseOrchestrationService.java:207)
-	at com.app.publishservice.service.ReleaseOrchestrationService.lambda$scheduleStoreSubmit$2(ReleaseOrchestrationService.java:185)
-	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-2026-06-22 17:01:39.337 [release-submit-1] ERROR [] c.a.p.s.ReleaseOrchestrationService - Submit review failed, releaseId=76, storeType=vivo
-com.app.publishservice.common.exception.StoreApiException: Store API request failed during upload vivo 64-bit apk: status=413 PAYLOAD_TOO_LARGE, body=<html> <head><title>413 Request Entity Too Large</title></head> <body> <center><h1>413 Request Entity Too Large</h1></center> <hr><center>nginx</center> </body> </html>
-	at com.app.publishservice.service.AbstractStorePlatformPublisher.executeStoreRequest(AbstractStorePlatformPublisher.java:310)
-	at com.app.publishservice.service.AbstractStorePlatformPublisher.executeStoreRequest(AbstractStorePlatformPublisher.java:335)
-	at com.app.publishservice.service.AbstractStorePlatformPublisher.executeStoreRequest(AbstractStorePlatformPublisher.java:285)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.submitVivoApkUpload(VivoStorePlatformPublisher.java:467)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.uploadVivoPackageBundle(VivoStorePlatformPublisher.java:409)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.uploadVivoPackageBundle(VivoStorePlatformPublisher.java:389)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.submitVivoFullRelease(VivoStorePlatformPublisher.java:193)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.submitVivoRelease(VivoStorePlatformPublisher.java:133)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.submitRelease(VivoStorePlatformPublisher.java:104)
-	at com.app.publishservice.service.ConfigurableStorePublisher.submitRelease(ConfigurableStorePublisher.java:67)
-	at com.app.publishservice.service.ReleaseOrchestrationService.submitToStore(ReleaseOrchestrationService.java:207)
-	at com.app.publishservice.service.ReleaseOrchestrationService.lambda$scheduleStoreSubmit$2(ReleaseOrchestrationService.java:185)
-	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-Caused by: org.springframework.web.client.HttpClientErrorException: 413 Payload Too Large: "<html><EOL><EOL><head><title>413 Request Entity Too Large</title></head><EOL><EOL><body><EOL><EOL><center><h1>413 Request Entity Too Large</h1></center><EOL><EOL><hr><center>nginx</center><EOL><EOL></body><EOL><EOL></html><EOL><EOL>"
-	at org.springframework.web.client.HttpClientErrorException.create(HttpClientErrorException.java:136)
-	at org.springframework.web.client.StatusHandler.lambda$defaultHandler$3(StatusHandler.java:86)
-	at org.springframework.web.client.StatusHandler.handle(StatusHandler.java:146)
-	at org.springframework.web.client.DefaultRestClient$DefaultResponseSpec.applyStatusHandlers(DefaultRestClient.java:707)
-	at org.springframework.web.client.DefaultRestClient.readWithMessageConverters(DefaultRestClient.java:200)
-	at org.springframework.web.client.DefaultRestClient$DefaultResponseSpec.readBody(DefaultRestClient.java:694)
-	at org.springframework.web.client.DefaultRestClient$DefaultResponseSpec.body(DefaultRestClient.java:640)
-	at com.app.publishservice.service.VivoStorePlatformPublisher.lambda$submitVivoApkUpload$3(VivoStorePlatformPublisher.java:474)
-	at com.app.publishservice.service.AbstractStorePlatformPublisher.executeStoreRequest(AbstractStorePlatformPublisher.java:294)
-	... 15 common frames omitted
-2026-06-22 17:01:39.387 [http-nio-0.0.0.0-8080-exec-1] INFO  [efaa615845394378a73886f89671ca7f] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=200, durationMs=503885
-2026-06-22 17:01:53.304 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 17:01:53.313 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 17:02:37.169 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
-2026-06-22 17:02:37.183 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
-2026-06-22 17:08:48.903 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
-2026-06-22 17:08:48.943 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 32876 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
-2026-06-22 17:08:48.943 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
-2026-06-22 17:08:48.944 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
-2026-06-22 17:08:50.252 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
-2026-06-22 17:08:50.262 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 17:08:50.265 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
-2026-06-22 17:08:50.265 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
-2026-06-22 17:08:50.331 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2026-06-22 17:08:50.332 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1342 ms
-2026-06-22 17:08:50.437 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
-2026-06-22 17:08:50.440 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
-2026-06-22 17:08:50.933 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-22 17:08:51.235 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@17884d
-2026-06-22 17:08:51.237 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
-2026-06-22 17:08:51.928 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-22 17:08:51.950 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
-2026-06-22 17:08:51.962 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 3.503 seconds (process running for 3.908)
-2026-06-22 17:08:51.964 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 17:08:52.036 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 17:08:56.275 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-06-22 17:08:56.276 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
-2026-06-22 17:08:56.278 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 2 ms
-2026-06-22 17:08:56.282 [http-nio-0.0.0.0-8080-exec-1] INFO  [4165e876c749477e83c9f801a8c06bef] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/apps, clientIp=0:0:0:0:0:0:0:1
-2026-06-22 17:08:56.528 [http-nio-0.0.0.0-8080-exec-1] INFO  [4165e876c749477e83c9f801a8c06bef] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/apps, status=200, durationMs=247
-2026-06-22 17:09:52.043 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-22 17:09:52.048 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-22 17:10:23.991 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
-2026-06-22 17:10:24.005 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+Caused by: org.springframework.web.client.ResourceAccessException: I/O error on GET request for "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/10.18.3_cmschina_armeabi_13231/cms_yht_32.apk": artifacts.cmschina.com.cn
+	at org.springframework.web.client.RestTemplate.createResourceAccessException(RestTemplate.java:915)
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:895)
+	at org.springframework.web.client.RestTemplate.execute(RestTemplate.java:790)
+	at org.springframework.web.client.RestTemplate.exchange(RestTemplate.java:672)
+	at com.app.publishservice.util.ApkDownloadUtil.downloadApk(ApkDownloadUtil.java:100)
+	at com.app.publishservice.util.ApkDownloadUtil.downloadApk32(ApkDownloadUtil.java:39)
+	at com.app.publishservice.service.PackageVersionService.prepareVersionForSubmit(PackageVersionService.java:168)
+	... 83 common frames omitted
+Caused by: java.net.UnknownHostException: artifacts.cmschina.com.cn
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:572)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/sun.security.ssl.SSLSocketImpl.connect(SSLSocketImpl.java:304)
+	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)
+	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:638)
+	at java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:266)
+	at java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:380)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:193)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1262)
+	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)
+	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:179)
+	at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.connect(HttpsURLConnectionImpl.java:142)
+	at org.springframework.http.client.SimpleClientHttpRequest.executeInternal(SimpleClientHttpRequest.java:79)
+	at org.springframework.http.client.AbstractStreamingClientHttpRequest.executeInternal(AbstractStreamingClientHttpRequest.java:70)
+	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66)
+	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:889)
+	... 88 common frames omitted
+2026-06-26 08:48:53.615 [http-nio-0.0.0.0-8080-exec-4] WARN  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.handler.GlobalExceptionHandler - Bad request, method=POST, uri=/api/releases/submit, message=从https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/10.18.3_cmschina_armeabi_13231/cms_yht_32.apk下载32位apk失败，请核对版本号和构建号是否正确
+2026-06-26 08:48:53.632 [http-nio-0.0.0.0-8080-exec-4] INFO  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=400, durationMs=529
+2026-06-26 08:49:00.466 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-06-26 08:49:00.470 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-06-26 08:50:00.481 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-06-26 08:50:00.488 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-06-26 08:51:00.505 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-06-26 08:51:00.513 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-06-26 08:52:00.534 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-06-26 08:52:00.544 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-06-26 08:53:00.552 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-06-26 08:53:00.557 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0

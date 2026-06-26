@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -66,6 +67,8 @@ class QueryApiIntegrationTest {
         assertTrue(openapiYaml.contains("components:"));
         assertTrue(openapiYaml.contains("AppVersionResponse"));
         assertTrue(openapiYaml.contains("StoreConfigRequest"));
+        assertTrue(openapiYaml.contains("StoreConfigMultipartRequest"));
+        assertTrue(openapiYaml.contains("multipart/form-data"));
 
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());
@@ -108,26 +111,37 @@ class QueryApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.clientSecret").value("demo-secret"));
 
-        mockMvc.perform(put("/api/store-configs/{configId}", firstConfigId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "storeType": "huawei",
-                                  "accountName": "main-account",
-                                  "email": "main@example.com",
-                                  "phone": "13800138000",
-                                  "clientId": "demo-client-updated",
-                                  "clientSecret": "demo-secret-updated",
-                                  "publicKey": "public-key",
-                                  "privateKey": "private-key",
-                                  "token": "demo-token-updated",
-                                  "ipWhitelist": "127.0.0.1",
-                                  "apiStatus": 1
-                                }
-                                """))
+        MockMultipartFile updateIcon = new MockMultipartFile(
+                "iconFile",
+                "xiaomi-icon.png",
+                "image/png",
+                "icon-bytes".getBytes(StandardCharsets.UTF_8)
+        );
+        mockMvc.perform(multipart("/api/store-configs/{configId}", firstConfigId)
+                        .file(updateIcon)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                        .param("storeType", "huawei")
+                        .param("accountName", "main-account")
+                        .param("email", "main@example.com")
+                        .param("phone", "13800138000")
+                        .param("clientId", "demo-client-updated")
+                        .param("clientSecret", "demo-secret-updated")
+                        .param("publicKey", "public-key")
+                        .param("privateKey", "private-key")
+                        .param("token", "demo-token-updated")
+                        .param("ipWhitelist", "127.0.0.1")
+                        .param("privacyUrl", "https://xiaomi.example.com/privacy")
+                        .param("appId", "yyb-app-001")
+                        .param("apiStatus", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accountName").value("main-account"))
-                .andExpect(jsonPath("$.data.clientId").value("demo-client-updated"));
+                .andExpect(jsonPath("$.data.clientId").value("demo-client-updated"))
+                .andExpect(jsonPath("$.data.privacyUrl").value("https://xiaomi.example.com/privacy"))
+                .andExpect(jsonPath("$.data.appId").value("yyb-app-001"))
+                .andExpect(jsonPath("$.data.icon").value("aWNvbi1ieXRlcw=="));
 
         mockMvc.perform(put("/api/store-configs/{configId}/status", firstConfigId)
                         .param("apiStatus", "0"))
@@ -139,24 +153,44 @@ class QueryApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.apiStatus").value(1));
 
+        MockMultipartFile createIcon = new MockMultipartFile(
+                "iconFile",
+                "oppo-icon.png",
+                "image/png",
+                "create-icon".getBytes(StandardCharsets.UTF_8)
+        );
+        mockMvc.perform(multipart("/api/store-configs")
+                        .file(createIcon)
+                        .param("storeType", "oppo")
+                        .param("accountName", "backup-account")
+                        .param("email", "backup@example.com")
+                        .param("phone", "13900139000")
+                        .param("clientId", "oppo-client")
+                        .param("clientSecret", "oppo-secret")
+                        .param("token", "oppo-token")
+                        .param("ipWhitelist", "10.0.0.1")
+                        .param("privacyUrl", "https://oppo.example.com/privacy")
+                        .param("appId", "sanxing-content-001")
+                        .param("apiStatus", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.storeType").value("oppo"))
+                .andExpect(jsonPath("$.data.accountName").value("backup-account"))
+                .andExpect(jsonPath("$.data.appId").value("sanxing-content-001"));
+
         mockMvc.perform(post("/api/store-configs")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "storeType": "oppo",
-                                  "accountName": "backup-account",
-                                  "email": "backup@example.com",
-                                  "phone": "13900139000",
-                                  "clientId": "oppo-client",
-                                  "clientSecret": "oppo-secret",
-                                  "token": "oppo-token",
-                                  "ipWhitelist": "10.0.0.1",
+                                  "storeType": "vivo",
+                                  "accountName": "json-account",
+                                  "email": "json@example.com",
+                                  "icon": "data:image/png;base64,anNvbi1iYXNlNjQtaWNvbg==",
                                   "apiStatus": 1
                                 }
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.storeType").value("oppo"))
-                .andExpect(jsonPath("$.data.accountName").value("backup-account"));
+                .andExpect(jsonPath("$.data.storeType").value("vivo"))
+                .andExpect(jsonPath("$.data.icon").value("anNvbi1iYXNlNjQtaWNvbg=="));
 
         MockMultipartFile multipartFile = new MockMultipartFile(
                 "file",
@@ -213,7 +247,9 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.pages").value(1))
                 .andExpect(jsonPath("$.data.records[0].storeType").value("huawei"))
-                .andExpect(jsonPath("$.data.records[0].token").value("demo-token-updated"));
+                .andExpect(jsonPath("$.data.records[0].token").value("demo-token-updated"))
+                .andExpect(jsonPath("$.data.records[0].privacyUrl").value("https://xiaomi.example.com/privacy"))
+                .andExpect(jsonPath("$.data.records[0].appId").value("yyb-app-001"));
 
         mockMvc.perform(get("/api/apps/{appId}/versions", app.id()))
                 .andExpect(status().isOk())

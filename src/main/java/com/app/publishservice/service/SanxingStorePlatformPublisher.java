@@ -160,7 +160,7 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
      */
     private StoreSubmitResult submitSanxingRelease(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record, String token) {
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
-        SanxingContext context = resolveSanxingSubmitContext(version, record, endpoint);
+        SanxingContext context = resolveSanxingSubmitContext(storeConfig, version, record, endpoint);
 
         List<Map<String, Object>> contentInfoList = querySanxingContentInfo(storeConfig, token, context.contentId());
         Map<String, Object> currentContentInfo = firstSanxingContentInfo(contentInfoList, context.contentId());
@@ -249,20 +249,21 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     }
 
     private SanxingContext resolveSanxingSubmitContext(
+            AppStoreConfig storeConfig,
             AppVersion version,
             AppReleaseRecord record,
             StoreApiProperties.StoreEndpointProperties endpoint
     ) {
         return endpoint.isMockEnabled()
-                ? mockSanxingContext(version, record)
-                : resolveSanxingContext(version, record);
+                ? mockSanxingContext(storeConfig, version, record)
+                : resolveSanxingContext(storeConfig, version, record);
     }
 
     /**
      * 查询三星审核。
      */
     private StoreReviewResult querySanxingReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
-        String contentId = resolveSanxingContentId(record, null);
+        String contentId = resolveSanxingContentId(storeConfig, record, null);
         List<Map<String, Object>> contentInfoList = querySanxingContentInfo(storeConfig, token, contentId);
         Map<String, Object> contentInfo = firstSanxingContentInfo(contentInfoList, contentId);
         if (contentInfo.isEmpty()) {
@@ -592,11 +593,12 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     /**
      * 读取三星内容 Info。
      */
-    private SanxingContext mockSanxingContext(AppVersion version, AppReleaseRecord record) {
+    private SanxingContext mockSanxingContext(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record) {
         String packageLocation = firstNonBlank(version.getPackageUrl64(), version.getPackageUrl32(), version.getPackageUrl());
         ProjectMetadataContext metadataContext = resolveProjectMetadataContext(packageLocation);
         String contentId = firstNonBlank(
                 record == null ? null : record.getStoreReleaseId(),
+                storeConfig == null ? null : storeConfig.getAppId(),
                 version == null || version.getAppInfo() == null ? null : version.getAppInfo().getPackageName(),
                 "mock-sanxing-" + UUID.randomUUID()
         );
@@ -719,13 +721,13 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     /**
      * 解析三星上下文。
      */
-    private SanxingContext resolveSanxingContext(AppVersion version, AppReleaseRecord record) {
+    private SanxingContext resolveSanxingContext(AppStoreConfig storeConfig, AppVersion version, AppReleaseRecord record) {
         String packageLocation = firstNonBlank(version.getPackageUrl64(), version.getPackageUrl32(), version.getPackageUrl());
         ProjectMetadataContext metadataContext = resolveProjectMetadataContext(packageLocation);
         Map<String, Object> metadata = metadataContext.metadata();
-        String contentId = resolveSanxingContentId(record, metadata);
+        String contentId = resolveSanxingContentId(storeConfig, record, metadata);
         if (!StringUtils.hasText(contentId)) {
-            throw new IllegalStateException("Sanxing submit requires app.publish-metadata.values.sanxing.contentId in application.yml.");
+            throw new IllegalStateException("Sanxing submit requires store config appId or app.publish-metadata.values.sanxing.contentId in application.yml.");
         }
         Path packagePath = resolveSanxingPackagePath(metadataContext, metadata, version);
         return new SanxingContext(
@@ -769,8 +771,11 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     /**
      * 解析三星内容 Id。
      */
-    private String resolveSanxingContentId(AppReleaseRecord record, Map<String, Object> metadata) {
+    private String resolveSanxingContentId(AppStoreConfig storeConfig, AppReleaseRecord record, Map<String, Object> metadata) {
         String contentId = record == null ? null : record.getStoreReleaseId();
+        if (!StringUtils.hasText(contentId)) {
+            contentId = storeConfig == null ? null : storeConfig.getAppId();
+        }
         if (!StringUtils.hasText(contentId)) {
             contentId = stringValue(sanxingMetadata(metadata, "contentId"));
         }

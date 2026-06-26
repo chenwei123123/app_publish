@@ -139,7 +139,7 @@ paths:
         - in: query
           name: key
           required: false
-          description: 关键字，支持按商店类型、账号名、邮箱或手机号模糊匹配
+          description: 关键字，支持按商店类型、账号名、邮箱、手机号、隐私地址或应用 ID 模糊匹配
           schema:
             type: string
       responses:
@@ -160,6 +160,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StoreConfigRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StoreConfigMultipartRequest'
       responses:
         '200':
           description: 创建成功
@@ -194,6 +197,9 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/StoreConfigRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StoreConfigMultipartRequest'
       responses:
         '200':
           description: 更新成功
@@ -563,6 +569,72 @@ components:
         ipWhitelist:
           type: string
           description: IP 白名单
+        privacyUrl:
+          type: string
+          description: 小米隐私政策地址
+        icon:
+          type: string
+          description: 小米图标 Base64，支持原始 Base64 或 data:image/...;base64,...
+        appId:
+          type: string
+          description: 应用宝 appId / 三星 contentId
+        apiStatus:
+          type: integer
+          enum: [0, 1]
+          default: 1
+          description: API 状态，`1` 表示启用，`0` 表示禁用
+    StoreConfigMultipartRequest:
+      type: object
+      description: 应用商店账号配置表单请求体
+      required: [storeType]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 配置 ID，更新场景可传
+        storeType:
+          type: string
+          description: 应用商店类型，例如 `vivo`、`oppo`、`huawei`、`xiaomi`
+        accountName:
+          type: string
+          description: 账号名称
+        email:
+          type: string
+          description: 联系邮箱
+        phone:
+          type: string
+          description: 联系手机号
+        clientId:
+          type: string
+          description: 开放平台 Client ID
+        clientSecret:
+          type: string
+          description: 开放平台 Client Secret
+        publicKey:
+          type: string
+          description: 平台公钥，当前主要用于小米渠道
+        privateKey:
+          type: string
+          description: 平台私钥，当前主要用于小米渠道
+        token:
+          type: string
+          description: 固定 Token
+        ipWhitelist:
+          type: string
+          description: IP 白名单
+        privacyUrl:
+          type: string
+          description: 小米隐私政策地址
+        icon:
+          type: string
+          description: 小米图标 Base64，支持原始 Base64 或 data:image/...;base64,...
+        iconFile:
+          type: string
+          format: binary
+          description: 小米图标文件，上传后自动转为 Base64 保存
+        appId:
+          type: string
+          description: 应用宝 appId / 三星 contentId
         apiStatus:
           type: integer
           enum: [0, 1]
@@ -770,6 +842,15 @@ components:
         ipWhitelist:
           type: string
           description: IP 白名单
+        privacyUrl:
+          type: string
+          description: 小米隐私政策地址
+        icon:
+          type: string
+          description: 小米图标 Base64，支持原始 Base64 或 data:image/...;base64,...
+        appId:
+          type: string
+          description: 应用宝 appId / 三星 contentId
         apiStatus:
           type: integer
           enum: [0, 1]

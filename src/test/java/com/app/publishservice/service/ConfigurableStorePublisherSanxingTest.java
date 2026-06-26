@@ -305,7 +305,6 @@ class ConfigurableStorePublisherSanxingTest {
         appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
         appProperties.getPublishMetadata().setValues(Map.of(
                 "sanxing", Map.of(
-                        "contentId", CONTENT_ID,
                         "gms", "N"
                 )
         ));
@@ -324,6 +323,7 @@ class ConfigurableStorePublisherSanxingTest {
         storeConfig.setStoreType(StoreType.fromCode("sanxing"));
         storeConfig.setClientId(SERVICE_ACCOUNT_ID);
         storeConfig.setPrivateKey(sanxingPrivateKeyJson(keyPair));
+        storeConfig.setAppId(CONTENT_ID);
         return storeConfig;
     }
 
@@ -369,7 +369,6 @@ class ConfigurableStorePublisherSanxingTest {
         AppReleaseRecord record = new AppReleaseRecord();
         record.setId(2L);
         record.setStoreType(StoreType.fromCode("sanxing"));
-        record.setStoreReleaseId(CONTENT_ID);
         record.setVersionCode("101");
         return record;
     }

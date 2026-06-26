@@ -27,6 +27,7 @@ import javax.crypto.Cipher;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
@@ -341,11 +342,12 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
             Path secondApkPath
     ) {
         return endpoint(storeConfig).isMockEnabled()
-                ? mockXiaomiSubmitContext(version, packageQuery, apkPath, secondApkPath)
-                : resolveXiaomiSubmitContext(version, metadataContext, packageQuery, apkPath, secondApkPath);
+                ? mockXiaomiSubmitContext(storeConfig, version, packageQuery, apkPath, secondApkPath)
+                : buildXiaomiSubmitContext(storeConfig, version, metadataContext, packageQuery, apkPath, secondApkPath);
     }
 
-    private XiaomiSubmitContext resolveXiaomiSubmitContext(
+    private XiaomiSubmitContext buildXiaomiSubmitContext(
+            AppStoreConfig storeConfig,
             AppVersion version,
             ProjectMetadataContext metadataContext,
             XiaomiPackageQueryResult packageQuery,
@@ -358,9 +360,9 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         if (!create && !packageQuery.updateVersionAllowed()) {
             throw new IllegalStateException("Xiaomi package query indicates version update is not allowed for " + appInfo.getPackageName());
         }
-        Path iconPath = resolveXiaomiIconPath(metadataContext, metadata);
+        Path iconPath = resolveXiaomiIconPath(storeConfig, metadataContext, metadata);
         if (iconPath == null) {
-            throw new IllegalStateException("Xiaomi submit requires icon asset. Provide app.publish-metadata.values.xiaomi.iconPath in application.yml.");
+            throw new IllegalStateException("Xiaomi submit requires icon asset. Configure store config icon or app.publish-metadata.values.xiaomi.iconPath in application.yml.");
         }
 
         Integer suitableTypeValue = firstInteger(
@@ -398,9 +400,10 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                 appInfo.getAppName()
         ));
         addIfHasText(appInfoPayload, "privacyUrl", requireText(firstNonBlank(
+                storeConfig.getPrivacyUrl(),
                 stringValue(metadataLookup(metadata, "xiaomi", "privacyUrl")),
                 appInfo.getPrivacyUrl()
-        ), "Xiaomi submit requires privacyUrl. Provide app privacyUrl or xiaomi.privacyUrl."));
+        ), "Xiaomi submit requires privacyUrl. Provide store config privacyUrl, app privacyUrl or xiaomi.privacyUrl."));
         addIfHasText(appInfoPayload, "testAccount", normalizeXiaomiJsonString(metadataLookup(metadata, "xiaomi", "testAccount")));
         addIfNotNull(appInfoPayload, "onlineTime", firstLong(
                 metadataLookup(metadata, "xiaomi", "onlineTime"),
@@ -423,6 +426,7 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      * 解析小米 User 名称。
      */
     private XiaomiSubmitContext mockXiaomiSubmitContext(
+            AppStoreConfig storeConfig,
             AppVersion version,
             XiaomiPackageQueryResult packageQuery,
             Path apkPath,
@@ -439,7 +443,7 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                 appInfo.getAppDescription(),
                 appInfo.getAppName()
         ));
-        appInfoPayload.put("privacyUrl", firstNonBlank(appInfo.getPrivacyUrl(), "https://mock.xiaomi.local/privacy"));
+        appInfoPayload.put("privacyUrl", firstNonBlank(storeConfig.getPrivacyUrl(), appInfo.getPrivacyUrl(), "https://mock.xiaomi.local/privacy"));
 
         return new XiaomiSubmitContext(
                 create ? 0 : 1,
@@ -694,12 +698,57 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     /**
      * 解析小米图标路径。
      */
-    private Path resolveXiaomiIconPath(ProjectMetadataContext metadataContext, Map<String, Object> metadata) {
+    private Path resolveXiaomiIconPath(AppStoreConfig storeConfig, ProjectMetadataContext metadataContext, Map<String, Object> metadata) {
+        Path configIconPath = decodeXiaomiStoreConfigIcon(storeConfig);
+        if (configIconPath != null) {
+            return configIconPath;
+        }
         Object metadataValue = metadataLookup(metadata, "xiaomi", "iconPath");
         if (metadataValue == null) {
             metadataValue = metadataLookup(metadata, null, "xiaomiIconPath");
         }
         return resolveProjectAssetPath(metadataContext.metadataPath(), metadataValue);
+    }
+
+    private Path decodeXiaomiStoreConfigIcon(AppStoreConfig storeConfig) {
+        if (storeConfig == null || !StringUtils.hasText(storeConfig.getIcon())) {
+            return null;
+        }
+        String rawValue = storeConfig.getIcon().trim();
+        String base64Value = rawValue;
+        String extension = ".png";
+        if (rawValue.startsWith("data:")) {
+            int commaIndex = rawValue.indexOf(',');
+            if (commaIndex < 0) {
+                throw new IllegalStateException("Xiaomi store config icon data URI is invalid");
+            }
+            String mediaType = rawValue.substring(5, commaIndex);
+            extension = iconFileExtension(mediaType);
+            base64Value = rawValue.substring(commaIndex + 1);
+        }
+        try {
+            byte[] iconBytes = Base64.getDecoder().decode(base64Value);
+            Path tempFile = Files.createTempFile("xiaomi-icon-", extension);
+            Files.write(tempFile, iconBytes);
+            tempFile.toFile().deleteOnExit();
+            return tempFile;
+        } catch (IllegalArgumentException | IOException ex) {
+            throw new IllegalStateException("Failed to decode Xiaomi icon from store config", ex);
+        }
+    }
+
+    private String iconFileExtension(String mediaType) {
+        String normalized = mediaType == null ? "" : mediaType.toLowerCase(Locale.ROOT);
+        if (normalized.contains("jpeg") || normalized.contains("jpg")) {
+            return ".jpg";
+        }
+        if (normalized.contains("gif")) {
+            return ".gif";
+        }
+        if (normalized.contains("webp")) {
+            return ".webp";
+        }
+        return ".png";
     }
 
     /**

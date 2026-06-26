@@ -25,10 +25,13 @@ import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Base64;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -201,6 +204,10 @@ public class AppManagementService {
                         .like(AppStoreConfig::getEmail, keyFilter)
                         .or()
                         .like(AppStoreConfig::getPhone, keyFilter)
+                        .or()
+                        .like(AppStoreConfig::getPrivacyUrl, keyFilter)
+                        .or()
+                        .like(AppStoreConfig::getAppId, keyFilter)
                 ).orderByAsc(AppStoreConfig::getStoreType)
                         .orderByAsc(AppStoreConfig::getId)
         );
@@ -273,6 +280,9 @@ public class AppManagementService {
         config.setPrivateKey(request.getPrivateKey());
         config.setToken(request.getToken());
         config.setIpWhitelist(request.getIpWhitelist());
+        config.setPrivacyUrl(normalizeNullableText(request.getPrivacyUrl()));
+        config.setAppId(normalizeNullableText(request.getAppId()));
+        config.setIcon(resolveStoreConfigIcon(config, request));
         config.setApiStatus(request.getApiStatus() == null ? 1 : request.getApiStatus());
         saveOrUpdate(storeConfigRepository, config);
         return toStoreConfigResponse(requireStoreConfigById(config.getId()));
@@ -469,12 +479,58 @@ public class AppManagementService {
                 config.getPrivateKey(),
                 config.getToken(),
                 config.getIpWhitelist(),
+                config.getPrivacyUrl(),
+                config.getIcon(),
+                config.getAppId(),
                 config.getApiStatus(),
                 config.getCreateUser(),
                 config.getUpdateUser(),
                 config.getCreateTime(),
                 config.getUpdateTime()
         );
+    }
+
+    private String resolveStoreConfigIcon(AppStoreConfig config, StoreConfigRequest request) {
+        MultipartFile iconFile = request.getIconFile();
+        if (iconFile != null && !iconFile.isEmpty()) {
+            try {
+                return Base64.getEncoder().encodeToString(iconFile.getBytes());
+            } catch (IOException ex) {
+                throw new IllegalStateException("读取图标文件失败", ex);
+            }
+        }
+        if (request.getIcon() != null) {
+            return normalizeStoreConfigIcon(request.getIcon());
+        }
+        return config.getIcon();
+    }
+
+    private String normalizeStoreConfigIcon(String value) {
+        String normalized = normalizeNullableText(value);
+        if (normalized == null) {
+            return null;
+        }
+        String base64Value = normalized;
+        if (normalized.startsWith("data:")) {
+            int commaIndex = normalized.indexOf(',');
+            if (commaIndex < 0) {
+                throw new IllegalArgumentException("icon data uri format is invalid");
+            }
+            base64Value = normalized.substring(commaIndex + 1).trim();
+        }
+        try {
+            Base64.getDecoder().decode(base64Value);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("icon must be a valid base64 image");
+        }
+        return base64Value;
+    }
+
+    private String normalizeNullableText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        return value.trim();
     }
 
     /**
