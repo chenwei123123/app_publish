@@ -272,6 +272,147 @@ class ConfigurableStorePublisherOppoTest {
      * 测试查询 OPPO 审核 Task State Only场景。
      */
     @Test
+    void shouldFallbackToOppoAppInfoWhenMultiInfoDataIsEmpty() throws Exception {
+        Path apk = tempDir.resolve("demo.apk");
+        Files.writeString(apk, "fake-oppo-apk", StandardCharsets.UTF_8);
+
+        AtomicReference<Map<String, String>> multiInfoQuery = new AtomicReference<>();
+        AtomicReference<Map<String, String>> infoQuery = new AtomicReference<>();
+        AtomicReference<Map<String, String>> submitForm = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/resource/v1/app/multi-info", exchange -> {
+            assertEquals("GET", exchange.getRequestMethod());
+            multiInfoQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            byte[] response = """
+                    {
+                      "errno": 0,
+                      "data": {}
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/resource/v1/app/info", exchange -> {
+            assertEquals("GET", exchange.getRequestMethod());
+            infoQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            byte[] response = """
+                    {
+                      "errno": 0,
+                      "data": {
+                        "pkg_name": "com.demo.oppo.app",
+                        "version_code": "101",
+                        "app_name": "Normal Oppo App",
+                        "second_category_id": "2001",
+                        "third_category_id": "3001",
+                        "summary": "Normal summary",
+                        "detail_desc": "Normal detail description",
+                        "update_desc": "Normal old update desc",
+                        "privacy_source_url": "https://example.com/normal-privacy",
+                        "icon_url": "https://cdn.example.com/normal-icon.png",
+                        "pic_url": "https://cdn.example.com/normal-shot1.png,https://cdn.example.com/normal-shot2.png,https://cdn.example.com/normal-shot3.png",
+                        "online_type": "1",
+                        "test_desc": "Normal test description",
+                        "copyright_url": "https://cdn.example.com/normal-copyright.png",
+                        "business_username": "Normal Contact",
+                        "business_email": "normal-contact@example.com",
+                        "business_mobile": "13900139000",
+                        "age_level": "3",
+                        "adaptive_equipment": "4"
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/resource/v1/upload/get-upload-url", exchange -> {
+            assertEquals("GET", exchange.getRequestMethod());
+            byte[] response = """
+                    {
+                      "errno": 0,
+                      "data": {
+                        "upload_url": "http://127.0.0.1:%d/upload",
+                        "sign": "single-use-sign",
+                        "type": "apk"
+                      }
+                    }
+                    """.formatted(server.getAddress().getPort()).getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/upload", exchange -> {
+            assertEquals("POST", exchange.getRequestMethod());
+            byte[] response = """
+                    {
+                      "errno": 0,
+                      "data": {
+                        "apk_url": "https://cdn.example.com/demo.apk",
+                        "Md5": "upload-md5-demo.apk"
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/resource/v1/app/upd", exchange -> {
+            assertEquals("POST", exchange.getRequestMethod());
+            submitForm.set(parseForm(exchange.getRequestBody().readAllBytes()));
+            byte[] response = """
+                    {
+                      "errno": 0,
+                      "data": {
+                        "task_id": "task-fallback-123"
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            AppVersion version = appVersion(apk, apk);
+            version.setPackageUrl32(null);
+            version.setPackageUrl64(null);
+            version.setPackageUrl(apk.toString());
+            StoreSubmitResult result = publisher.submitRelease(oppoStoreConfig(), version, new AppReleaseRecord(), "oppo-access-token");
+
+            assertEquals("com.demo.oppo.app", multiInfoQuery.get().get("pkg_name"));
+            assertEquals("com.demo.oppo.app", infoQuery.get().get("pkg_name"));
+            assertEquals("101", infoQuery.get().get("version_code"));
+            assertEquals(sign(without(multiInfoQuery.get(), "api_sign"), "demo-client-secret"), multiInfoQuery.get().get("api_sign"));
+            assertEquals(sign(without(infoQuery.get(), "api_sign"), "demo-client-secret"), infoQuery.get().get("api_sign"));
+            assertEquals("task-fallback-123", result.storeReleaseId());
+            assertEquals("101", submitForm.get().get("version_code"));
+            assertEquals("Normal Oppo App", submitForm.get().get("app_name"));
+            assertEquals("Normal summary", submitForm.get().get("summary"));
+            assertEquals("Normal detail description", submitForm.get().get("detail_desc"));
+            assertEquals("Normal old update desc", submitForm.get().get("update_desc"));
+            assertEquals("https://example.com/normal-privacy", submitForm.get().get("privacy_source_url"));
+            assertEquals("https://cdn.example.com/normal-icon.png", submitForm.get().get("icon_url"));
+            assertEquals("https://cdn.example.com/normal-shot1.png,https://cdn.example.com/normal-shot2.png,https://cdn.example.com/normal-shot3.png", submitForm.get().get("pic_url"));
+            assertEquals("1", submitForm.get().get("online_type"));
+            assertEquals("Normal test description", submitForm.get().get("test_desc"));
+            assertEquals("Normal Contact", submitForm.get().get("business_username"));
+            assertEquals("normal-contact@example.com", submitForm.get().get("business_email"));
+            assertEquals("13900139000", submitForm.get().get("business_mobile"));
+            assertTrue(result.responseLog().contains("\"info\""));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void shouldQueryOppoReviewByTaskStateOnly() throws Exception {
         AtomicReference<Map<String, String>> taskStateForm = new AtomicReference<>();
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);

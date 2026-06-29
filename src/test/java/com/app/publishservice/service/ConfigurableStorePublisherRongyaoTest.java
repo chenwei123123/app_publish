@@ -111,18 +111,13 @@ class ConfigurableStorePublisherRongyaoTest {
                       "msg": "success",
                       "data": [
                         {
-                          "fileName": "rongyao-32.apk",
-                          "uploadUrl": "http://127.0.0.1:%d/upload/32",
-                          "objectId": 9001
-                        },
-                        {
                           "fileName": "rongyao-64.apk",
                           "uploadUrl": "http://127.0.0.1:%d/upload/64",
                           "objectId": 9002
                         }
                       ]
                     }
-                    """.formatted(server.getAddress().getPort(), server.getAddress().getPort()).getBytes(StandardCharsets.UTF_8));
+                    """.formatted(server.getAddress().getPort()).getBytes(StandardCharsets.UTF_8));
         });
         server.createContext("/openapi/v1/publish/file-upload", exchange -> {
             uploadQueries.add(parseQuery(exchange.getRequestURI().getRawQuery()));
@@ -161,19 +156,17 @@ class ConfigurableStorePublisherRongyaoTest {
             StoreSubmitResult result = publisher.submitRelease(rongyaoStoreConfig(), appVersion(apk32, apk64), releaseRecord(1L), "rongyao-access-token");
 
             assertEquals("com.demo.rongyao", appIdQuery.get().get("pkgName"));
-            assertEquals(2, uploadUrlRequest.get().size());
-            assertEquals("rongyao-32.apk", uploadUrlRequest.get().get(0).get("fileName"));
+            assertEquals(1, uploadUrlRequest.get().size());
+            assertEquals("rongyao-64.apk", uploadUrlRequest.get().get(0).get("fileName"));
             assertEquals(100, ((Number) uploadUrlRequest.get().get(0).get("fileType")).intValue());
             assertEquals("123456", uploadQueries.get(0).get("appId"));
-            assertEquals("9001", uploadQueries.get(0).get("objectId"));
-            assertEquals("9002", uploadQueries.get(1).get("objectId"));
-            assertEquals(2, uploadCounter.get());
+            assertEquals("9002", uploadQueries.get(0).get("objectId"));
+            assertEquals(1, uploadCounter.get());
 
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> bindingFileList = (List<Map<String, Object>>) updateFileInfoBody.get().get("bindingFileList");
-            assertEquals(2, bindingFileList.size());
-            assertEquals(9001, ((Number) bindingFileList.get(0).get("objectId")).intValue());
-            assertEquals(9002, ((Number) bindingFileList.get(1).get("objectId")).intValue());
+            assertEquals(1, bindingFileList.size());
+            assertEquals(9002, ((Number) bindingFileList.get(0).get("objectId")).intValue());
             assertEquals(1, ((Number) submitAuditBody.get().get("releaseType")).intValue());
             assertEquals("release-123", result.storeReleaseId());
             assertTrue(result.requestLog().contains("\"submitAudit\""));
@@ -210,18 +203,13 @@ class ConfigurableStorePublisherRongyaoTest {
                   "msg": "success",
                   "data": [
                     {
-                      "fileName": "stage-32.apk",
-                      "uploadUrl": "http://127.0.0.1:%d/upload/32",
-                      "objectId": 9101
-                    },
-                    {
                       "fileName": "stage-64.apk",
                       "uploadUrl": "http://127.0.0.1:%d/upload/64",
                       "objectId": 9102
                     }
                   ]
                 }
-                """.formatted(server.getAddress().getPort(), server.getAddress().getPort()).getBytes(StandardCharsets.UTF_8)));
+                """.formatted(server.getAddress().getPort()).getBytes(StandardCharsets.UTF_8)));
         server.createContext("/openapi/v1/publish/file-upload", exchange -> {
             exchange.getRequestBody().readAllBytes();
             sendJson(exchange, """

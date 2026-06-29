@@ -36,8 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ConfigurableStorePublisherXiaomiTest {
 
@@ -58,14 +57,12 @@ class ConfigurableStorePublisherXiaomiTest {
         Path packagesDir = Files.createDirectories(tempDir.resolve("packages"));
         Path assetsDir = Files.createDirectories(tempDir.resolve("assets").resolve("xiaomi"));
         Path apk64 = packagesDir.resolve("demo.apk");
-        Path secondApk = packagesDir.resolve("demo-32.apk");
         Path fallbackApk = packagesDir.resolve("fallback.apk");
         Path icon = assetsDir.resolve("icon.png");
         Path screenshot1 = assetsDir.resolve("screenshot-1.png");
         Path screenshot2 = assetsDir.resolve("screenshot-2.png");
         Path screenshot3 = assetsDir.resolve("screenshot-3.png");
         Files.writeString(apk64, "xiaomi-apk", StandardCharsets.UTF_8);
-        Files.writeString(secondApk, "xiaomi-second-apk", StandardCharsets.UTF_8);
         Files.writeString(icon, "xiaomi-icon", StandardCharsets.UTF_8);
         Files.writeString(screenshot1, "xiaomi-shot-1", StandardCharsets.UTF_8);
         Files.writeString(screenshot2, "xiaomi-shot-2", StandardCharsets.UTF_8);
@@ -109,7 +106,7 @@ class ConfigurableStorePublisherXiaomiTest {
             ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
             StoreSubmitResult result = publisher.submitRelease(
                     xiaomiStoreConfig(keyPair),
-                    appVersion(apk64, secondApk, fallbackApk),
+                    appVersion(apk64, null, fallbackApk),
                     new AppReleaseRecord(),
                     ""
             );
@@ -133,8 +130,8 @@ class ConfigurableStorePublisherXiaomiTest {
             assertEquals("Demo Xiaomi App", appInfo.get("appName"));
             assertEquals("com.demo.xiaomi.app", appInfo.get("packageName"));
             assertEquals("https://store-config.example.com/privacy", appInfo.get("privacyUrl"));
-            assertEquals("demo-32.apk", submitForm.get().get("apk.filename"));
-            assertEquals("demo.apk", submitForm.get().get("secondApk.filename"));
+            assertEquals("demo.apk", submitForm.get().get("apk.filename"));
+            assertNull(submitForm.get().get("secondApk.filename"));
             assertTrue(submitForm.get().get("icon.filename").startsWith("xiaomi-icon-"));
             assertEquals("screenshot-1.png", submitForm.get().get("screenshot_1.filename"));
             assertEquals("screenshot-2.png", submitForm.get().get("screenshot_2.filename"));
@@ -144,7 +141,7 @@ class ConfigurableStorePublisherXiaomiTest {
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> submitSigEntries = (List<Map<String, Object>>) submitSig.get("sig");
             List<String> partNames = submitSigEntries.stream().map(entry -> String.valueOf(entry.get("name"))).toList();
-            assertEquals(List.of("RequestData", "apk", "secondApk", "icon", "screenshot_1", "screenshot_2", "screenshot_3"), partNames);
+            assertEquals(List.of("RequestData", "apk", "icon", "screenshot_1", "screenshot_2", "screenshot_3"), partNames);
             assertTrue(result.requestLog().contains("\"packageQuery\""));
             assertTrue(result.responseLog().contains("submit success"));
             assertEquals("com.demo.xiaomi.app:101", result.storeReleaseId());
@@ -331,7 +328,9 @@ class ConfigurableStorePublisherXiaomiTest {
         version.setUpdateLog("Xiaomi release update");
         version.setPackageUrl(fallbackPackagePath.toString());
         version.setPackageUrl64(package64Path.toString());
-        version.setPackageUrl32(secondApk.toString());
+        if (secondApk != null) {
+            version.setPackageUrl32(secondApk.toString());
+        }
         version.setCreateTime(LocalDateTime.now());
         return version;
     }

@@ -180,23 +180,20 @@ class ConfigurableStorePublisherHuaweiTest {
             StoreSubmitResult result = publisher.submitRelease(huaweiStoreConfig(), appVersion(apk32, apk64), new AppReleaseRecord(), "huawei-access-token");
 
             assertEquals("com.demo.huawei.app", appIdQuery.get().get("packageName"));
-            assertEquals(2, uploadUrlQueries.size());
+            assertEquals(1, uploadUrlQueries.size());
             assertEquals("app-123", uploadUrlQueries.get(0).get("appId"));
-            assertEquals("demo-32.apk", uploadUrlQueries.get(0).get("fileName"));
+            assertEquals("demo-64.apk", uploadUrlQueries.get(0).get("fileName"));
             assertEquals("1", uploadUrlQueries.get(0).get("releaseType"));
-            assertEquals("demo-64.apk", uploadUrlQueries.get(1).get("fileName"));
-            assertEquals(2, uploadCounter.get());
-            assertEquals("huawei-32", uploadedBodies.get(0));
-            assertEquals("huawei-64", uploadedBodies.get(1));
+            assertEquals(1, uploadCounter.get());
+            assertEquals("huawei-64", uploadedBodies.get(0));
             assertEquals("app-123", fileInfoQuery.get().get("appId"));
             assertEquals("1", fileInfoQuery.get().get("releaseType"));
             assertEquals(5, ((Number) fileInfoBody.get().get("fileType")).intValue());
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> files = (List<Map<String, Object>>) fileInfoBody.get().get("files");
-            assertEquals(2, files.size());
-            assertEquals("demo-32.apk", files.get(0).get("fileName"));
-            assertEquals("demo-32.apk.object", files.get(0).get("fileDestUrl"));
-            assertEquals("demo-64.apk", files.get(1).get("fileName"));
+            assertEquals(1, files.size());
+            assertEquals("demo-64.apk", files.get(0).get("fileName"));
+            assertEquals("demo-64.apk.object", files.get(0).get("fileDestUrl"));
             assertEquals("app-123", submitQuery.get().get("appId"));
             assertEquals("1", submitQuery.get().get("releaseType"));
             assertTrue(submitQuery.get().get("remark").length() >= 10);
