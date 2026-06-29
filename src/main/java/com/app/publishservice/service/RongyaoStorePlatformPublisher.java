@@ -239,20 +239,7 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
     }
 
     private List<Path> resolveRongyaoPackagePaths(AppVersion version) {
-        List<Path> paths = new ArrayList<>();
-        if (StringUtils.hasText(version.getPackageUrl32())) {
-            paths.add(requireLocalPackage(version.getPackageUrl32(), "Rongyao 32-bit package path is empty"));
-        }
-        if (StringUtils.hasText(version.getPackageUrl64())) {
-            Path highPath = requireLocalPackage(version.getPackageUrl64(), "Rongyao 64-bit package path is empty");
-            if (paths.stream().noneMatch(highPath::equals)) {
-                paths.add(highPath);
-            }
-        }
-        if (paths.isEmpty()) {
-            paths.add(requireLocalPackage(version.getPackageUrl(), "Rongyao package path is empty"));
-        }
-        return paths;
+        return List.of(requireLocalPackage(version.getPackageUrl64(), "Rongyao submit requires app_version.package_url_64"));
     }
 
     private List<Map<String, Object>> getRongyaoFileUploadPaths(

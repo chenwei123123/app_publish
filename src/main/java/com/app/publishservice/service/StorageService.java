@@ -50,7 +50,7 @@ public class StorageService {
                 .resolve(currentEnvironmentName())
                 .resolve(buildDownloadDirectoryName(versionCode, buildCode));
         Files.createDirectories(targetDir);
-        return targetDir.resolve(fileName);
+        return targetDir.resolve(fileName).normalize();
     }
 
     /**

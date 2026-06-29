@@ -39,6 +39,7 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
     private static final String OPPO_TOKEN_ENDPOINT = "/developer/v1/token";
     private static final String OPPO_UPLOAD_CONFIG_ENDPOINT = "/resource/v1/upload/get-upload-url";
     private static final String OPPO_MULTI_INFO_ENDPOINT = "/resource/v1/app/multi-info";
+    private static final String OPPO_INFO_ENDPOINT = "/resource/v1/app/info";
     private static final String OPPO_SUBMIT_ENDPOINT = "/resource/v1/app/upd";
     private static final String OPPO_STATUS_ENDPOINT = "/resource/v1/app/task-state";
     private static final long OPPO_TOKEN_EXPIRE_SECONDS = 48 * 60 * 60L;
@@ -147,16 +148,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
 
         StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
         Map<String, Object> submitPayload = new LinkedHashMap<>();
-        Map<String, Object> multiInfoResponse = oppoSignedRequest(
-                storeConfig,
-                token,
-                oppoMultiInfoEndpoint(endpoint),
-                Map.of("pkg_name", appInfo.getPackageName()),
-                true
-        );
-        Map<String, Object> multiInfoData = asMap(multiInfoResponse.get("data"));
-        Map<String, Object> currentVersionInfo = resolveOppoVersionInfo(multiInfoData, version.getVersionCode());
-        submitPayload.putAll(buildOppoSubmitPayload(appInfo, version, multiInfoData, currentVersionInfo));
+        OppoAppDetail appDetail = queryOppoAppDetail(storeConfig, token, endpoint, appInfo.getPackageName(), version.getVersionCode());
+
+        submitPayload.putAll(buildOppoSubmitPayload(appInfo, version, appDetail.detailData(), appDetail.versionInfo()));
 
         List<OppoApkBundle> packageBundles = resolveOppoPackageBundles(version);
         List<Map<String, Object>> apkInfos = new ArrayList<>();
@@ -194,15 +188,50 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         );
 
         Map<String, Object> requestLog = new LinkedHashMap<>();
-        requestLog.put("multiInfo", multiInfoData);
+        requestLog.put("appDetail", appDetail.detailData());
         requestLog.put("apkInfo", apkInfos);
         requestLog.put("submit", submitPayload);
         Map<String, Object> responseLog = new LinkedHashMap<>();
-        responseLog.put("multiInfo", multiInfoResponse);
+        responseLog.put("multiInfo", appDetail.multiInfoResponse());
+        if (!appDetail.infoResponse().isEmpty()) {
+            responseLog.put("info", appDetail.infoResponse());
+        }
         responseLog.put("uploadConfigs", uploadConfigResponses);
         responseLog.put("uploads", uploadResults);
         responseLog.put("submit", submitResponse);
         return new StoreSubmitResult(storeReleaseId, writeJson(requestLog), writeJson(responseLog), "submit success");
+    }
+
+    private OppoAppDetail queryOppoAppDetail(
+            AppStoreConfig storeConfig,
+            String token,
+            StoreApiProperties.StoreEndpointProperties endpoint,
+            String packageName,
+            String versionCode
+    ) {
+        Map<String, Object> multiInfoResponse = oppoSignedRequest(
+                storeConfig,
+                token,
+                oppoMultiInfoEndpoint(endpoint),
+                Map.of("pkg_name", packageName),
+                true
+        );
+        Map<String, Object> detailData = asMap(multiInfoResponse.get("data"));
+        Map<String, Object> infoResponse = Map.of();
+        if (detailData.isEmpty()) {
+            Map<String, Object> infoQuery = new LinkedHashMap<>();
+            infoQuery.put("pkg_name", packageName);
+            infoResponse = oppoSignedRequest(
+                    storeConfig,
+                    token,
+                    oppoInfoEndpoint(endpoint),
+                    infoQuery,
+                    true
+            );
+            detailData = asMap(infoResponse.get("data"));
+        }
+        Map<String, Object> versionInfo = resolveOppoVersionInfo(detailData, versionCode);
+        return new OppoAppDetail(detailData, versionInfo, multiInfoResponse, infoResponse);
     }
 
     /**
@@ -291,7 +320,7 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
     private Map<String, Object> resolveOppoVersionInfo(Map<String, Object> multiInfoData, String targetVersionCode) {
         Map<String, Object> apkInfo = asMap(multiInfoData.get("apk_info"));
         if (apkInfo.isEmpty()) {
-            return Map.of();
+            return multiInfoData;
         }
         if (StringUtils.hasText(targetVersionCode)) {
             Map<String, Object> matched = asMap(apkInfo.get(targetVersionCode));
@@ -544,6 +573,22 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                     )
             );
         }
+        if (OPPO_INFO_ENDPOINT.equals(endpointPath)) {
+            String packageName = firstString(payload, "pkg_name");
+            String versionCode = firstNonBlank(firstString(payload, "version_code"), "100");
+            return Map.of(
+                    "errno", 0,
+                    "data", Map.of(
+                            "pkg_name", packageName,
+                            "version_code", versionCode,
+                            "app_name", firstNonBlank(packageName, "mock-oppo-app"),
+                            "update_desc", "mock oppo update",
+                            "privacy_source_url", "https://mock.oppo.local/privacy",
+                            "online_type", 1,
+                            "adaptive_equipment", 0
+                    )
+            );
+        }
         if (OPPO_UPLOAD_CONFIG_ENDPOINT.equals(endpointPath)) {
             return Map.of(
                     "errno", 0,
@@ -654,6 +699,10 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         return OPPO_MULTI_INFO_ENDPOINT;
     }
 
+    private String oppoInfoEndpoint(StoreApiProperties.StoreEndpointProperties endpoint) {
+        return OPPO_INFO_ENDPOINT;
+    }
+
     /**
      * 处理OPPO 提交接口地址相关逻辑。
      */
@@ -671,6 +720,14 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
     private record OppoApkBundle(
             Path packagePath,
             int cpuCode
+    ) {
+    }
+
+    private record OppoAppDetail(
+            Map<String, Object> detailData,
+            Map<String, Object> versionInfo,
+            Map<String, Object> multiInfoResponse,
+            Map<String, Object> infoResponse
     ) {
     }
 }
