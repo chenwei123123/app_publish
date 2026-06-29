@@ -23,7 +23,7 @@ app:
       vivo:
         # vivo 默认使用测试环境地址，可通过 STORE_VIVO_SANDBOX_ENABLED 覆盖
         mock-enabled: ${STORE_VIVO_MOCK_ENABLED:false}
-        sandbox-enabled: ${STORE_VIVO_SANDBOX_ENABLED:true}
+        sandbox-enabled: ${STORE_VIVO_SANDBOX_ENABLED:false}
       yingyongbao:
         mock-enabled: ${STORE_YINGYONGBAO_MOCK_ENABLED:false}
       sanxing:
