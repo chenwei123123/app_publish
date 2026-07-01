@@ -3,6 +3,7 @@ package com.app.publishservice.service;
 import com.app.publishservice.common.exception.StoreApiException;
 import com.app.publishservice.config.AppProperties;
 import com.app.publishservice.config.StoreApiProperties;
+import com.app.publishservice.domain.entity.AppInfo;
 import com.app.publishservice.domain.entity.AppReleaseRecord;
 import com.app.publishservice.domain.entity.AppStoreConfig;
 import com.app.publishservice.domain.entity.AppVersion;
@@ -163,10 +164,12 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
             YingyongbaoContext context,
             List<Map<String, Object>> uploadLogs
     ) {
+        AppInfo appInfo = version == null ? null : version.getAppInfo();
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("pkg_name", context.packageName());
         payload.put("app_id", context.appId());
         payload.put("deploy_type", resolveDeployType(context.metadata()));
+        payload.put("feature", appInfo == null ? "" : stringValue(appInfo.getAppDescription()));
 
         Object deployTime = yingyongbaoMetadata(context.metadata(), "deployTime");
         if (stringValue(payload.get("deploy_type")).equals("2")) {

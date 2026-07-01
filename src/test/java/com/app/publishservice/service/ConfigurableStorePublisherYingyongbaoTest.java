@@ -117,6 +117,7 @@ class ConfigurableStorePublisherYingyongbaoTest {
             assertEquals("app-123", updateForm.get().get("app_id"));
             assertEquals("com.demo.yyb.app", updateForm.get().get("pkg_name"));
             assertEquals("1", updateForm.get().get("deploy_type"));
+            assertEquals("Demo yingyongbao app description", updateForm.get().get("feature"));
             assertEquals("1", updateForm.get().get("apk32_flag"));
             assertEquals("1", updateForm.get().get("apk64_flag"));
             assertEquals("serial-demo-32.apk", updateForm.get().get("apk32_file_serial_number"));

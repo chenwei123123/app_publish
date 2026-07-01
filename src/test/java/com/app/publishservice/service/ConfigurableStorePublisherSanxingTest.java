@@ -94,7 +94,7 @@ class ConfigurableStorePublisherSanxingTest {
                         "ageLimit": "0",
                         "chinaAgeLimit": "0",
                         "openSourceURL": "",
-                        "privatePolicyURL": "",
+                        "privatePolicyURL": "https://store.sanxing.test/privacy",
                         "youTubeURL": "",
                         "copyrightHolder": "",
                         "supportEMail": "support@demo.test",
@@ -102,6 +102,7 @@ class ConfigurableStorePublisherSanxingTest {
                         "standardPrice": "0",
                         "paid": "N",
                         "publicationType": "01",
+                        "reviewComment": "Store review comment",
                         "usExportLaws": true,
                         "binaryList": [
                           {
@@ -231,9 +232,10 @@ class ConfigurableStorePublisherSanxingTest {
             assertEquals("ENG", contentUpdatePayload.get().get("defaultLanguageCode"));
             assertEquals("N", contentUpdatePayload.get().get("paid"));
             assertEquals("01", contentUpdatePayload.get().get("publicationType"));
-            assertEquals("Sanxing review update", contentUpdatePayload.get().get("newFeature"));
-            assertEquals("Sanxing review update", contentUpdatePayload.get().get("reviewComment"));
-            assertEquals("https://example.com/privacy", contentUpdatePayload.get().get("privatePolicyURL"));
+            assertEquals("Existing description", contentUpdatePayload.get().get("longDescription"));
+            assertEquals("Sanxing description", contentUpdatePayload.get().get("newFeature"));
+            assertEquals("Store review comment", contentUpdatePayload.get().get("reviewComment"));
+            assertEquals("https://store.sanxing.test/privacy", contentUpdatePayload.get().get("privatePolicyURL"));
             assertEquals("null", contentUpdatePayload.get().get("addLanguage"));
             assertEquals("null", contentUpdatePayload.get().get("screenshots"));
             assertEquals("null", contentUpdatePayload.get().get("sellCountryList"));

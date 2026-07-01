@@ -40,9 +40,6 @@ class ConfigurableStorePublisherHuaweiTest {
     @TempDir
     Path tempDir;
 
-    /**
-     * 测试Refresh 华为令牌客户端 Credentials场景。
-     */
     @Test
     void shouldRefreshHuaweiTokenByClientCredentials() throws Exception {
         AtomicReference<Map<String, Object>> tokenRequest = new AtomicReference<>();
@@ -76,9 +73,6 @@ class ConfigurableStorePublisherHuaweiTest {
         }
     }
 
-    /**
-     * 测试提交华为发布 Split 包上传场景。
-     */
     @Test
     void shouldSubmitHuaweiReleaseWithSplitPackageUpload() throws Exception {
         Path apk32 = tempDir.resolve("demo-32.apk");
@@ -87,10 +81,13 @@ class ConfigurableStorePublisherHuaweiTest {
         Files.writeString(apk64, "huawei-64", StandardCharsets.UTF_8);
 
         AtomicReference<Map<String, String>> appIdQuery = new AtomicReference<>();
+        AtomicReference<Map<String, String>> appInfoQuery = new AtomicReference<>();
         List<Map<String, String>> uploadUrlQueries = new ArrayList<>();
         List<String> uploadedBodies = new ArrayList<>();
         AtomicReference<Map<String, Object>> fileInfoBody = new AtomicReference<>();
         AtomicReference<Map<String, String>> fileInfoQuery = new AtomicReference<>();
+        AtomicReference<List<Map<String, Object>>> languageInfoBody = new AtomicReference<>();
+        AtomicReference<Map<String, String>> languageInfoQuery = new AtomicReference<>();
         AtomicReference<Map<String, Object>> submitBody = new AtomicReference<>();
         AtomicReference<Map<String, String>> submitQuery = new AtomicReference<>();
         AtomicInteger uploadCounter = new AtomicInteger();
@@ -98,7 +95,7 @@ class ConfigurableStorePublisherHuaweiTest {
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/api/publish/v2/appid-list", exchange -> {
             appIdQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
-            byte[] response = """
+            sendJson(exchange, """
                     {
                       "ret": {
                         "code": 0,
@@ -111,15 +108,48 @@ class ConfigurableStorePublisherHuaweiTest {
                         }
                       ]
                     }
-                    """.getBytes(StandardCharsets.UTF_8);
-            sendJson(exchange, response);
+                    """.getBytes(StandardCharsets.UTF_8));
+        });
+        server.createContext("/api/publish/v2/app-info", exchange -> {
+            appInfoQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            sendJson(exchange, """
+                    {
+                      "ret": {
+                        "code": 0,
+                        "msg": "success"
+                      },
+                      "appInfo": {
+                        "appId": "app-123",
+                        "releaseState": 0
+                      },
+                      "auditInfo": {
+                        "auditOpinion": ""
+                      },
+                      "languages": [
+                        {
+                          "lang": "zh-CN",
+                          "appName": "Detail Chinese Name",
+                          "appDesc": "Detail Chinese Desc",
+                          "briefInfo": "Detail Chinese Brief",
+                          "newFeatures": "Detail Chinese New Features"
+                        },
+                        {
+                          "lang": "en-US",
+                          "appName": "Detail English Name",
+                          "appDesc": "Detail English Desc",
+                          "briefInfo": "Detail English Brief",
+                          "newFeatures": "Detail English New Features"
+                        }
+                      ]
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
         });
         server.createContext("/api/publish/v2/upload-url/for-obs", exchange -> {
             Map<String, String> query = parseQuery(exchange.getRequestURI().getRawQuery());
             uploadUrlQueries.add(query);
             String fileName = query.get("fileName");
             String objectId = fileName + ".object";
-            byte[] response = """
+            sendJson(exchange, """
                     {
                       "ret": {
                         "code": 0,
@@ -135,8 +165,7 @@ class ConfigurableStorePublisherHuaweiTest {
                         }
                       }
                     }
-                    """.formatted(objectId, server.getAddress().getPort(), objectId).getBytes(StandardCharsets.UTF_8);
-            sendJson(exchange, response);
+                    """.formatted(objectId, server.getAddress().getPort(), objectId).getBytes(StandardCharsets.UTF_8));
         });
         server.createContext("/upload", exchange -> {
             uploadedBodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
@@ -147,7 +176,7 @@ class ConfigurableStorePublisherHuaweiTest {
         server.createContext("/api/publish/v2/app-file-info", exchange -> {
             fileInfoQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
             fileInfoBody.set(jsonMap(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
-            byte[] response = """
+            sendJson(exchange, """
                     {
                       "ret": {
                         "code": 0,
@@ -157,21 +186,31 @@ class ConfigurableStorePublisherHuaweiTest {
                         "pkg-version-1"
                       ]
                     }
-                    """.getBytes(StandardCharsets.UTF_8);
-            sendJson(exchange, response);
+                    """.getBytes(StandardCharsets.UTF_8));
         });
-        server.createContext("/api/publish/v2/app-submit", exchange -> {
-            submitQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
-            submitBody.set(jsonMap(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
-            byte[] response = """
+        server.createContext("/api/publish/v2/app-language-info", exchange -> {
+            languageInfoQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            languageInfoBody.set(jsonList(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            sendJson(exchange, """
                     {
                       "ret": {
                         "code": 0,
                         "msg": "success"
                       }
                     }
-                    """.getBytes(StandardCharsets.UTF_8);
-            sendJson(exchange, response);
+                    """.getBytes(StandardCharsets.UTF_8));
+        });
+        server.createContext("/api/publish/v2/app-submit", exchange -> {
+            submitQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            submitBody.set(jsonMap(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            sendJson(exchange, """
+                    {
+                      "ret": {
+                        "code": 0,
+                        "msg": "success"
+                      }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
         });
         server.start();
 
@@ -180,6 +219,8 @@ class ConfigurableStorePublisherHuaweiTest {
             StoreSubmitResult result = publisher.submitRelease(huaweiStoreConfig(), appVersion(apk32, apk64), new AppReleaseRecord(), "huawei-access-token");
 
             assertEquals("com.demo.huawei.app", appIdQuery.get().get("packageName"));
+            assertEquals("app-123", appInfoQuery.get().get("appId"));
+            assertEquals("1", appInfoQuery.get().get("releaseType"));
             assertEquals(1, uploadUrlQueries.size());
             assertEquals("app-123", uploadUrlQueries.get(0).get("appId"));
             assertEquals("demo-64.apk", uploadUrlQueries.get(0).get("fileName"));
@@ -194,20 +235,26 @@ class ConfigurableStorePublisherHuaweiTest {
             assertEquals(1, files.size());
             assertEquals("demo-64.apk", files.get(0).get("fileName"));
             assertEquals("demo-64.apk.object", files.get(0).get("fileDestUrl"));
+            assertEquals("app-123", languageInfoQuery.get().get("appId"));
+            assertEquals("1", languageInfoQuery.get().get("releaseType"));
+            assertEquals(2, languageInfoBody.get().size());
+            assertEquals("Detail Chinese Name", languageInfoBody.get().get(0).get("appName"));
+            assertEquals("Detail Chinese Desc", languageInfoBody.get().get(0).get("appDesc"));
+            assertEquals("Detail Chinese Brief", languageInfoBody.get().get(0).get("briefInfo"));
+            assertEquals("Huawei publish update description", languageInfoBody.get().get(0).get("newFeatures"));
+            assertEquals("Huawei publish update description", languageInfoBody.get().get(1).get("newFeatures"));
             assertEquals("app-123", submitQuery.get().get("appId"));
             assertEquals("1", submitQuery.get().get("releaseType"));
             assertTrue(submitQuery.get().get("remark").length() >= 10);
             assertTrue(submitBody.get().isEmpty());
             assertEquals("app-123", result.storeReleaseId());
             assertTrue(result.requestLog().contains("\"uploadPackages\""));
+            assertTrue(result.requestLog().contains("\"updateLanguageInfo\""));
         } finally {
             server.stop(0);
         }
     }
 
-    /**
-     * 测试提交华为灰度发布场景。
-     */
     @Test
     void shouldSubmitHuaweiStagedRelease() throws Exception {
         Path apk32 = tempDir.resolve("stage-32.apk");
@@ -216,6 +263,8 @@ class ConfigurableStorePublisherHuaweiTest {
         Files.writeString(apk64, "stage-64", StandardCharsets.UTF_8);
 
         AtomicReference<Map<String, String>> fileInfoQuery = new AtomicReference<>();
+        AtomicReference<List<Map<String, Object>>> languageInfoBody = new AtomicReference<>();
+        AtomicReference<Map<String, String>> languageInfoQuery = new AtomicReference<>();
         AtomicReference<Map<String, String>> submitQuery = new AtomicReference<>();
         AtomicReference<Map<String, Object>> submitBody = new AtomicReference<>();
 
@@ -225,6 +274,27 @@ class ConfigurableStorePublisherHuaweiTest {
                   "ret": { "code": 0, "msg": "success" },
                   "appids": [
                     { "key": "Demo Huawei App", "value": "app-456" }
+                  ]
+                }
+                """.getBytes(StandardCharsets.UTF_8)));
+        server.createContext("/api/publish/v2/app-info", exchange -> sendJson(exchange, """
+                {
+                  "ret": { "code": 0, "msg": "success" },
+                  "appInfo": {
+                    "appId": "app-456",
+                    "releaseState": 0
+                  },
+                  "auditInfo": {
+                    "auditOpinion": ""
+                  },
+                  "languages": [
+                    {
+                      "lang": "zh-CN",
+                      "appName": "Stage Chinese Name",
+                      "appDesc": "Stage Chinese Desc",
+                      "briefInfo": "Stage Chinese Brief",
+                      "newFeatures": "Stage Old New Features"
+                    }
                   ]
                 }
                 """.getBytes(StandardCharsets.UTF_8)));
@@ -259,6 +329,15 @@ class ConfigurableStorePublisherHuaweiTest {
                     }
                     """.getBytes(StandardCharsets.UTF_8));
         });
+        server.createContext("/api/publish/v2/app-language-info", exchange -> {
+            languageInfoQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            languageInfoBody.set(jsonList(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            sendJson(exchange, """
+                    {
+                      "ret": { "code": 0, "msg": "success" }
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
+        });
         server.createContext("/api/publish/v2/app-submit", exchange -> {
             submitQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
             submitBody.set(jsonMap(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
@@ -281,6 +360,8 @@ class ConfigurableStorePublisherHuaweiTest {
             StoreSubmitResult result = publisher.submitRelease(huaweiStoreConfig(), appVersion(apk32, apk64), record, "huawei-access-token");
 
             assertEquals("3", fileInfoQuery.get().get("releaseType"));
+            assertEquals("3", languageInfoQuery.get().get("releaseType"));
+            assertEquals("Huawei publish update description", languageInfoBody.get().get(0).get("newFeatures"));
             assertEquals("3", submitQuery.get().get("releaseType"));
             assertEquals("2026-06-08T10:00:00+0800", submitBody.get().get("phasedReleaseStartTime"));
             assertEquals("2026-06-10T10:00:00+0800", submitBody.get().get("phasedReleaseEndTime"));
@@ -292,9 +373,6 @@ class ConfigurableStorePublisherHuaweiTest {
         }
     }
 
-    /**
-     * 处理应用 Properties相关逻辑。
-     */
     private AppProperties appProperties(HttpServer server) {
         AppProperties appProperties = new AppProperties();
         appProperties.setStorageRoot(tempDir.resolve("storage").toString());
@@ -308,9 +386,6 @@ class ConfigurableStorePublisherHuaweiTest {
         return appProperties;
     }
 
-    /**
-     * 处理华为商店配置相关逻辑。
-     */
     private AppStoreConfig huaweiStoreConfig() {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("huawei"));
@@ -319,9 +394,6 @@ class ConfigurableStorePublisherHuaweiTest {
         return storeConfig;
     }
 
-    /**
-     * 处理应用版本相关逻辑。
-     */
     private AppVersion appVersion(Path apk32, Path apk64) {
         AppInfo appInfo = new AppInfo();
         appInfo.setId(1L);
@@ -342,9 +414,6 @@ class ConfigurableStorePublisherHuaweiTest {
         return version;
     }
 
-    /**
-     * 解析查询。
-     */
     private Map<String, String> parseQuery(String rawQuery) {
         Map<String, String> result = new LinkedHashMap<>();
         if (rawQuery == null || rawQuery.isBlank()) {
@@ -362,17 +431,16 @@ class ConfigurableStorePublisherHuaweiTest {
         return result;
     }
 
-    /**
-     * 处理JSON 映射相关逻辑。
-     */
     private Map<String, Object> jsonMap(String json) throws IOException {
         return objectMapper.readValue(json, new TypeReference<>() {
         });
     }
 
-    /**
-     * 发送JSON。
-     */
+    private List<Map<String, Object>> jsonList(String json) throws IOException {
+        return objectMapper.readValue(json, new TypeReference<>() {
+        });
+    }
+
     private void sendJson(HttpExchange exchange, byte[] body) throws IOException {
         exchange.getResponseHeaders().add("Content-Type", "application/json");
         exchange.sendResponseHeaders(200, body.length);

@@ -100,7 +100,7 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         if (!StringUtils.hasText(token)) {
             throw new IllegalStateException("Oppo token response does not contain access_token");
         }
-        long expiresIn = longValue(
+        long expireAtEpochSeconds = longValue(
                 firstNonNull(
                         data.get("expire_in"),
                         data.get("expires_in"),
@@ -111,7 +111,8 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                 ),
                 OPPO_TOKEN_EXPIRE_SECONDS
         );
-        return new TokenPayload(TokenType.ACCESS_TOKEN.getCode(), token, LocalDateTime.now().plusSeconds(expiresIn));
+        LocalDateTime expireTime = LocalDateTime.ofInstant(Instant.ofEpochSecond(expireAtEpochSeconds), java.time.ZoneId.systemDefault());
+        return new TokenPayload(TokenType.ACCESS_TOKEN.getCode(), token, expireTime);
     }
 
     /**
@@ -299,7 +300,11 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         copyOppoSubmitField(payload, "third_category_id", currentVersionInfo, multiInfoData);
         copyOppoSubmitField(payload, "summary", currentVersionInfo, multiInfoData);
         copyOppoSubmitField(payload, "detail_desc", currentVersionInfo, multiInfoData);
-        copyOppoSubmitField(payload, "update_desc", currentVersionInfo, multiInfoData, appInfo.getAppDescription());
+        if (!StringUtils.hasText(appInfo.getAppDescription())) {
+            copyOppoSubmitField(payload, "update_desc", currentVersionInfo, multiInfoData);
+        }else {
+            payload.put("update_desc",appInfo.getAppDescription());
+        }
         copyOppoSubmitField(payload, "privacy_source_url", currentVersionInfo, multiInfoData);
         copyOppoSubmitField(payload, "icon_url", currentVersionInfo, multiInfoData);
         copyOppoSubmitField(payload, "pic_url", currentVersionInfo, multiInfoData);
@@ -361,6 +366,9 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         }
         if (value instanceof String stringValue) {
             String normalized = stringValue.trim();
+            if ("summary".equals(fieldName)) {
+                normalized = sanitizeOppoSummary(normalized);
+            }
             if (!StringUtils.hasText(normalized)) {
                 return null;
             }
@@ -370,6 +378,27 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
             return writeJson(value);
         }
         return value;
+    }
+
+    private String sanitizeOppoSummary(String value) {
+        StringBuilder sanitized = new StringBuilder(value.length());
+        value.codePoints().forEach(codePoint -> {
+            if (Character.isWhitespace(codePoint)) {
+                return;
+            }
+            int type = Character.getType(codePoint);
+            if (type == Character.CONNECTOR_PUNCTUATION
+                    || type == Character.DASH_PUNCTUATION
+                    || type == Character.START_PUNCTUATION
+                    || type == Character.END_PUNCTUATION
+                    || type == Character.INITIAL_QUOTE_PUNCTUATION
+                    || type == Character.FINAL_QUOTE_PUNCTUATION
+                    || type == Character.OTHER_PUNCTUATION) {
+                return;
+            }
+            sanitized.appendCodePoint(codePoint);
+        });
+        return sanitized.toString();
     }
 
     /**
@@ -410,6 +439,7 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         uploadForm.remove("apkUrl");
         uploadForm.remove("file_url");
         uploadForm.remove("fileUrl");
+        uploadForm.put("type", "apk");
 
         String responseBody;
         if (uploadForm.isEmpty()) {
@@ -569,6 +599,7 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                     "errno", 0,
                     "data", Map.of(
                             "pkg_name", packageName,
+                            "summary","招商证券，招财有道",
                             "apk_info", Map.of("100", versionInfo)
                     )
             );
@@ -583,6 +614,7 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
                             "version_code", versionCode,
                             "app_name", firstNonBlank(packageName, "mock-oppo-app"),
                             "update_desc", "mock oppo update",
+                            "summary","招商证券，招财有道",
                             "privacy_source_url", "https://mock.oppo.local/privacy",
                             "online_type", 1,
                             "adaptive_equipment", 0

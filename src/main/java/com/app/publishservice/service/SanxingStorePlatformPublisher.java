@@ -469,30 +469,23 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("contentId", context.contentId());
         payload.put("appTitle", requireSanxingText(
-                firstNonBlank(appInfo == null ? null : appInfo.getAppName(), firstString(contentInfo, "appTitle")),
+                firstNonBlank(firstString(contentInfo, "appTitle"), appInfo == null ? null : appInfo.getAppName()),
                 "Sanxing contentUpdate requires appTitle"
         ));
         payload.put("contentStatus", "REGISTERING");
         payload.put("defaultLanguageCode", requireSanxingText(firstString(contentInfo, "defaultLanguageCode"), "Sanxing contentUpdate requires defaultLanguageCode"));
         payload.put("applicationType", firstNonBlank(firstString(contentInfo, "applicationType"), "android"));
-        payload.put("longDescription", firstNonBlank(
-                appInfo == null ? null : appInfo.getAppDescription(),
-                firstString(contentInfo, "longDescription")
-        ));
+        payload.put("longDescription", appInfo == null ?  firstString(contentInfo, "longDescription") : appInfo.getAppDescription());
         payload.put("shortDescription", firstString(contentInfo, "shortDescription"));
-        payload.put("newFeature", firstNonBlank(
-                stringValue(sanxingMetadata(metadata, "newFeature")),
-                version.getUpdateLog(),
-                firstString(contentInfo, "newFeature")
-        ));
+        payload.put("newFeature", appInfo == null ?  firstString(contentInfo, "newFeature") : appInfo.getAppDescription());
         putIfHasText(payload, "ageLimit", firstString(contentInfo, "ageLimit"));
         putIfHasText(payload, "chinaAgeLimit", firstString(contentInfo, "chinaAgeLimit"));
         putIfHasText(payload, "openSourceURL", firstString(contentInfo, "openSourceURL"));
 
         String privacyUrl = firstNonBlank(
-                stringValue(sanxingMetadata(metadata, "privatePolicyURL")),
+                firstString(contentInfo, "privatePolicyURL"),
                 appInfo == null ? null : appInfo.getPrivacyUrl(),
-                firstString(contentInfo, "privatePolicyURL")
+                stringValue(sanxingMetadata(metadata, "privatePolicyURL"))
         );
         payload.put("privatePolicyURLYN", StringUtils.hasText(privacyUrl) ? "Y" : "N");
         payload.put("privatePolicyURL", StringUtils.hasText(privacyUrl) ? privacyUrl.trim() : "");
@@ -504,8 +497,8 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         putIfHasText(payload, "standardPrice", firstString(contentInfo, "standardPrice"));
         payload.put("paid", firstNonBlank(firstString(contentInfo, "paid"), "N"));
         payload.put("publicationType", firstNonBlank(
-                stringValue(sanxingMetadata(metadata, "publicationType")),
                 firstString(contentInfo, "publicationType"),
+                stringValue(sanxingMetadata(metadata, "publicationType")),
                 "01"
         ));
         putIfPresent(payload, "startPublicationDate", contentInfo.get("startPublicationDate"));
@@ -514,9 +507,9 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
             payload.put("usExportLaws", contentInfo.get("usExportLaws"));
         }
         putIfHasText(payload, "reviewComment", firstNonBlank(
-                stringValue(sanxingMetadata(metadata, "reviewComment")),
+                firstString(contentInfo, "reviewComment"),
                 version.getUpdateLog(),
-                firstString(contentInfo, "reviewComment")
+                stringValue(sanxingMetadata(metadata, "reviewComment"))
         ));
         putIfPresent(payload, "reviewFilename", contentInfo.get("reviewFilename"));
         putIfPresent(payload, "reviewFilekey", contentInfo.get("reviewFilekey"));

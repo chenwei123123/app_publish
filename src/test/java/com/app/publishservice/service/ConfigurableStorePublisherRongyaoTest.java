@@ -81,10 +81,12 @@ class ConfigurableStorePublisherRongyaoTest {
         Files.writeString(apk64, "rongyao-64", StandardCharsets.UTF_8);
 
         AtomicReference<Map<String, String>> appIdQuery = new AtomicReference<>();
+        AtomicReference<Map<String, String>> appDetailQuery = new AtomicReference<>();
         AtomicReference<List<Map<String, Object>>> uploadUrlRequest = new AtomicReference<>();
         List<Map<String, String>> uploadQueries = new ArrayList<>();
         AtomicInteger uploadCounter = new AtomicInteger();
         AtomicReference<Map<String, Object>> updateFileInfoBody = new AtomicReference<>();
+        AtomicReference<Map<String, Object>> updateLanguageInfoBody = new AtomicReference<>();
         AtomicReference<Map<String, Object>> submitAuditBody = new AtomicReference<>();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
@@ -100,6 +102,33 @@ class ConfigurableStorePublisherRongyaoTest {
                           "packageName": "com.demo.rongyao"
                         }
                       ]
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
+        });
+        server.createContext("/openapi/v1/publish/get-app-detail", exchange -> {
+            appDetailQuery.set(parseQuery(exchange.getRequestURI().getRawQuery()));
+            sendJson(exchange, """
+                    {
+                      "code": 0,
+                      "msg": "success",
+                      "data": {
+                        "languageInfo": [
+                          {
+                            "languageId": "zh-CN",
+                            "appName": "详情里的中文名",
+                            "intro": "详情里的中文介绍",
+                            "briefIntro": "详情里的中文短介绍",
+                            "newFeature": "详情里的中文新特性"
+                          },
+                          {
+                            "languageId": "en-US",
+                            "appName": "Detail English Name",
+                            "intro": "Detail English Intro",
+                            "briefIntro": "Detail English Brief",
+                            "newFeature": "Detail English Feature"
+                          }
+                        ]
+                      }
                     }
                     """.getBytes(StandardCharsets.UTF_8));
         });
@@ -139,6 +168,15 @@ class ConfigurableStorePublisherRongyaoTest {
                     }
                     """.getBytes(StandardCharsets.UTF_8));
         });
+        server.createContext("/openapi/v1/publish/update-language-info", exchange -> {
+            updateLanguageInfoBody.set(jsonMap(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            sendJson(exchange, """
+                    {
+                      "code": 0,
+                      "msg": "success"
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
+        });
         server.createContext("/openapi/v1/publish/submit-audit", exchange -> {
             submitAuditBody.set(jsonMap(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
             sendJson(exchange, """
@@ -156,6 +194,7 @@ class ConfigurableStorePublisherRongyaoTest {
             StoreSubmitResult result = publisher.submitRelease(rongyaoStoreConfig(), appVersion(apk32, apk64), releaseRecord(1L), "rongyao-access-token");
 
             assertEquals("com.demo.rongyao", appIdQuery.get().get("pkgName"));
+            assertEquals("123456", appDetailQuery.get().get("appId"));
             assertEquals(1, uploadUrlRequest.get().size());
             assertEquals("rongyao-64.apk", uploadUrlRequest.get().get(0).get("fileName"));
             assertEquals(100, ((Number) uploadUrlRequest.get().get(0).get("fileType")).intValue());
@@ -167,9 +206,21 @@ class ConfigurableStorePublisherRongyaoTest {
             List<Map<String, Object>> bindingFileList = (List<Map<String, Object>>) updateFileInfoBody.get().get("bindingFileList");
             assertEquals(1, bindingFileList.size());
             assertEquals(9002, ((Number) bindingFileList.get(0).get("objectId")).intValue());
+
+            assertEquals(0, ((Number) updateLanguageInfoBody.get().get("setAll")).intValue());
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> languageInfoList = (List<Map<String, Object>>) updateLanguageInfoBody.get().get("languageInfoList");
+            assertEquals(2, languageInfoList.size());
+            assertEquals("详情里的中文名", languageInfoList.get(0).get("appName"));
+            assertEquals("详情里的中文介绍", languageInfoList.get(0).get("intro"));
+            assertEquals("详情里的中文短介绍", languageInfoList.get(0).get("briefIntro"));
+            assertEquals("Rongyao publish update description", languageInfoList.get(0).get("newFeature"));
+            assertEquals("Rongyao publish update description", languageInfoList.get(1).get("newFeature"));
+
             assertEquals(1, ((Number) submitAuditBody.get().get("releaseType")).intValue());
             assertEquals("release-123", result.storeReleaseId());
             assertTrue(result.requestLog().contains("\"submitAudit\""));
+            assertTrue(result.requestLog().contains("\"updateLanguageInfo\""));
         } finally {
             server.stop(0);
         }
@@ -182,6 +233,7 @@ class ConfigurableStorePublisherRongyaoTest {
         Files.writeString(apk32, "stage-32", StandardCharsets.UTF_8);
         Files.writeString(apk64, "stage-64", StandardCharsets.UTF_8);
 
+        AtomicReference<Map<String, Object>> updateLanguageInfoBody = new AtomicReference<>();
         AtomicReference<Map<String, Object>> submitAuditBody = new AtomicReference<>();
 
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
@@ -195,6 +247,23 @@ class ConfigurableStorePublisherRongyaoTest {
                       "packageName": "com.demo.rongyao"
                     }
                   ]
+                }
+                """.getBytes(StandardCharsets.UTF_8)));
+        server.createContext("/openapi/v1/publish/get-app-detail", exchange -> sendJson(exchange, """
+                {
+                  "code": 0,
+                  "msg": "success",
+                  "data": {
+                    "languageInfo": [
+                      {
+                        "languageId": "zh-CN",
+                        "appName": "阶段发布中文名",
+                        "intro": "阶段发布中文介绍",
+                        "briefIntro": "阶段发布中文短介绍",
+                        "newFeature": "阶段发布旧特性"
+                      }
+                    ]
+                  }
                 }
                 """.getBytes(StandardCharsets.UTF_8)));
         server.createContext("/openapi/v1/publish/get-file-upload-url", exchange -> sendJson(exchange, """
@@ -225,6 +294,15 @@ class ConfigurableStorePublisherRongyaoTest {
                   "msg": "success"
                 }
                 """.getBytes(StandardCharsets.UTF_8)));
+        server.createContext("/openapi/v1/publish/update-language-info", exchange -> {
+            updateLanguageInfoBody.set(jsonMap(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
+            sendJson(exchange, """
+                    {
+                      "code": 0,
+                      "msg": "success"
+                    }
+                    """.getBytes(StandardCharsets.UTF_8));
+        });
         server.createContext("/openapi/v1/publish/submit-audit", exchange -> {
             submitAuditBody.set(jsonMap(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)));
             sendJson(exchange, """
@@ -253,6 +331,9 @@ class ConfigurableStorePublisherRongyaoTest {
             assertEquals("2026-06-18T10:00:00+0800", phasedReleaseInfo.get("releaseStartDate"));
             assertEquals("2026-06-20T10:00:00+0800", phasedReleaseInfo.get("releaseEndDate"));
             assertNotNull(phasedReleaseInfo.get("releaseNote"));
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> languageInfoList = (List<Map<String, Object>>) updateLanguageInfoBody.get().get("languageInfoList");
+            assertEquals("Rongyao publish update description", languageInfoList.get(0).get("newFeature"));
             assertEquals("release-stage-123", result.storeReleaseId());
         } finally {
             server.stop(0);

@@ -39,9 +39,11 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
     private static final String RONGYAO_IAM_BASE_URL = "https://iam.developer.honor.com";
     private static final String RONGYAO_TOKEN_ENDPOINT = "/auth/token";
     private static final String RONGYAO_APP_ID_ENDPOINT = "/openapi/v1/publish/get-app-id";
+    private static final String RONGYAO_APP_DETAIL_ENDPOINT = "/openapi/v1/publish/get-app-detail";
     private static final String RONGYAO_FILE_UPLOAD_URL_ENDPOINT = "/openapi/v1/publish/get-file-upload-url";
     private static final String RONGYAO_FILE_UPLOAD_ENDPOINT = "/openapi/v1/publish/file-upload";
     private static final String RONGYAO_UPDATE_FILE_INFO_ENDPOINT = "/openapi/v1/publish/update-file-info";
+    private static final String RONGYAO_UPDATE_LANGUAGE_INFO_ENDPOINT = "/openapi/v1/publish/update-language-info";
     private static final String RONGYAO_SUBMIT_AUDIT_ENDPOINT = "/openapi/v1/publish/submit-audit";
     private static final String RONGYAO_AUDIT_RESULT_ENDPOINT = "/openapi/v1/publish/get-audit-result";
     private static final String RONGYAO_CURRENT_RELEASE_ENDPOINT = "/openapi/v1/publish/get-app-current-release";
@@ -119,11 +121,15 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
 
         String appId = queryRongyaoAppId(storeConfig, token, appInfo.getPackageName());
+        Map<String, Object> appDetailResponse = queryRongyaoAppDetail(storeConfig, token, appId);
+        Map<String, Object> appDetailData = extractRongyaoDataMap(appDetailResponse);
         List<Path> packagePaths = resolveRongyaoPackagePaths(version);
         List<Map<String, Object>> uploadPaths = getRongyaoFileUploadPaths(storeConfig, token, appId, packagePaths);
         List<Map<String, Object>> uploadResponses = uploadRongyaoPackages(storeConfig, token, appId, packagePaths, uploadPaths);
         Map<String, Object> updateFileInfoBody = buildRongyaoUpdateFileInfoBody(uploadPaths);
         Map<String, Object> updateFileInfoResponse = updateRongyaoFileInfo(storeConfig, token, appId, updateFileInfoBody);
+        Map<String, Object> updateLanguageInfoBody = buildRongyaoUpdateLanguageInfoBody(version, appDetailData);
+        Map<String, Object> updateLanguageInfoResponse = updateRongyaoLanguageInfo(storeConfig, token, appId, updateLanguageInfoBody);
         Map<String, Object> submitBody = buildRongyaoSubmitBody(version, record, packagePaths.isEmpty() ? null : packagePaths.get(0));
         Map<String, Object> submitResponse = submitRongyaoAudit(storeConfig, token, appId, submitBody);
 
@@ -134,16 +140,20 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
 
         Map<String, Object> requestLog = new LinkedHashMap<>();
         requestLog.put("appIdQuery", Map.of("pkgName", appInfo.getPackageName()));
+        requestLog.put("appDetail", Map.of("appId", appId));
         requestLog.put("fileUploadUrl", uploadPaths);
         requestLog.put("fileUpload", uploadResponses);
         requestLog.put("updateFileInfo", updateFileInfoBody);
+        requestLog.put("updateLanguageInfo", updateLanguageInfoBody);
         requestLog.put("submitAudit", submitBody);
 
         Map<String, Object> responseLog = new LinkedHashMap<>();
         responseLog.put("appIdQuery", Map.of("appId", appId));
+        responseLog.put("appDetail", appDetailResponse);
         responseLog.put("fileUploadUrl", uploadPaths);
         responseLog.put("fileUpload", uploadResponses);
         responseLog.put("updateFileInfo", updateFileInfoResponse);
+        responseLog.put("updateLanguageInfo", updateLanguageInfoResponse);
         responseLog.put("submitAudit", submitResponse);
 
         String message = firstString(submitResponse, "msg", "message");
@@ -240,6 +250,22 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
 
     private List<Path> resolveRongyaoPackagePaths(AppVersion version) {
         return List.of(requireLocalPackage(version.getPackageUrl64(), "Rongyao submit requires app_version.package_url_64"));
+    }
+
+    private Map<String, Object> queryRongyaoAppDetail(AppStoreConfig storeConfig, String token, String appId) {
+        String url = rongyaoPublishBaseUrl(endpoint(storeConfig)) + rongyaoAppDetailEndpoint() + "?appId=" + appId;
+        String responseBody = executeStoreRequest(
+                trace(storeConfig, "query rongyao app detail", "GET", url, Map.of("appId", appId), Map.of("Authorization", "Bearer " + token)),
+                () -> restClient.get()
+                        .uri(url)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .retrieve()
+                        .body(String.class),
+                () -> writeJson(mockRongyaoAppDetailResponse())
+        );
+        Map<String, Object> response = readJson(responseBody);
+        ensureRongyaoSuccess(response, "query app detail");
+        return response;
     }
 
     private List<Map<String, Object>> getRongyaoFileUploadPaths(
@@ -372,6 +398,43 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
         );
         Map<String, Object> response = readJson(responseBody);
         ensureRongyaoSuccess(response, "update file info");
+        return response;
+    }
+
+    private Map<String, Object> buildRongyaoUpdateLanguageInfoBody(AppVersion version, Map<String, Object> appDetailData) {
+        AppInfo appInfo = version == null ? null : version.getAppInfo();
+        String appDescription = appInfo == null ? null : appInfo.getAppDescription();
+        List<Map<String, Object>> languageInfoList = new ArrayList<>();
+        Object languageInfoValue = appDetailData.get("languageInfo");
+        if (languageInfoValue instanceof List<?> entries) {
+            for (Object entry : entries) {
+                Map<String, Object> languageInfo = new LinkedHashMap<>(asMap(entry));
+                languageInfo.put("newFeature", firstNonBlank(appDescription, firstString(languageInfo, "newFeature")));
+                languageInfoList.add(languageInfo);
+            }
+        }
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("setAll", 0);
+        body.put("languageInfoList", languageInfoList);
+        return body;
+    }
+
+    private Map<String, Object> updateRongyaoLanguageInfo(AppStoreConfig storeConfig, String token, String appId, Map<String, Object> body) {
+        String url = rongyaoPublishBaseUrl(endpoint(storeConfig)) + rongyaoUpdateLanguageInfoEndpoint() + "?appId=" + appId;
+        String responseBody = executeStoreRequest(
+                trace(storeConfig, "update rongyao language info", "POST", url, Map.of("appId", appId), body),
+                () -> restClient.post()
+                        .uri(url)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(body)
+                        .retrieve()
+                        .body(String.class),
+                () -> writeJson(mockRongyaoSuccessResponse())
+        );
+        Map<String, Object> response = readJson(responseBody);
+        ensureRongyaoSuccess(response, "update language info");
         return response;
     }
 
@@ -597,6 +660,65 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
         );
     }
 
+    private Map<String, Object> mockRongyaoAppDetailResponse() {
+        Map<String, Object> basicInfo = new LinkedHashMap<>();
+        basicInfo.put("appCategoryId", 2);
+        basicInfo.put("createTime", "2026-03-11T09:18:00+0800");
+        basicInfo.put("packageName", "com.demo.rongyao");
+        basicInfo.put("appId", 123456);
+        basicInfo.put("privacyPolicyUrl", "https://mock.rongyao.local/privacy");
+
+        List<Map<String, Object>> languageInfo = List.of(
+                Map.of(
+                        "languageId", "zh-CN",
+                        "appName", "Mock Rongyao App",
+                        "intro", "Mock Rongyao intro zh",
+                        "briefIntro", "Mock Rongyao brief intro zh",
+                        "newFeature", "Mock Rongyao new feature zh"
+                ),
+                Map.of(
+                        "languageId", "en-US",
+                        "appName", "Mock Rongyao App",
+                        "intro", "Mock Rongyao intro en",
+                        "briefIntro", "Mock Rongyao brief intro en",
+                        "newFeature", "Mock Rongyao new feature en"
+                )
+        );
+
+        Map<String, Object> publishInfo = new LinkedHashMap<>();
+        publishInfo.put("releaseType", 1);
+        publishInfo.put("releaseTime", "2026-03-11T10:00:00+0800");
+        publishInfo.put("testAccount", "mock-test-account");
+        publishInfo.put("testPassword", "mock-test-password");
+        publishInfo.put("testComment", "mock test comment");
+
+        List<Map<String, Object>> fileInfo = List.of(
+                Map.of(
+                        "objectId", 9002,
+                        "fileType", RONGYAO_PACKAGE_FILE_TYPE,
+                        "fileName", "mock-64.apk"
+                )
+        );
+
+        Map<String, Object> releaseInfo = new LinkedHashMap<>();
+        releaseInfo.put("versionName", "1.0.0");
+        releaseInfo.put("versionCode", 100);
+        releaseInfo.put("releaseStatus", 1);
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("basicInfo", basicInfo);
+        data.put("languageInfo", languageInfo);
+        data.put("publishInfo", publishInfo);
+        data.put("fileInfo", fileInfo);
+        data.put("releaseInfo", releaseInfo);
+
+        return Map.of(
+                "code", 0,
+                "msg", "success",
+                "data", data
+        );
+    }
+
     private Map<String, Object> mockRongyaoUploadFileResponse(Path packagePath, String objectId) {
         return Map.of(
                 "code", 0,
@@ -684,6 +806,10 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
         return RONGYAO_APP_ID_ENDPOINT;
     }
 
+    private String rongyaoAppDetailEndpoint() {
+        return RONGYAO_APP_DETAIL_ENDPOINT;
+    }
+
     private String rongyaoFileUploadUrlEndpoint() {
         return RONGYAO_FILE_UPLOAD_URL_ENDPOINT;
     }
@@ -694,6 +820,10 @@ final class RongyaoStorePlatformPublisher extends AbstractStorePlatformPublisher
 
     private String rongyaoUpdateFileInfoEndpoint() {
         return RONGYAO_UPDATE_FILE_INFO_ENDPOINT;
+    }
+
+    private String rongyaoUpdateLanguageInfoEndpoint() {
+        return RONGYAO_UPDATE_LANGUAGE_INFO_ENDPOINT;
     }
 
     private String rongyaoSubmitAuditEndpoint() {

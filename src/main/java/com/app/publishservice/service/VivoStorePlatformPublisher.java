@@ -617,7 +617,7 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         payload.put("apk32", apk32SerialNumber);
         payload.put("apk64", apk64SerialNumber);
         payload.put("onlineType", 1);
-        payload.put("updateDesc", normalizeStageText(5, 200,  appDescription, appName, packageName, "Version update notes"));
+        payload.put("updateDesc", normalizeStageText(5, 200,  appDescription));
         //payload.put("detailDesc", normalizeStageText(50, 1000, appDescription, version.getUpdateLog(), appName, packageName, "App description"));
         //payload.put("mainTitle", normalizeTitle(appName, packageName));
         //payload.put("subTitle", "");
@@ -649,7 +649,7 @@ final class VivoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         payload.put("stagedProportion", record.getGrayPercent());
         payload.put("apkUuid32", apk32UploadSerialNumber);
         payload.put("apkUuid64", apk64UploadSerialNumber);
-        payload.put("updateDesc", normalizeStageText(5, 200,  appDescription, appName, packageName, "Version update notes"));
+        payload.put("updateDesc", normalizeStageText(5, 200,  appDescription));
         //payload.put("simpleDesc", normalizeStageText(10, 500, appDescription, version.getUpdateLog(), appName, packageName, "App release notes"));
         //payload.put("description", normalizeStageText(20, 1000, appDescription, version.getUpdateLog(), appName, packageName, "App detail description"));
         //payload.put("remark", normalizeStageText(5, 500, version.getUpdateLog(), appDescription, appName, packageName, "Stage release notes"));

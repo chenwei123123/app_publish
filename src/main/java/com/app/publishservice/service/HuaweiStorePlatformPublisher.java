@@ -38,6 +38,7 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     private static final String HUAWEI_TOKEN_ENDPOINT = "/oauth2/v1/token";
     private static final String HUAWEI_APPID_LIST_ENDPOINT = "/publish/v2/appid-list";
     private static final String HUAWEI_APP_INFO_ENDPOINT = "/publish/v2/app-info";
+    private static final String HUAWEI_APP_LANGUAGE_INFO_ENDPOINT = "/publish/v2/app-language-info";
     private static final String HUAWEI_UPLOAD_URL_ENDPOINT = "/publish/v2/upload-url/for-obs";
     private static final String HUAWEI_APP_FILE_INFO_ENDPOINT = "/publish/v2/app-file-info";
     private static final String HUAWEI_APP_SUBMIT_ENDPOINT = "/publish/v2/app-submit";
@@ -135,20 +136,26 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         }
 
         String appId = queryHuaweiAppId(storeConfig, token, appInfo.getPackageName());
+        Map<String, Object> appDetailResponse = queryHuaweiAppInfo(storeConfig, token, appId, isStagedRelease(record));
         List<Path> packagePaths = resolveHuaweiPackagePaths(version);
         List<Map<String, Object>> uploadedFiles = uploadHuaweiPackages(storeConfig, token, appId, packagePaths, record);
         HuaweiFileInfoUpdateResult fileInfoUpdateResult = updateHuaweiAppFileInfo(storeConfig, token, appId, uploadedFiles, record);
+        HuaweiLanguageInfoUpdateResult languageInfoUpdateResult = updateHuaweiAppLanguageInfo(storeConfig, token, appId, version, appDetailResponse, record);
         Map<String, Object> submitResponse = submitHuaweiApp(storeConfig, token, appId, version, record);
 
         Map<String, Object> requestLog = new LinkedHashMap<>();
         requestLog.put("appIdQuery", Map.of("packageName", appInfo.getPackageName()));
+        requestLog.put("appDetail", Map.of("appId", appId, "releaseType", isStagedRelease(record) ? 3 : 1));
         requestLog.put("uploadPackages", uploadedFiles);
         requestLog.put("updateFileInfo", fileInfoUpdateResult.requestBody());
+        requestLog.put("updateLanguageInfo", languageInfoUpdateResult.requestBody());
         requestLog.put("submit", buildHuaweiSubmitRequestLog(version, record));
 
         Map<String, Object> responseLog = new LinkedHashMap<>();
         responseLog.put("appIdQuery", Map.of("appId", appId));
+        responseLog.put("appDetail", appDetailResponse);
         responseLog.put("updateFileInfo", fileInfoUpdateResult.responseBody());
+        responseLog.put("updateLanguageInfo", languageInfoUpdateResult.responseBody());
         responseLog.put("submit", submitResponse);
 
         String storeReleaseId = appId;
@@ -382,6 +389,38 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return new HuaweiFileInfoUpdateResult(body, response);
     }
 
+    private HuaweiLanguageInfoUpdateResult updateHuaweiAppLanguageInfo(
+            AppStoreConfig storeConfig,
+            String token,
+            String appId,
+            AppVersion version,
+            Map<String, Object> appDetailResponse,
+            AppReleaseRecord record
+    ) {
+        List<Map<String, Object>> body = buildHuaweiLanguageInfoBody(version, appDetailResponse);
+
+        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+        Map<String, Object> queryParams = new LinkedHashMap<>();
+        queryParams.put("appId", appId);
+        queryParams.put("releaseType", isStagedRelease(record) ? 3 : 1);
+        String url = huaweiBaseUrl(endpoint) + huaweiAppLanguageInfoEndpoint();
+        String responseBody = executeStoreRequest(
+                trace(storeConfig, "update huawei app language info", "PUT", url, queryParams, body),
+                () -> restClient.put()
+                        .uri(url + "?" + buildQueryString(queryParams))
+                        .header("Authorization", "Bearer " + token)
+                        .header("client_id", storeConfig.getClientId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(body)
+                        .retrieve()
+                        .body(String.class),
+                () -> writeJson(mockHuaweiLanguageInfoUpdateResponse())
+        );
+        Map<String, Object> response = readJson(responseBody);
+        ensureHuaweiSuccess(response, "update app language info");
+        return new HuaweiLanguageInfoUpdateResult(body, response);
+    }
+
     /**
      * 提交华为应用。
      */
@@ -440,12 +479,64 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     private Map<String, Object> mockHuaweiAppInfoResponse(String appId, boolean stagedRelease) {
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("ret", Map.of("code", 0, "msg", "success"));
-        response.put("appInfo", Map.of(
-                "appId", appId,
-                "releaseState", 0
+        Map<String, Object> appInfo = new LinkedHashMap<>();
+        appInfo.put("appId", appId);
+        appInfo.put("packageName", "com.demo.mock");
+        appInfo.put("versionNumber", "1.0.0");
+        appInfo.put("versionCode", "100");
+        appInfo.put("releaseState", 0);
+        appInfo.put("privacyPolicy", "https://mock.huawei.local/privacy");
+        appInfo.put("pkgName", "mock-64.apk");
+        appInfo.put("pkgSize", 1024);
+        appInfo.put("icon", "https://mock.huawei.local/assets/icon.png");
+        appInfo.put("featureGraphic", "https://mock.huawei.local/assets/feature-graphic.png");
+        appInfo.put("banner", "https://mock.huawei.local/assets/banner.png");
+        appInfo.put("videoUrl", "https://mock.huawei.local/assets/video.mp4");
+        appInfo.put("showType", 1);
+        appInfo.put("charge", 0);
+        appInfo.put("price", 0);
+        appInfo.put("website", "https://mock.huawei.local");
+        appInfo.put("supportEmail", "mock@example.com");
+        appInfo.put("developerName", "Mock Developer");
+        appInfo.put("updateTime", "2026-03-11T09:18:00+0800");
+        response.put("appInfo", appInfo);
+        response.put("auditInfo", Map.of(
+                "auditOpinion", "",
+                "copyRightAuditOpinion", "",
+                "copyRightCodeAuditOpinion", "",
+                "recordAuditOpinion", ""
+        ));
+        response.put("languages", List.of(
+                Map.of(
+                        "lang", "zh-CN",
+                        "appName", "Mock Demo App",
+                        "appDesc", "Mock demo description zh",
+                        "briefInfo", "Mock demo brief zh",
+                        "newFeatures", "Mock demo new features zh",
+                        "icon", "https://mock.huawei.local/assets/icon-zh.png",
+                        "screenShots", "https://mock.huawei.local/assets/zh-1.png,https://mock.huawei.local/assets/zh-2.png",
+                        "banner", "https://mock.huawei.local/assets/banner-zh.png",
+                        "showType", 1
+                ),
+                Map.of(
+                        "lang", "en-US",
+                        "appName", "Mock Demo App",
+                        "appDesc", "Mock demo description en",
+                        "briefInfo", "Mock demo brief en",
+                        "newFeatures", "Mock demo new features en",
+                        "icon", "https://mock.huawei.local/assets/icon-en.png",
+                        "screenShots", "https://mock.huawei.local/assets/en-1.png,https://mock.huawei.local/assets/en-2.png",
+                        "banner", "https://mock.huawei.local/assets/banner-en.png",
+                        "showType", 1
+                )
         ));
         if (stagedRelease) {
-            response.put("phasedReleaseInfo", Map.of("state", "RELEASE"));
+            response.put("phasedReleaseInfo", Map.of(
+                    "state", "RELEASE",
+                    "startTime", "2026-03-11T10:00:00+0800",
+                    "endTime", "2026-03-18T10:00:00+0800",
+                    "percent", 30
+            ));
         }
         return response;
     }
@@ -472,6 +563,12 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return Map.of(
                 "ret", Map.of("code", 0, "msg", "success"),
                 "pkgVersion", List.of("mock-pkg-version")
+        );
+    }
+
+    private Map<String, Object> mockHuaweiLanguageInfoUpdateResponse() {
+        return Map.of(
+                "ret", Map.of("code", 0, "msg", "success")
         );
     }
 
@@ -676,6 +773,10 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return HUAWEI_APP_FILE_INFO_ENDPOINT;
     }
 
+    private String huaweiAppLanguageInfoEndpoint() {
+        return HUAWEI_APP_LANGUAGE_INFO_ENDPOINT;
+    }
+
     /**
      * 处理华为应用提交接口地址相关逻辑。
      */
@@ -683,8 +784,29 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return StringUtils.hasText(endpoint.getSubmitEndpoint()) ? endpoint.getSubmitEndpoint() : HUAWEI_APP_SUBMIT_ENDPOINT;
     }
 
+    private List<Map<String, Object>> buildHuaweiLanguageInfoBody(AppVersion version, Map<String, Object> appDetailResponse) {
+        AppInfo appInfo = version == null ? null : version.getAppInfo();
+        String appDescription = appInfo == null ? null : appInfo.getAppDescription();
+        List<Map<String, Object>> languages = new ArrayList<>();
+        Object languagesValue = appDetailResponse.get("languages");
+        if (languagesValue instanceof List<?> entries) {
+            for (Object entry : entries) {
+                Map<String, Object> language = new LinkedHashMap<>(asMap(entry));
+                language.put("newFeatures", firstNonBlank(appDescription, firstString(language, "newFeatures")));
+                languages.add(language);
+            }
+        }
+        return languages;
+    }
+
     private record HuaweiFileInfoUpdateResult(
             Map<String, Object> requestBody,
+            Map<String, Object> responseBody
+    ) {
+    }
+
+    private record HuaweiLanguageInfoUpdateResult(
+            List<Map<String, Object>> requestBody,
             Map<String, Object> responseBody
     ) {
     }

@@ -440,8 +440,7 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         appInfoPayload.put("appName", appInfo.getAppName().trim());
         appInfoPayload.put("packageName", appInfo.getPackageName().trim());
         addIfHasText(appInfoPayload, "updateDesc", firstNonBlank(
-                appInfo.getAppDescription(),
-                appInfo.getAppName()
+                appInfo.getAppDescription()
         ));
         appInfoPayload.put("privacyUrl", firstNonBlank(storeConfig.getPrivacyUrl(), appInfo.getPrivacyUrl(), "https://mock.xiaomi.local/privacy"));
 
