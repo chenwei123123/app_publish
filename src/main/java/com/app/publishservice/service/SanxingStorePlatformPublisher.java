@@ -163,9 +163,22 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         SanxingContext context = resolveSanxingSubmitContext(storeConfig, version, record, endpoint);
 
         List<Map<String, Object>> contentInfoList = querySanxingContentInfo(storeConfig, token, context.contentId());
-        Map<String, Object> currentContentInfo = firstSanxingContentInfo(contentInfoList, context.contentId());
+        Map<String, Object> currentContentInfo = selectSanxingSubmitContentInfo(contentInfoList, context.contentId());
         if (currentContentInfo.isEmpty()) {
             throw new IllegalStateException("Sanxing contentInfo does not contain contentId: " + context.contentId());
+        }
+
+        Map<String, Object> contentUpdatePayload = buildSanxingContentUpdatePayload(version, context, currentContentInfo);
+        Map<String, Object> contentUpdateResponse = null;
+        if (isSanxingSaleContent(currentContentInfo)) {
+            contentUpdateResponse = sanxingJsonRequest(
+                    storeConfig,
+                    token,
+                    "POST",
+                    sanxingBaseUrl(endpoint) + SANXING_CONTENT_UPDATE_ENDPOINT,
+                    contentUpdatePayload,
+                    "update sanxing content"
+            );
         }
 
         Map<String, Object> uploadSession = createSanxingUploadSession(storeConfig, token);
@@ -185,15 +198,16 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                 "add sanxing binary"
         );
 
-        Map<String, Object> contentUpdatePayload = buildSanxingContentUpdatePayload(version, context, currentContentInfo);
-        Map<String, Object> contentUpdateResponse = sanxingJsonRequest(
-                storeConfig,
-                token,
-                "POST",
-                sanxingBaseUrl(endpoint) + SANXING_CONTENT_UPDATE_ENDPOINT,
-                contentUpdatePayload,
-                "update sanxing content"
-        );
+        if (contentUpdateResponse == null) {
+            contentUpdateResponse = sanxingJsonRequest(
+                    storeConfig,
+                    token,
+                    "POST",
+                    sanxingBaseUrl(endpoint) + SANXING_CONTENT_UPDATE_ENDPOINT,
+                    contentUpdatePayload,
+                    "update sanxing content"
+            );
+        }
 
         Map<String, Object> stagedRolloutPayload = null;
         Map<String, Object> stagedRolloutResponse = null;
@@ -690,6 +704,40 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return contentInfos.get(0);
     }
 
+    private Map<String, Object> selectSanxingSubmitContentInfo(List<Map<String, Object>> contentInfos, String contentId) {
+        if (contentInfos == null || contentInfos.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Object> matchedContentInfo = Map.of();
+        for (Map<String, Object> contentInfo : contentInfos) {
+            if (!contentId.equals(firstString(contentInfo, "contentId", "ctntId"))) {
+                continue;
+            }
+            if (isSanxingSaleContent(contentInfo)) {
+                return contentInfo;
+            }
+            if (matchedContentInfo.isEmpty()) {
+                matchedContentInfo = contentInfo;
+            }
+        }
+        return matchedContentInfo.isEmpty() ? contentInfos.get(0) : matchedContentInfo;
+    }
+
+    private boolean isSanxingSaleContent(Map<String, Object> contentInfo) {
+        String normalized = normalizeSanxingStatus(firstNonBlank(
+                firstString(contentInfo, "contentStatus"),
+                firstString(contentInfo, "appStatus"),
+                firstString(contentInfo, "status")
+        ));
+        return "FOR_SALE".equals(normalized)
+                || "READY_FOR_SALE".equals(normalized)
+                || "SALE".equals(normalized);
+    }
+
+    private String normalizeSanxingStatus(String rawStatus) {
+        return rawStatus == null ? "" : rawStatus.trim().toUpperCase(Locale.ROOT);
+    }
+
     /**
      * 解析First Binary Seq。
      */
@@ -828,10 +876,10 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
      * 解析三星 Private Key 值。
      */
     private String resolveSanxingPrivateKeyValue(AppStoreConfig storeConfig) {
-        if (!StringUtils.hasText(storeConfig.getPrivateKey())) {
+        if (!StringUtils.hasText(storeConfig.getClientSecret())) {
             throw new IllegalArgumentException("Sanxing token refresh requires privateKey as service account key JSON or PEM");
         }
-        String configuredValue = storeConfig.getPrivateKey().trim();
+        String configuredValue = storeConfig.getClientSecret().trim();
         Path possiblePath = toPath(configuredValue);
         String content = configuredValue;
         if (possiblePath != null && Files.exists(possiblePath) && Files.isRegularFile(possiblePath)) {
