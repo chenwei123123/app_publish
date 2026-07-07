@@ -1,9 +1,12 @@
 package com.app.publishservice.service;
 
 import com.app.publishservice.config.AppProperties;
+import com.app.publishservice.domain.entity.AppInfo;
 import com.app.publishservice.domain.entity.AppVersion;
+import com.app.publishservice.domain.enums.AppType;
 import com.app.publishservice.repository.AppVersionRepository;
 import com.app.publishservice.util.ApkDownloadUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockedStatic;
@@ -28,11 +31,19 @@ import static org.mockito.Mockito.when;
 
 class PackageVersionServiceTest {
 
-    private static final String APK32_URL = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/123_cmschina_armeabi_b456/cms_yht_32.apk";
-    private static final String APK64_URL = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/123_cmschina_arm64_b456/cms_yht_64.apk";
+    private static final String APK32_URL = "https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/123_cmschina_armeabi_b456/cms_yht_32.apk";
+    private static final String APK64_URL = "https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/123_cmschina_arm64_b456/cms_yht_64.apk";
+    private static final String APP_URL = "https://artifacts.cmschina.com.cn:443/artifactory/INT_CMSAPP_HARMONY-generic-release-wx/harmony/123_b456/CMSApp_HM-yht_release-signed.app";
     private static final String APK32_DOWNLOAD_FAILED_MESSAGE = PackageVersionService.apk32DownloadFailedMessage(APK32_URL);
     private static final String APK64_DOWNLOAD_FAILED_MESSAGE = PackageVersionService.apk64DownloadFailedMessage(APK64_URL);
+    private static final String APP_DOWNLOAD_FAILED_MESSAGE = PackageVersionService.appDownloadFailedMessage(APP_URL);
     private static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk32Path";
+    private static final String APP_LOCAL_FILE_FAILED_MESSAGE = "\u9E3F\u8499app\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.packageAppPath";
+
+    @AfterEach
+    void tearDown() {
+        ApkDownloadUtil.configure(null);
+    }
 
     /**
      * 测试Prepare Remote 提交包 Urls When 流上传 Enabled场景。
@@ -64,6 +75,32 @@ class PackageVersionServiceTest {
 
         assertEquals(APK32_URL, prepared.getPackageUrl32());
         assertEquals(APK64_URL, prepared.getPackageUrl64());
+        verify(repository).updateById(version);
+    }
+
+    @Test
+    void shouldPrepareHarmonySubmitPackageUrlWhenStreamUploadEnabled() {
+        AppProperties appProperties = new AppProperties();
+        appProperties.getPackageRepository().setStreamUploadEnabled(true);
+        AppVersionRepository repository = mock(AppVersionRepository.class);
+        Environment environment = mock(Environment.class);
+        when(environment.matchesProfiles("dev")).thenReturn(false);
+        when(repository.updateById(any(AppVersion.class))).thenReturn(1);
+
+        PackageVersionService service = new PackageVersionService(
+                mock(AppManagementService.class),
+                repository,
+                mock(StorageService.class),
+                mock(PackageInspectorService.class),
+                appProperties,
+                environment
+        );
+
+        AppVersion version = harmonyVersion();
+
+        AppVersion prepared = service.prepareVersionForSubmit(version);
+
+        assertEquals(APP_URL, prepared.getPackageAppUrl());
         verify(repository).updateById(version);
     }
 
@@ -165,6 +202,44 @@ class PackageVersionServiceTest {
         verify(repository, never()).updateById(any(AppVersion.class));
     }
 
+    @Test
+    void shouldThrowExactMessageWhenHarmonyDownloadFails() throws IOException {
+        AppProperties appProperties = new AppProperties();
+        StorageService storageService = mock(StorageService.class);
+        AppVersionRepository repository = mock(AppVersionRepository.class);
+        Environment environment = mock(Environment.class);
+        when(environment.matchesProfiles("dev")).thenReturn(false);
+        Path appTarget = Path.of("target", "submit.app");
+        when(storageService.allocateDownloadPath(anyString(), anyString(), anyString()))
+                .thenReturn(appTarget);
+
+        PackageVersionService service = new PackageVersionService(
+                mock(AppManagementService.class),
+                repository,
+                storageService,
+                mock(PackageInspectorService.class),
+                appProperties,
+                environment
+        );
+
+        AppVersion version = harmonyVersion();
+
+        try (MockedStatic<ApkDownloadUtil> mockedStatic = mockStatic(ApkDownloadUtil.class, CALLS_REAL_METHODS)) {
+            mockedStatic.when(() -> ApkDownloadUtil.downloadApp("123", "b456", appTarget.toString()))
+                    .thenThrow(new IOException("app failed"));
+
+            IllegalArgumentException exception = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> service.prepareVersionForSubmit(version)
+            );
+
+            assertEquals(APP_DOWNLOAD_FAILED_MESSAGE, exception.getMessage());
+        }
+
+        verify(storageService).allocateDownloadPath("123", "b456", "CMSApp_HM-yht_release-signed.app");
+        verify(repository, never()).updateById(any(AppVersion.class));
+    }
+
     /**
      * 测试Resolve Local 提交包元数据 Dev场景。
      */
@@ -209,6 +284,37 @@ class PackageVersionServiceTest {
         verify(repository).updateById(version);
     }
 
+    @Test
+    void shouldResolveLocalHarmonySubmitPackageFromMetadataInDev(@TempDir Path tempDir) throws IOException {
+        AppProperties appProperties = new AppProperties();
+        AppVersionRepository repository = mock(AppVersionRepository.class);
+        Environment environment = mock(Environment.class);
+        when(environment.matchesProfiles("dev")).thenReturn(true);
+        when(repository.updateById(any(AppVersion.class))).thenReturn(1);
+
+        Path appPackage = Files.writeString(tempDir.resolve("CMSApp_HM-yht_release-signed.app"), "app");
+        appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
+        appProperties.getPublishMetadata().setValues(Map.of(
+                "packageAppPath", "CMSApp_HM-yht_release-signed.app"
+        ));
+
+        PackageVersionService service = new PackageVersionService(
+                mock(AppManagementService.class),
+                repository,
+                mock(StorageService.class),
+                mock(PackageInspectorService.class),
+                appProperties,
+                environment
+        );
+
+        AppVersion version = harmonyVersion();
+
+        AppVersion prepared = service.prepareVersionForSubmit(version);
+
+        assertEquals(appPackage.toString(), prepared.getPackageAppUrl());
+        verify(repository).updateById(version);
+    }
+
     /**
      * 测试Throw When Dev 元数据 Missing Apk32 路径场景。
      */
@@ -244,5 +350,46 @@ class PackageVersionServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.prepareVersionForSubmit(version));
         assertEquals(APK32_LOCAL_FILE_FAILED_MESSAGE, exception.getMessage());
         verify(repository, never()).updateById(any(AppVersion.class));
+    }
+
+    @Test
+    void shouldThrowWhenDevMetadataMissingHarmonyPackagePath(@TempDir Path tempDir) {
+        AppProperties appProperties = new AppProperties();
+        AppVersionRepository repository = mock(AppVersionRepository.class);
+        Environment environment = mock(Environment.class);
+        when(environment.matchesProfiles("dev")).thenReturn(true);
+
+        appProperties.getPublishMetadata().setBaseDir(tempDir.toString());
+        appProperties.getPublishMetadata().setValues(Map.of(
+                "huawei", Map.of("remark", "demo")
+        ));
+
+        PackageVersionService service = new PackageVersionService(
+                mock(AppManagementService.class),
+                repository,
+                mock(StorageService.class),
+                mock(PackageInspectorService.class),
+                appProperties,
+                environment
+        );
+
+        AppVersion version = harmonyVersion();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> service.prepareVersionForSubmit(version));
+        assertEquals(APP_LOCAL_FILE_FAILED_MESSAGE, exception.getMessage());
+        verify(repository, never()).updateById(any(AppVersion.class));
+    }
+
+    private AppVersion harmonyVersion() {
+        AppInfo appInfo = new AppInfo();
+        appInfo.setAppType(AppType.HarmonyOS);
+
+        AppVersion version = new AppVersion();
+        version.setId(9L);
+        version.setAppInfo(appInfo);
+        version.setVersionName("1.0.1");
+        version.setVersionCode("123");
+        version.setBuildCode("b456");
+        return version;
     }
 }

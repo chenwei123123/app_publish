@@ -290,7 +290,8 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data[0].id").value(uploadResponse.versionId()))
                 .andExpect(jsonPath("$.data[0].versionCode").value("release-101"))
                 .andExpect(jsonPath("$.data[0].packageUrl32").value(uploadResponse.storedPath()))
-                .andExpect(jsonPath("$.data[0].packageUrl64").isEmpty());
+                .andExpect(jsonPath("$.data[0].packageUrl64").isEmpty())
+                .andExpect(jsonPath("$.data[0].packageAppUrl").isEmpty());
 
         mockMvc.perform(get("/api/apps/{appId}/versions/{versionId}", app.id(), uploadResponse.versionId()))
                 .andExpect(status().isOk())
@@ -458,7 +459,8 @@ class QueryApiIntegrationTest {
                 .andExpect(jsonPath("$.data.versions[0].updateLog").value("创建应用时自动初始化版本记录"))
                 .andExpect(jsonPath("$.data.versions[0].packageUrl").isEmpty())
                 .andExpect(jsonPath("$.data.versions[0].packageUrl32").isEmpty())
-                .andExpect(jsonPath("$.data.versions[0].packageUrl64").isEmpty());
+                .andExpect(jsonPath("$.data.versions[0].packageUrl64").isEmpty())
+                .andExpect(jsonPath("$.data.versions[0].packageAppUrl").isEmpty());
 
         mockMvc.perform(put("/api/apps/{appId}", app.id())
                         .contentType(MediaType.APPLICATION_JSON)

@@ -524,6 +524,111 @@ class ConfigurableStorePublisherHuaweiTest {
     }
 
     @Test
+    void shouldPreferHarmonyAppPackageForHuaweiSubmit() throws Exception {
+        Path appPackage = tempDir.resolve("CMSApp_HM-yht_release-signed.app");
+        Files.writeString(appPackage, "harmony-app", StandardCharsets.UTF_8);
+
+        List<Map<String, String>> uploadUrlQueries = new ArrayList<>();
+        List<String> uploadedBodies = new ArrayList<>();
+
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/api/publish/v2/appid-list", exchange -> sendJson(exchange, """
+                {
+                  "ret": { "code": 0, "msg": "success" },
+                  "appids": [
+                    { "key": "Demo Huawei App", "value": "app-harmony" }
+                  ]
+                }
+                """.getBytes(StandardCharsets.UTF_8)));
+        server.createContext("/api/publish/v2/app-info", exchange -> sendJson(exchange, """
+                {
+                  "ret": { "code": 0, "msg": "success" },
+                  "appInfo": {
+                    "appId": "app-harmony",
+                    "releaseState": 0
+                  },
+                  "auditInfo": {
+                    "auditOpinion": ""
+                  },
+                  "languages": [
+                    {
+                      "lang": "zh-CN",
+                      "appName": "Harmony Chinese Name",
+                      "appDesc": "Harmony Chinese Desc",
+                      "briefInfo": "Harmony Chinese Brief",
+                      "newFeatures": "Harmony Old New Features"
+                    }
+                  ]
+                }
+                """.getBytes(StandardCharsets.UTF_8)));
+        server.createContext("/api/publish/v2/upload-url/for-obs", exchange -> {
+            Map<String, String> query = parseQuery(exchange.getRequestURI().getRawQuery());
+            uploadUrlQueries.add(query);
+            String fileName = query.get("fileName");
+            String objectId = fileName + ".object";
+            sendJson(exchange, """
+                    {
+                      "ret": { "code": 0, "msg": "success" },
+                      "urlInfo": {
+                        "objectId": "%s",
+                        "url": "http://127.0.0.1:%d/upload/%s",
+                        "method": "PUT",
+                        "headers": {
+                          "Content-Type": "application/octet-stream"
+                        }
+                      }
+                    }
+                    """.formatted(objectId, server.getAddress().getPort(), objectId).getBytes(StandardCharsets.UTF_8));
+        });
+        server.createContext("/upload", exchange -> {
+            uploadedBodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            exchange.sendResponseHeaders(200, -1);
+            exchange.close();
+        });
+        server.createContext("/api/publish/v2/app-file-info", exchange -> sendJson(exchange, """
+                {
+                  "ret": { "code": 0, "msg": "success" },
+                  "pkgVersion": ["pkg-version-harmony"]
+                }
+                """.getBytes(StandardCharsets.UTF_8)));
+        server.createContext("/api/publish/v2/app-language-info", exchange -> sendJson(exchange, """
+                {
+                  "ret": { "code": 0, "msg": "success" }
+                }
+                """.getBytes(StandardCharsets.UTF_8)));
+        server.createContext("/api/publish/v2/package/compile/status", exchange -> sendJson(exchange, """
+                {
+                  "ret": { "code": 0, "msg": "success" },
+                  "pkgStateList": [
+                    {
+                      "pkgId": "pkg-version-harmony",
+                      "aabCompileStatus": 0,
+                      "successStatus": 0
+                    }
+                  ]
+                }
+                """.getBytes(StandardCharsets.UTF_8)));
+        server.createContext("/api/publish/v2/app-submit", exchange -> sendJson(exchange, """
+                {
+                  "ret": { "code": 0, "msg": "success" }
+                }
+                """.getBytes(StandardCharsets.UTF_8)));
+        server.start();
+
+        try {
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            StoreSubmitResult result = publisher.submitRelease(huaweiStoreConfig(), harmonyAppVersion(appPackage), new AppReleaseRecord(), "huawei-access-token");
+
+            assertEquals(1, uploadUrlQueries.size());
+            assertEquals("CMSApp_HM-yht_release-signed.app", uploadUrlQueries.get(0).get("fileName"));
+            assertEquals("harmony-app", uploadedBodies.get(0));
+            assertEquals("app-harmony", result.storeReleaseId());
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void shouldPollHuaweiPackageCompileStatusBeforeSubmit() throws Exception {
         Path apk32 = tempDir.resolve("poll-32.apk");
         Path apk64 = tempDir.resolve("poll-64.apk");
@@ -689,6 +794,25 @@ class ConfigurableStorePublisherHuaweiTest {
         version.setVersionCode("101");
         version.setPackageUrl32(apk32.toString());
         version.setPackageUrl64(apk64.toString());
+        version.setUpdateLog("Huawei publish update");
+        version.setCreateTime(LocalDateTime.now());
+        return version;
+    }
+
+    private AppVersion harmonyAppVersion(Path appPackage) {
+        AppInfo appInfo = new AppInfo();
+        appInfo.setId(1L);
+        appInfo.setAppName("Demo Huawei App");
+        appInfo.setPackageName("com.demo.huawei.app");
+        appInfo.setAppDescription("Huawei publish update description");
+
+        AppVersion version = new AppVersion();
+        version.setId(1L);
+        version.setAppId(1L);
+        version.setAppInfo(appInfo);
+        version.setVersionName("1.0.1");
+        version.setVersionCode("101");
+        version.setPackageAppUrl(appPackage.toString());
         version.setUpdateLog("Huawei publish update");
         version.setCreateTime(LocalDateTime.now());
         return version;

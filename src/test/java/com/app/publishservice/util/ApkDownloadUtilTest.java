@@ -27,12 +27,16 @@ class ApkDownloadUtilTest {
     @Test
     void shouldBuildApkUrlsFromVersionCodeAndBuildCode() {
         assertEquals(
-                "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/1.12.1_cmschina_armeabi_b1843/cms_yht_32.apk",
+                "https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/1.12.1_cmschina_armeabi_b1843/cms_yht_32.apk",
                 ApkDownloadUtil.buildApk32Url("1.12.1", "b1843")
         );
         assertEquals(
-                "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/release-20260609_cmschina_arm64_b1843/cms_yht_64.apk",
+                "https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/release-20260609_cmschina_arm64_b1843/cms_yht_64.apk",
                 ApkDownloadUtil.buildApk64Url("release-20260609", "b1843")
+        );
+        assertEquals(
+                "https://artifacts.cmschina.com.cn:443/artifactory/INT_CMSAPP_HARMONY-generic-release-wx/harmony/1.12.1_b1843/CMSApp_HM-yht_release-signed.app",
+                ApkDownloadUtil.buildAppUrl("1.12.1", "b1843")
         );
     }
 
@@ -52,6 +56,7 @@ class ApkDownloadUtilTest {
         AppProperties.PackageRepositoryProperties properties = new AppProperties.PackageRepositoryProperties();
         properties.setApkUrl32("https://download.example.com/apk/%s/%s/32.apk");
         properties.setApkUrl64("https://download.example.com/apk/%s/%s/64.apk");
+        properties.setAppUrl("https://download.example.com/app/%s/%s/release.app");
         properties.setAuthorization("Basic custom-token");
 
         ApkDownloadUtil.configure(properties);
@@ -64,6 +69,10 @@ class ApkDownloadUtilTest {
                 "https://download.example.com/apk/release-20260609/b1843/64.apk",
                 ApkDownloadUtil.buildApk64Url("release-20260609", "b1843")
         );
+        assertEquals(
+                "https://download.example.com/app/release-20260609/b1843/release.app",
+                ApkDownloadUtil.buildAppUrl("release-20260609", "b1843")
+        );
         assertEquals("Basic custom-token", ApkDownloadUtil.defaultAuthorizationValue());
     }
 
@@ -74,7 +83,7 @@ class ApkDownloadUtilTest {
     void shouldExtractOriginalFileNameFromDownloadUrl() {
         assertEquals(
                 "cms_yht_32.apk",
-                ApkDownloadUtil.extractFileName("https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/1.12.1_cmschina_armeabi_b1843/cms_yht_32.apk")
+                ApkDownloadUtil.extractFileName("https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/1.12.1_cmschina_armeabi_b1843/cms_yht_32.apk")
         );
     }
 
