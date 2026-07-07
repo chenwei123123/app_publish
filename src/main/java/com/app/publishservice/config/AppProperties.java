@@ -125,8 +125,9 @@ public class AppProperties {
 
     public static class PackageRepositoryProperties {
 
-        private String apkUrl32 = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/%s_cmschina_armeabi_%s/cms_yht_32.apk";
-        private String apkUrl64 = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/%s_cmschina_arm64_%s/cms_yht_64.apk";
+        private String apkUrl32 = "https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/%s_cmschina_armeabi_%s/cms_yht_32.apk";
+        private String apkUrl64 = "https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/%s_cmschina_arm64_%s/cms_yht_64.apk";
+        private String appUrl = "https://artifacts.cmschina.com.cn:443/artifactory/INT_CMSAPP_HARMONY-generic-release-wx/harmony/%s_%s/CMSApp_HM-yht_release-signed.app";
         private String baseUrl;
         private boolean streamUploadEnabled;
         private String authorization;
@@ -158,6 +159,14 @@ public class AppProperties {
          */
         public void setApkUrl64(String apkUrl64) {
             this.apkUrl64 = apkUrl64;
+        }
+
+        public String getAppUrl() {
+            return appUrl;
+        }
+
+        public void setAppUrl(String appUrl) {
+            this.appUrl = appUrl;
         }
 
         /**

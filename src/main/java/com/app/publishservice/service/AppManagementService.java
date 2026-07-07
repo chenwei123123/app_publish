@@ -410,6 +410,7 @@ public class AppManagementService {
                 version.getPackageUrl(),
                 version.getPackageUrl32(),
                 version.getPackageUrl64(),
+                version.getPackageAppUrl(),
                 version.getUpdateLog(),
                 version.getIsReinforce() != null && version.getIsReinforce() == 1,
                 version.getCreateUser(),
@@ -626,6 +627,7 @@ public class AppManagementService {
                 existingVersion.setBuildCode(normalizedBuildCode);
                 existingVersion.setPackageUrl32(null);
                 existingVersion.setPackageUrl64(null);
+                existingVersion.setPackageAppUrl(null);
             }
             existingVersion.setCreateTime(LocalDateTime.now());
             appVersionRepository.updateById(existingVersion);

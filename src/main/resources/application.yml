@@ -38,8 +38,9 @@ app:
     audience-aes-key: ${APP_JWT_AUTH_AUDIENCE_AES_KEY:K6MIDdFi1NGk685H}
     audience-aes-iv: ${APP_JWT_AUTH_AUDIENCE_AES_IV:}
   package-repository:
-    apk-url-32: ${PACKAGE_REPOSITORY_APK_URL_32:https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/%s_cmschina_armeabi_%s/cms_yht_32.apk}
-    apk-url-64: ${PACKAGE_REPOSITORY_APK_URL_64:https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/%s_cmschina_arm64_%s/cms_yht_64.apk}
+    apk-url-32: ${PACKAGE_REPOSITORY_APK_URL_32:https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/%s_cmschina_armeabi_%s/cms_yht_32.apk}
+    apk-url-64: ${PACKAGE_REPOSITORY_APK_URL_64:https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/%s_cmschina_arm64_%s/cms_yht_64.apk}
+    app-url: ${PACKAGE_REPOSITORY_APP_URL:https://artifacts.cmschina.com.cn:443/artifactory/INT_CMSAPP_HARMONY-generic-release-wx/harmony/%s_%s/CMSApp_HM-yht_release-signed.app}
     base-url: ${PACKAGE_REPOSITORY_BASE_URL:}
     stream-upload-enabled: ${PACKAGE_REPOSITORY_STREAM_UPLOAD_ENABLED:false}
     authorization: ${PACKAGE_REPOSITORY_AUTHORIZATION:Basic eHVjaGFvNjpBS0NwOGpSN0U5G9LZjZzMWY1N1pGcG9Za2F5SHpqSE52bkRUZWhpY2NZWDDwOUZyNG1YeTJuaHgyV3dmQkdtZ1JoWWdWZXVG}

@@ -33,6 +33,7 @@ public class PackageVersionService {
     private static final Logger log = LoggerFactory.getLogger(PackageVersionService.class);
     static final String APK32_LOCAL_FILE_FAILED_MESSAGE = "32\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk32Path";
     static final String APK64_LOCAL_FILE_FAILED_MESSAGE = "64\u4F4Dapk\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.apk64Path";
+    static final String APP_LOCAL_FILE_FAILED_MESSAGE = "\u9E3F\u8499app\u672C\u5730\u6587\u4EF6\u8BFB\u53D6\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9application.yml\u4E2D\u7684app.publish-metadata.values.packageAppPath";
 
     private final AppManagementService appManagementService;
     private final AppVersionRepository appVersionRepository;
@@ -60,6 +61,7 @@ public class PackageVersionService {
         this.appProperties = appProperties;
         this.environment = environment;
         this.publishMetadataResolver = new PublishMetadataResolver(appProperties);
+        ApkDownloadUtil.configure(appProperties.getPackageRepository());
     }
 
     /**
@@ -87,7 +89,11 @@ public class PackageVersionService {
         appVersion.setAppInfo(appInfo);
         appVersion.setVersionName(metadata.versionName());
         appVersion.setVersionCode(metadata.versionCode());
-        appVersion.setPackageUrl32(target.toString());
+        if (appInfo.getAppType() == AppType.HarmonyOS) {
+            appVersion.setPackageAppUrl(target.toString());
+        } else {
+            appVersion.setPackageUrl32(target.toString());
+        }
         appVersion.setUpdateLog(updateLog);
         appVersion.setIsReinforce(metadata.reinforced() ? 1 : 0);
         appVersionRepository.insert(appVersion);
@@ -139,11 +145,25 @@ public class PackageVersionService {
     @Transactional(noRollbackFor = SubmitPackageDownloadException.class)
     public AppVersion prepareVersionForSubmit(AppVersion version) {
         if (StringUtils.hasText(version.getBuildCode())) {
+            boolean harmonyPackage = isHarmonyPackage(version);
             if (environment.matchesProfiles("dev")) {
-                prepareLocalSubmitPackagesFromMetadata(version);
+                prepareLocalSubmitPackagesFromMetadata(version, harmonyPackage);
                 return version;
             }
             if (appProperties.getPackageRepository().isStreamUploadEnabled()) {
+                if (harmonyPackage) {
+                    String appUrl = ApkDownloadUtil.buildAppUrl(version.getVersionCode(), version.getBuildCode());
+                    version.setPackageAppUrl(appUrl);
+                    appVersionRepository.updateById(version);
+                    log.info(
+                            "Harmony submit package URL prepared, versionId={}, versionCode={}, buildCode={}, packageAppUrl={}",
+                            version.getId(),
+                            version.getVersionCode(),
+                            version.getBuildCode(),
+                            appUrl
+                    );
+                    return version;
+                }
                 String apk32Url = ApkDownloadUtil.buildApk32Url(version.getVersionCode(), version.getBuildCode());
                 String apk64Url = ApkDownloadUtil.buildApk64Url(version.getVersionCode(), version.getBuildCode());
                 version.setPackageUrl32(apk32Url);
@@ -156,6 +176,26 @@ public class PackageVersionService {
                         version.getBuildCode(),
                         apk32Url,
                         apk64Url
+                );
+                return version;
+            }
+
+            if (harmonyPackage) {
+                String appUrl = ApkDownloadUtil.buildAppUrl(version.getVersionCode(), version.getBuildCode());
+                Path appTarget = allocateSubmitPackagePath(version.getVersionCode(), version.getBuildCode(), ApkDownloadUtil.extractFileName(appUrl));
+                try {
+                    ApkDownloadUtil.downloadApp(version.getVersionCode(), version.getBuildCode(), appTarget.toString());
+                } catch (Exception ex) {
+                    throw new SubmitPackageDownloadException(appDownloadFailedMessage(appUrl), ex);
+                }
+                version.setPackageAppUrl(appTarget.toString());
+                appVersionRepository.updateById(version);
+                log.info(
+                        "Harmony submit package downloaded, versionId={}, versionCode={}, buildCode={}, packageAppPath={}",
+                        version.getId(),
+                        version.getVersionCode(),
+                        version.getBuildCode(),
+                        appTarget
                 );
                 return version;
             }
@@ -278,6 +318,7 @@ public class PackageVersionService {
                 version.getPackageUrl(),
                 version.getPackageUrl32(),
                 version.getPackageUrl64(),
+                version.getPackageAppUrl(),
                 version.getUpdateLog(),
                 version.getIsReinforce() != null && version.getIsReinforce() == 1,
                 version.getCreateUser(),
@@ -289,9 +330,37 @@ public class PackageVersionService {
     /**
      * 处理prepare Local 提交包元数据相关逻辑。
      */
-    private void prepareLocalSubmitPackagesFromMetadata(AppVersion version) {
+    private void prepareLocalSubmitPackagesFromMetadata(AppVersion version, boolean harmonyPackage) {
         ProjectMetadataContext metadataContext = resolveProjectMetadataContext();
         Map<String, Object> metadata = metadataContext.metadata();
+
+        if (harmonyPackage) {
+            Path packageAppPath = resolveProjectAssetPath(
+                    metadataContext.metadataPath(),
+                    firstNonNull(
+                            metadataLookup(metadata, null, "packageAppPath"),
+                            metadataLookup(metadata, "huawei", "packageAppPath"),
+                            metadataLookup(metadata, "harmony", "packageAppPath"),
+                            metadataLookup(metadata, "harmony", "appPath"),
+                            metadataLookup(metadata, null, "harmonyAppPath"),
+                            metadataLookup(metadata, null, "appPath")
+                    )
+            );
+            if (packageAppPath == null) {
+                throw new IllegalArgumentException(APP_LOCAL_FILE_FAILED_MESSAGE);
+            }
+
+            version.setPackageAppUrl(packageAppPath.toString());
+            appVersionRepository.updateById(version);
+            log.info(
+                    "Harmony submit package resolved from local metadata, versionId={}, versionCode={}, buildCode={}, packageAppPath={}",
+                    version.getId(),
+                    version.getVersionCode(),
+                    version.getBuildCode(),
+                    packageAppPath
+            );
+            return;
+        }
 
         Path apk32Path = resolveProjectAssetPath(
                 metadataContext.metadataPath(),
@@ -350,6 +419,12 @@ public class PackageVersionService {
                 .thenComparing(AppVersion::getId, Comparator.nullsLast(Comparator.reverseOrder()));
     }
 
+    private boolean isHarmonyPackage(AppVersion version) {
+        return version != null
+                && version.getAppInfo() != null
+                && version.getAppInfo().getAppType() == AppType.HarmonyOS;
+    }
+
     /**
      * 解析项目元数据上下文。
      */
@@ -395,6 +470,10 @@ public class PackageVersionService {
 
     static String apk64DownloadFailedMessage(String downloadUrl) {
         return "\u4ECE" + downloadUrl + "\u4E0B\u8F7D64\u4F4Dapk\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7\u662F\u5426\u6B63\u786E";
+    }
+
+    static String appDownloadFailedMessage(String downloadUrl) {
+        return "\u4ECE" + downloadUrl + "\u4E0B\u8F7D\u9E3F\u8499app\u5931\u8D25\uFF0C\u8BF7\u6838\u5BF9\u7248\u672C\u53F7\u548C\u6784\u5EFA\u53F7\u662F\u5426\u6B63\u786E";
     }
 
     private record ProjectMetadataContext(Path metadataPath, Map<String, Object> metadata) {

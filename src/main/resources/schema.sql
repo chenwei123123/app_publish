@@ -29,9 +29,9 @@ CREATE TABLE IF NOT EXISTS app_store_config (
     private_key VARCHAR(255) DEFAULT NULL COMMENT '私钥',
     token VARCHAR(500) DEFAULT NULL COMMENT '静态 Token',
     ip_whitelist VARCHAR(500) DEFAULT NULL COMMENT 'IP 白名单',
-    privacy_url VARCHAR(255) DEFAULT NULL COMMENT '小米隐私政策地址',
-    icon LONGTEXT DEFAULT NULL COMMENT '小米图标 Base64',
-    app_id VARCHAR(100) DEFAULT NULL COMMENT '应用宝 appId / 三星 contentId',
+    privacy_url VARCHAR(255) DEFAULT NULL COMMENT '隐私政策地址',
+    icon LONGTEXT DEFAULT NULL COMMENT '图标 Base64',
+    app_id VARCHAR(100) DEFAULT NULL COMMENT '应用商店侧 appId 或 contentId',
     api_status TINYINT NOT NULL DEFAULT 1 COMMENT '0=禁用 1=启用',
     create_user VARCHAR(255) DEFAULT NULL COMMENT '创建人',
     update_user VARCHAR(255) DEFAULT NULL COMMENT '更新人',
@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS app_version (
     version_code VARCHAR(64) NOT NULL COMMENT '版本号',
     package_url_32 VARCHAR(255) DEFAULT NULL COMMENT '32 位安装包路径',
     package_url_64 VARCHAR(255) DEFAULT NULL COMMENT '64 位安装包路径',
+    package_app_url VARCHAR(255) DEFAULT NULL COMMENT '鸿蒙安装包路径',
     build_code VARCHAR(64) DEFAULT NULL COMMENT '构建号',
     update_log TEXT COMMENT '更新说明',
     is_reinforce TINYINT NOT NULL DEFAULT 0 COMMENT '0=未加固 1=已加固',
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS app_version (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应用版本表';
 
 CREATE TABLE IF NOT EXISTS app_release_record (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '发版记录 ID',
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '发布记录 ID',
     app_id BIGINT NOT NULL COMMENT '应用 ID',
     version_id BIGINT NOT NULL COMMENT '版本 ID',
     store_type VARCHAR(20) NOT NULL COMMENT '应用商店类型',
@@ -80,7 +81,7 @@ CREATE TABLE IF NOT EXISTS app_release_record (
     KEY idx_release_record_app (app_id),
     KEY idx_release_record_version (version_id),
     KEY idx_release_status_store (release_status, store_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应用发版记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应用发布记录表';
 
 CREATE TABLE IF NOT EXISTS app_api_token_cache (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键 ID',
@@ -96,11 +97,11 @@ CREATE TABLE IF NOT EXISTS app_api_token_cache (
 
 CREATE TABLE IF NOT EXISTS app_store_request_log (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '商店请求日志 ID',
-    release_record_id BIGINT DEFAULT NULL COMMENT '发版记录 ID',
+    release_record_id BIGINT DEFAULT NULL COMMENT '发布记录 ID',
     store_config_id BIGINT NOT NULL COMMENT '商店配置 ID',
     store_type VARCHAR(20) NOT NULL COMMENT '应用商店类型',
     action VARCHAR(100) NOT NULL COMMENT '操作动作',
-    request_order BIGINT DEFAULT NULL COMMENT '同一次发版内的请求顺序',
+    request_order BIGINT DEFAULT NULL COMMENT '同一次发布内的请求顺序',
     request_method VARCHAR(10) NOT NULL COMMENT 'HTTP 方法',
     request_url VARCHAR(500) NOT NULL COMMENT '请求地址',
     request_params TEXT COMMENT '请求参数',

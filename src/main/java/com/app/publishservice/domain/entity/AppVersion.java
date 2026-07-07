@@ -29,6 +29,9 @@ public class AppVersion {
     @TableField("package_url_64")
     private String packageUrl64;
 
+    @TableField("package_app_url")
+    private String packageAppUrl;
+
     private String buildCode;
 
     private String updateLog;
@@ -125,6 +128,9 @@ public class AppVersion {
         if (hasText(packageUrl)) {
             return packageUrl;
         }
+        if (hasText(packageAppUrl)) {
+            return packageAppUrl;
+        }
         if (hasText(packageUrl32)) {
             return packageUrl32;
         }
@@ -164,6 +170,14 @@ public class AppVersion {
      */
     public void setPackageUrl64(String packageUrl64) {
         this.packageUrl64 = packageUrl64;
+    }
+
+    public String getPackageAppUrl() {
+        return packageAppUrl;
+    }
+
+    public void setPackageAppUrl(String packageAppUrl) {
+        this.packageAppUrl = packageAppUrl;
     }
 
     /**

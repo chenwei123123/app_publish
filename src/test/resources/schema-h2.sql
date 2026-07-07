@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS app_version (
     version_code VARCHAR(64) NOT NULL,
     package_url_32 VARCHAR(255),
     package_url_64 VARCHAR(255),
+    package_app_url VARCHAR(255),
     build_code VARCHAR(64),
     update_log CLOB,
     is_reinforce TINYINT NOT NULL DEFAULT 0,

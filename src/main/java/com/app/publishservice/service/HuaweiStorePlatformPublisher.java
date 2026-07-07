@@ -256,7 +256,10 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
      * 解析华为包路径。
      */
     private List<Path> resolveHuaweiPackagePaths(AppVersion version) {
-        return List.of(requireLocalPackage(version.getPackageUrl64(), "Huawei submit requires app_version.package_url_64"));
+        return List.of(requireLocalPackage(
+                firstNonBlank(version.getPackageAppUrl(), version.getPackageUrl64(), version.getPackageUrl32(), version.getPackageUrl()),
+                "Huawei submit requires app_version.package_app_url or app_version.package_url_64"
+        ));
     }
 
     /**
@@ -729,7 +732,9 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         queryParams.put("appId", appId);
         queryParams.put("releaseType", isStagedRelease(record) ? 3 : 1);
 
-        Map<String, Object> metadata = resolveProjectMetadataContext(firstNonBlank(version.getPackageUrl64(), version.getPackageUrl32(), version.getPackageUrl())).metadata();
+        Map<String, Object> metadata = resolveProjectMetadataContext(
+                firstNonBlank(version.getPackageAppUrl(), version.getPackageUrl64(), version.getPackageUrl32(), version.getPackageUrl())
+        ).metadata();
         String releaseTime = firstNonBlank(
                 stringValue(metadataLookup(metadata, "huawei", "releaseTime")),
                 stringValue(metadataLookup(metadata, null, "huaweiReleaseTime"))

@@ -17,11 +17,13 @@ import java.nio.file.Path;
 @Component
 public final class ApkDownloadUtil {
 
-    static final String DEFAULT_APK_URL_32 = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/%s_cmschina_armeabi_%s/cms_yht_32.apk";
-    static final String DEFAULT_APK_URL_64 = "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/%s_cmschina_arm64_%s/cms_yht_64.apk";
+    static final String DEFAULT_APK_URL_32 = "https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/%s_cmschina_armeabi_%s/cms_yht_32.apk";
+    static final String DEFAULT_APK_URL_64 = "https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/%s_cmschina_arm64_%s/cms_yht_64.apk";
+    static final String DEFAULT_APP_URL = "https://artifacts.cmschina.com.cn:443/artifactory/INT_CMSAPP_HARMONY-generic-release-wx/harmony/%s_%s/CMSApp_HM-yht_release-signed.app";
     static final String DEFAULT_AUTH_VALUE = "Basic eHVjaGFvNjpBS0NwOGpSN0U5G9LZjZzMWY1N1pGcG9Za2F5SHpqSE52bkRUZWhpY2NZWDDwOUZyNG1YeTJuaHgyV3dmQkdtZ1JoWWdWZXVG";
     private static volatile String apkUrl32Template = DEFAULT_APK_URL_32;
     private static volatile String apkUrl64Template = DEFAULT_APK_URL_64;
+    private static volatile String appUrlTemplate = DEFAULT_APP_URL;
     private static volatile String authorizationValue = DEFAULT_AUTH_VALUE;
     private static volatile int timeoutMillis = 300000;
 
@@ -36,14 +38,18 @@ public final class ApkDownloadUtil {
      * 下载Apk32。
      */
     public static void downloadApk32(String versionCode, String buildCode, String savePath) throws Exception {
-        downloadApk(buildApk32Url(versionCode, buildCode), savePath);
+        downloadPackage(buildApk32Url(versionCode, buildCode), savePath);
     }
 
     /**
      * 下载Apk64。
      */
     public static void downloadApk64(String versionCode, String buildCode, String savePath) throws Exception {
-        downloadApk(buildApk64Url(versionCode, buildCode), savePath);
+        downloadPackage(buildApk64Url(versionCode, buildCode), savePath);
+    }
+
+    public static void downloadApp(String versionCode, String buildCode, String savePath) throws Exception {
+        downloadPackage(buildAppUrl(versionCode, buildCode), savePath);
     }
 
     /**
@@ -58,6 +64,10 @@ public final class ApkDownloadUtil {
      */
     public static String buildApk64Url(String versionCode, String buildCode) {
         return apkUrl64Template.formatted(requireVersionCode(versionCode), requireBuildCode(buildCode));
+    }
+
+    public static String buildAppUrl(String versionCode, String buildCode) {
+        return appUrlTemplate.formatted(requireVersionCode(versionCode), requireBuildCode(buildCode));
     }
 
     /**
@@ -85,7 +95,7 @@ public final class ApkDownloadUtil {
     /**
      * 下载APK。
      */
-    private static void downloadApk(String downloadUrl, String savePath) throws Exception {
+    private static void downloadPackage(String downloadUrl, String savePath) throws Exception {
         Path target = Path.of(savePath);
         if (Files.exists(target) && Files.isRegularFile(target)) {
             return;
@@ -99,7 +109,7 @@ public final class ApkDownloadUtil {
         HttpEntity<Void> request = new HttpEntity<>(headers);
         ResponseEntity<byte[]> response = restTemplate.exchange(downloadUrl, HttpMethod.GET, request, byte[].class);
         if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
-            throw new IOException("Failed to download apk, status=" + response.getStatusCode());
+            throw new IOException("Failed to download package, status=" + response.getStatusCode());
         }
         Path parent = target.toAbsolutePath().normalize().getParent();
         if (parent != null) {
@@ -128,16 +138,18 @@ public final class ApkDownloadUtil {
     /**
      * 处理configure相关逻辑。
      */
-    static void configure(AppProperties.PackageRepositoryProperties properties) {
+    public static void configure(AppProperties.PackageRepositoryProperties properties) {
         if (properties == null) {
             apkUrl32Template = DEFAULT_APK_URL_32;
             apkUrl64Template = DEFAULT_APK_URL_64;
+            appUrlTemplate = DEFAULT_APP_URL;
             authorizationValue = DEFAULT_AUTH_VALUE;
             timeoutMillis = 300000;
             return;
         }
         apkUrl32Template = StringUtils.hasText(properties.getApkUrl32()) ? properties.getApkUrl32().trim() : DEFAULT_APK_URL_32;
         apkUrl64Template = StringUtils.hasText(properties.getApkUrl64()) ? properties.getApkUrl64().trim() : DEFAULT_APK_URL_64;
+        appUrlTemplate = StringUtils.hasText(properties.getAppUrl()) ? properties.getAppUrl().trim() : DEFAULT_APP_URL;
         authorizationValue = StringUtils.hasText(properties.getAuthorization()) ? properties.getAuthorization().trim() : DEFAULT_AUTH_VALUE;
         long timeoutSeconds = Math.max(properties.getDownloadTimeoutSeconds(), 1L);
         timeoutMillis = Math.toIntExact(Math.min(timeoutSeconds * 1000L, Integer.MAX_VALUE));
