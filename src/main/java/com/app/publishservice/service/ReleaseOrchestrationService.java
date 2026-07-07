@@ -258,6 +258,7 @@ public class ReleaseOrchestrationService {
         if (record == null) {
             throw new NotFoundException("Release record not found");
         }
+        attachAppInfo(record);
         return toResponse(record);
     }
 
@@ -283,7 +284,10 @@ public class ReleaseOrchestrationService {
                 page.getCurrent(),
                 page.getSize(),
                 page.getTotal(),
-                page.getRecords().stream().map(this::toPageResponse).toList()
+                page.getRecords().stream()
+                        .peek(this::attachAppInfo)
+                        .map(this::toPageResponse)
+                        .toList()
         );
     }
 
@@ -306,7 +310,10 @@ public class ReleaseOrchestrationService {
                 page.getCurrent(),
                 page.getSize(),
                 page.getTotal(),
-                page.getRecords().stream().map(this::toPageResponse).toList()
+                page.getRecords().stream()
+                        .peek(this::attachAppInfo)
+                        .map(this::toPageResponse)
+                        .toList()
         );
     }
 
@@ -319,7 +326,14 @@ public class ReleaseOrchestrationService {
                 record.getAppId(),
                 record.getAppName(),
                 record.getPackageName(),
+                appTypeCode(record),
                 record.getAppDescription(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getCopyrightNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getIcpNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getAppRecordNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getPrivacyUrl(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getUserAgreementUrl(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getStatus(),
                 record.getVersionId(),
                 record.getVersionCode(),
                 record.getStoreType().getCode(),
@@ -349,7 +363,14 @@ public class ReleaseOrchestrationService {
                 record.getAppId(),
                 record.getAppName(),
                 record.getPackageName(),
+                appTypeCode(record),
                 record.getAppDescription(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getCopyrightNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getIcpNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getAppRecordNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getPrivacyUrl(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getUserAgreementUrl(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getStatus(),
                 record.getVersionId(),
                 record.getVersionCode(),
                 record.getStoreType().getCode(),
@@ -362,6 +383,19 @@ public class ReleaseOrchestrationService {
                 record.getCreateUser(),
                 record.getUpdateUser()
         );
+    }
+
+    private void attachAppInfo(AppReleaseRecord record) {
+        if (record == null || record.getAppId() == null) {
+            return;
+        }
+        record.setAppInfo(appManagementService.requireApp(record.getAppId()));
+    }
+
+    private Integer appTypeCode(AppReleaseRecord record) {
+        return record == null || record.getAppInfo() == null || record.getAppInfo().getAppType() == null
+                ? null
+                : record.getAppInfo().getAppType().getCode();
     }
 
     /**

@@ -437,6 +437,7 @@ public class AppManagementService {
      */
     private List<ReleaseRecordResponse> listReleaseRecordResponses(Long appId) {
         return releaseRecordRepository.selectReleaseRecordsByAppId(appId).stream()
+                .peek(this::attachAppInfo)
                 .map(this::toReleaseRecordResponse)
                 .toList();
     }
@@ -450,7 +451,14 @@ public class AppManagementService {
                 record.getAppId(),
                 record.getAppName(),
                 record.getPackageName(),
+                appTypeCode(record.getAppInfo()),
                 record.getAppDescription(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getCopyrightNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getIcpNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getAppRecordNo(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getPrivacyUrl(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getUserAgreementUrl(),
+                record.getAppInfo() == null ? null : record.getAppInfo().getStatus(),
                 record.getVersionId(),
                 record.getVersionCode(),
                 record.getStoreType() == null ? null : record.getStoreType().getCode(),
@@ -469,6 +477,17 @@ public class AppManagementService {
                 record.getCreateUser(),
                 record.getUpdateUser()
         );
+    }
+
+    private Integer appTypeCode(AppInfo appInfo) {
+        return appInfo == null || appInfo.getAppType() == null ? null : appInfo.getAppType().getCode();
+    }
+
+    private void attachAppInfo(AppReleaseRecord record) {
+        if (record == null || record.getAppId() == null) {
+            return;
+        }
+        record.setAppInfo(requireApp(record.getAppId()));
     }
 
     /**

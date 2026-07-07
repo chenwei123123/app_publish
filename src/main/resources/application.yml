@@ -29,14 +29,14 @@ app:
   jwt-auth:
     enabled: ${APP_JWT_AUTH_ENABLED:false}
     header-name: ${APP_JWT_AUTH_HEADER_NAME:Authentication}
-    secret: ${APP_JWT_AUTH_SECRET:webauth2022}
+    #secret: ${APP_JWT_AUTH_SECRET:webauth2022}
     cookie-name: ${APP_JWT_AUTH_COOKIE_NAME:Authentication}
     cookie-path: ${APP_JWT_AUTH_COOKIE_PATH:/}
     cookie-http-only: ${APP_JWT_AUTH_COOKIE_HTTP_ONLY:true}
     cookie-secure: ${APP_JWT_AUTH_COOKIE_SECURE:false}
     cookie-same-site: ${APP_JWT_AUTH_COOKIE_SAME_SITE:Lax}
     audience-aes-key: ${APP_JWT_AUTH_AUDIENCE_AES_KEY:K6MIDdFi1NGk685H}
-    audience-aes-iv: ${APP_JWT_AUTH_AUDIENCE_AES_IV:}
+    #audience-aes-iv: ${APP_JWT_AUTH_AUDIENCE_AES_IV:}
   package-repository:
     apk-url-32: ${PACKAGE_REPOSITORY_APK_URL_32:https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/%s_cmschina_armeabi_%s/cms_yht_32.apk}
     apk-url-64: ${PACKAGE_REPOSITORY_APK_URL_64:https://artifacts.cmschina.com.cn:443/artifactory/cms_app-generic-release-wx/android/%s_cmschina_arm64_%s/cms_yht_64.apk}
