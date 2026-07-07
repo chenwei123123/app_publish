@@ -1,266 +1,116 @@
-2026-06-26 08:45:43.837 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
-2026-06-26 08:45:43.896 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 20376 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
-2026-06-26 08:45:43.897 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "sit"
-2026-06-26 08:45:45.673 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8090 (http)
-2026-06-26 08:45:45.710 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8090"]
-2026-06-26 08:45:45.724 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
-2026-06-26 08:45:45.726 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
-2026-06-26 08:45:45.904 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2026-06-26 08:45:45.904 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1951 ms
-2026-06-26 08:45:47.424 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-26 08:45:50.035 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8090"]
-2026-06-26 08:45:50.067 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8090 (http) with context path '/'
-2026-06-26 08:45:50.097 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 6.842 seconds (process running for 7.385)
-2026-06-26 08:45:50.108 [scheduling-1] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-26 08:45:51.120 [scheduling-1] ERROR [] o.s.s.s.TaskUtils$LoggingErrorHandler - Unexpected error occurred in scheduled task
-org.springframework.transaction.CannotCreateTransactionException: Could not open JDBC Connection for transaction
-	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:313)
-	at org.springframework.transaction.support.AbstractPlatformTransactionManager.startTransaction(AbstractPlatformTransactionManager.java:532)
-	at org.springframework.transaction.support.AbstractPlatformTransactionManager.getTransaction(AbstractPlatformTransactionManager.java:405)
-	at org.springframework.transaction.interceptor.TransactionAspectSupport.createTransactionIfNecessary(TransactionAspectSupport.java:604)
-	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:373)
-	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
-	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
-	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
-	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
-	at com.app.publishservice.service.ReleaseOrchestrationService$$SpringCGLIB$$0.pollAuditResults(<generated>)
-	at com.app.publishservice.job.ReleaseReviewPollingJob.poll(ReleaseReviewPollingJob.java:29)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130)
-	at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124)
-	at io.micrometer.observation.Observation.observe(Observation.java:499)
-	at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124)
-	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54)
-	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
-	at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:305)
-	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-Caused by: java.sql.SQLException: error parsing url : The autoReconnect parameter is no longer supported since version 2.4.16. Please remove it from the URL.
-	at com.oceanbase.jdbc.UrlParser.parseInternal(UrlParser.java:239)
-	at com.oceanbase.jdbc.UrlParser.parse(UrlParser.java:189)
-	at com.oceanbase.jdbc.Driver.connect(Driver.java:87)
-	at com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:137)
-	at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:360)
-	at com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:202)
-	at com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:461)
-	at com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:550)
-	at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:98)
-	at com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111)
-	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:269)
-	... 25 common frames omitted
-Caused by: java.lang.IllegalArgumentException: The autoReconnect parameter is no longer supported since version 2.4.16. Please remove it from the URL.
-	at com.oceanbase.jdbc.util.DefaultOptions.postOptionProcess(DefaultOptions.java:1625)
-	at com.oceanbase.jdbc.UrlParser.defineUrlParserParameters(UrlParser.java:276)
-	at com.oceanbase.jdbc.UrlParser.parseInternal(UrlParser.java:234)
-	... 35 common frames omitted
-2026-06-26 08:46:51.137 [scheduling-1] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-26 08:46:52.152 [scheduling-1] ERROR [] o.s.s.s.TaskUtils$LoggingErrorHandler - Unexpected error occurred in scheduled task
-org.springframework.transaction.CannotCreateTransactionException: Could not open JDBC Connection for transaction
-	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:313)
-	at org.springframework.transaction.support.AbstractPlatformTransactionManager.startTransaction(AbstractPlatformTransactionManager.java:532)
-	at org.springframework.transaction.support.AbstractPlatformTransactionManager.getTransaction(AbstractPlatformTransactionManager.java:405)
-	at org.springframework.transaction.interceptor.TransactionAspectSupport.createTransactionIfNecessary(TransactionAspectSupport.java:604)
-	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:373)
-	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
-	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
-	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
-	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
-	at com.app.publishservice.service.ReleaseOrchestrationService$$SpringCGLIB$$0.pollAuditResults(<generated>)
-	at com.app.publishservice.job.ReleaseReviewPollingJob.poll(ReleaseReviewPollingJob.java:29)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.scheduling.support.ScheduledMethodRunnable.runInternal(ScheduledMethodRunnable.java:130)
-	at org.springframework.scheduling.support.ScheduledMethodRunnable.lambda$run$2(ScheduledMethodRunnable.java:124)
-	at io.micrometer.observation.Observation.observe(Observation.java:499)
-	at org.springframework.scheduling.support.ScheduledMethodRunnable.run(ScheduledMethodRunnable.java:124)
-	at org.springframework.scheduling.support.DelegatingErrorHandlingRunnable.run(DelegatingErrorHandlingRunnable.java:54)
-	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
-	at java.base/java.util.concurrent.FutureTask.runAndReset(FutureTask.java:305)
-	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:305)
-	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
-	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-Caused by: java.sql.SQLException: error parsing url : The autoReconnect parameter is no longer supported since version 2.4.16. Please remove it from the URL.
-	at com.oceanbase.jdbc.UrlParser.parseInternal(UrlParser.java:239)
-	at com.oceanbase.jdbc.UrlParser.parse(UrlParser.java:189)
-	at com.oceanbase.jdbc.Driver.connect(Driver.java:87)
-	at com.zaxxer.hikari.util.DriverDataSource.getConnection(DriverDataSource.java:137)
-	at com.zaxxer.hikari.pool.PoolBase.newConnection(PoolBase.java:360)
-	at com.zaxxer.hikari.pool.PoolBase.newPoolEntry(PoolBase.java:202)
-	at com.zaxxer.hikari.pool.HikariPool.createPoolEntry(HikariPool.java:461)
-	at com.zaxxer.hikari.pool.HikariPool.checkFailFast(HikariPool.java:550)
-	at com.zaxxer.hikari.pool.HikariPool.<init>(HikariPool.java:98)
-	at com.zaxxer.hikari.HikariDataSource.getConnection(HikariDataSource.java:111)
-	at org.springframework.jdbc.datasource.DataSourceTransactionManager.doBegin(DataSourceTransactionManager.java:269)
-	... 25 common frames omitted
-Caused by: java.lang.IllegalArgumentException: The autoReconnect parameter is no longer supported since version 2.4.16. Please remove it from the URL.
-	at com.oceanbase.jdbc.util.DefaultOptions.postOptionProcess(DefaultOptions.java:1625)
-	at com.oceanbase.jdbc.UrlParser.defineUrlParserParameters(UrlParser.java:276)
-	at com.oceanbase.jdbc.UrlParser.parseInternal(UrlParser.java:234)
-	... 35 common frames omitted
-2026-06-26 08:47:56.201 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
-2026-06-26 08:47:56.269 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 8096 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
-2026-06-26 08:47:56.269 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
-2026-06-26 08:47:56.270 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
-2026-06-26 08:47:58.186 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
-2026-06-26 08:47:58.198 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-26 08:47:58.203 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
-2026-06-26 08:47:58.203 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
-2026-06-26 08:47:58.277 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
-2026-06-26 08:47:58.278 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1913 ms
-2026-06-26 08:47:58.416 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
-2026-06-26 08:47:58.420 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
-2026-06-26 08:47:59.048 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
-2026-06-26 08:47:59.445 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@60a01cb
-2026-06-26 08:47:59.447 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
-2026-06-26 08:48:00.293 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
-2026-06-26 08:48:00.317 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
-2026-06-26 08:48:00.329 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 4.935 seconds (process running for 5.591)
-2026-06-26 08:48:00.333 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-26 08:48:00.449 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-26 08:48:16.169 [http-nio-0.0.0.0-8080-exec-2] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
-2026-06-26 08:48:16.170 [http-nio-0.0.0.0-8080-exec-2] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
-2026-06-26 08:48:16.172 [http-nio-0.0.0.0-8080-exec-2] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
-2026-06-26 08:48:16.182 [http-nio-0.0.0.0-8080-exec-2] INFO  [94d2ef0146304412a419700d658a5956] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/swagger-ui/swagger-initializer.js, clientIp=0:0:0:0:0:0:0:1
-2026-06-26 08:48:16.299 [http-nio-0.0.0.0-8080-exec-2] INFO  [94d2ef0146304412a419700d658a5956] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/swagger-ui/swagger-initializer.js, status=200, durationMs=120
-2026-06-26 08:48:16.614 [http-nio-0.0.0.0-8080-exec-1] INFO  [13a827a68c2245a68343a20aedda8f8c] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/v3/api-docs/swagger-config, clientIp=0:0:0:0:0:0:0:1
-2026-06-26 08:48:16.647 [http-nio-0.0.0.0-8080-exec-1] INFO  [13a827a68c2245a68343a20aedda8f8c] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/v3/api-docs/swagger-config, status=200, durationMs=33
-2026-06-26 08:48:16.667 [http-nio-0.0.0.0-8080-exec-3] INFO  [81ba284f1767487a85e38b137c556e8d] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/openapi.yaml, clientIp=0:0:0:0:0:0:0:1
-2026-06-26 08:48:16.672 [http-nio-0.0.0.0-8080-exec-3] INFO  [81ba284f1767487a85e38b137c556e8d] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/openapi.yaml, status=304, durationMs=5
-2026-06-26 08:48:53.103 [http-nio-0.0.0.0-8080-exec-4] INFO  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/releases/submit, clientIp=0:0:0:0:0:0:0:1
-2026-06-26 08:48:53.289 [http-nio-0.0.0.0-8080-exec-4] INFO  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.s.ReleaseOrchestrationService - Start release submit, versionId=1, releaseMode=api, stores=[oppo]
-2026-06-26 08:48:53.458 [http-nio-0.0.0.0-8080-exec-4] INFO  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.s.ReleaseOrchestrationService - Release record created, releaseId=98, appId=1, versionId=1, storeType=oppo
-2026-06-26 08:48:53.592 [http-nio-0.0.0.0-8080-exec-4] ERROR [d767d64921e34a8587b703c9ce7f75e4] c.a.p.s.ReleaseOrchestrationService - Submit package preparation failed, releaseId=98, storeType=oppo
-com.app.publishservice.common.exception.SubmitPackageDownloadException: 从https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/10.18.3_cmschina_armeabi_13231/cms_yht_32.apk下载32位apk失败，请核对版本号和构建号是否正确
-	at com.app.publishservice.service.PackageVersionService.prepareVersionForSubmit(PackageVersionService.java:170)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355)
-	at org.springframework.aop.framework.ReflectiveMethodInvocation.invokeJoinpoint(ReflectiveMethodInvocation.java:196)
-	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:163)
-	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
-	at org.springframework.transaction.interceptor.TransactionAspectSupport.invokeWithinTransaction(TransactionAspectSupport.java:379)
-	at org.springframework.transaction.interceptor.TransactionInterceptor.invoke(TransactionInterceptor.java:119)
-	at org.springframework.aop.framework.ReflectiveMethodInvocation.proceed(ReflectiveMethodInvocation.java:184)
-	at org.springframework.aop.framework.CglibAopProxy$CglibMethodInvocation.proceed(CglibAopProxy.java:768)
-	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:720)
-	at com.app.publishservice.service.PackageVersionService$$SpringCGLIB$$0.prepareVersionForSubmit(<generated>)
-	at com.app.publishservice.service.ReleaseOrchestrationService.prepareSubmit(ReleaseOrchestrationService.java:155)
-	at com.app.publishservice.service.ReleaseOrchestrationService.lambda$submit$0(ReleaseOrchestrationService.java:73)
-	at org.springframework.transaction.support.TransactionTemplate.execute(TransactionTemplate.java:140)
-	at com.app.publishservice.service.ReleaseOrchestrationService.submit(ReleaseOrchestrationService.java:73)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.aop.support.AopUtils.invokeJoinpointUsingReflection(AopUtils.java:355)
-	at org.springframework.aop.framework.CglibAopProxy$DynamicAdvisedInterceptor.intercept(CglibAopProxy.java:716)
-	at com.app.publishservice.service.ReleaseOrchestrationService$$SpringCGLIB$$0.submit(<generated>)
-	at com.app.publishservice.api.ReleaseController.submit(ReleaseController.java:46)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
-	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
-	at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)
-	at org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:188)
-	at org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118)
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:926)
-	at org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:831)
-	at org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87)
-	at org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1089)
-	at org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:979)
-	at org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1014)
-	at org.springframework.web.servlet.FrameworkServlet.doPost(FrameworkServlet.java:914)
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:590)
-	at org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885)
-	at jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658)
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:195)
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
-	at org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51)
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
-	at org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100)
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
-	at org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93)
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:101)
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
-	at org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201)
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
-	at com.app.publishservice.filter.RequestLoggingFilter.doFilterInternal(RequestLoggingFilter.java:41)
-	at org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116)
-	at org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:164)
-	at org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:140)
-	at org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:167)
-	at org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90)
-	at org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:483)
-	at org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115)
-	at org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93)
-	at org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74)
-	at org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:344)
-	at org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:384)
-	at org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63)
-	at org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:905)
-	at org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1741)
-	at org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52)
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1190)
-	at org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659)
-	at org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:63)
-	at java.base/java.lang.Thread.run(Thread.java:840)
-Caused by: org.springframework.web.client.ResourceAccessException: I/O error on GET request for "https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/10.18.3_cmschina_armeabi_13231/cms_yht_32.apk": artifacts.cmschina.com.cn
-	at org.springframework.web.client.RestTemplate.createResourceAccessException(RestTemplate.java:915)
-	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:895)
-	at org.springframework.web.client.RestTemplate.execute(RestTemplate.java:790)
-	at org.springframework.web.client.RestTemplate.exchange(RestTemplate.java:672)
-	at com.app.publishservice.util.ApkDownloadUtil.downloadApk(ApkDownloadUtil.java:100)
-	at com.app.publishservice.util.ApkDownloadUtil.downloadApk32(ApkDownloadUtil.java:39)
-	at com.app.publishservice.service.PackageVersionService.prepareVersionForSubmit(PackageVersionService.java:168)
-	... 83 common frames omitted
-Caused by: java.net.UnknownHostException: artifacts.cmschina.com.cn
-	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:572)
-	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
-	at java.base/java.net.Socket.connect(Socket.java:633)
-	at java.base/sun.security.ssl.SSLSocketImpl.connect(SSLSocketImpl.java:304)
-	at java.base/sun.net.NetworkClient.doConnect(NetworkClient.java:178)
-	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:533)
-	at java.base/sun.net.www.http.HttpClient.openServer(HttpClient.java:638)
-	at java.base/sun.net.www.protocol.https.HttpsClient.<init>(HttpsClient.java:266)
-	at java.base/sun.net.www.protocol.https.HttpsClient.New(HttpsClient.java:380)
-	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.getNewHttpClient(AbstractDelegateHttpsURLConnection.java:193)
-	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect0(HttpURLConnection.java:1262)
-	at java.base/sun.net.www.protocol.http.HttpURLConnection.plainConnect(HttpURLConnection.java:1148)
-	at java.base/sun.net.www.protocol.https.AbstractDelegateHttpsURLConnection.connect(AbstractDelegateHttpsURLConnection.java:179)
-	at java.base/sun.net.www.protocol.https.HttpsURLConnectionImpl.connect(HttpsURLConnectionImpl.java:142)
-	at org.springframework.http.client.SimpleClientHttpRequest.executeInternal(SimpleClientHttpRequest.java:79)
-	at org.springframework.http.client.AbstractStreamingClientHttpRequest.executeInternal(AbstractStreamingClientHttpRequest.java:70)
-	at org.springframework.http.client.AbstractClientHttpRequest.execute(AbstractClientHttpRequest.java:66)
-	at org.springframework.web.client.RestTemplate.doExecute(RestTemplate.java:889)
-	... 88 common frames omitted
-2026-06-26 08:48:53.615 [http-nio-0.0.0.0-8080-exec-4] WARN  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.handler.GlobalExceptionHandler - Bad request, method=POST, uri=/api/releases/submit, message=从https://artifacts.cmschina.com.cn:443/artifact/cms_app-generic-release-wx/android/10.18.3_cmschina_armeabi_13231/cms_yht_32.apk下载32位apk失败，请核对版本号和构建号是否正确
-2026-06-26 08:48:53.632 [http-nio-0.0.0.0-8080-exec-4] INFO  [d767d64921e34a8587b703c9ce7f75e4] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/releases/submit, status=400, durationMs=529
-2026-06-26 08:49:00.466 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-26 08:49:00.470 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-26 08:50:00.481 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-26 08:50:00.488 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-26 08:51:00.505 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-26 08:51:00.513 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-26 08:52:00.534 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-26 08:52:00.544 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
-2026-06-26 08:53:00.552 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
-2026-06-26 08:53:00.557 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:41:43.901 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
+2026-07-06 08:41:44.078 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 26456 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
+2026-07-06 08:41:44.080 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
+2026-07-06 08:41:44.081 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
+2026-07-06 08:41:47.043 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-07-06 08:41:47.057 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
+2026-07-06 08:41:47.062 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-07-06 08:41:47.062 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-07-06 08:41:47.146 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-07-06 08:41:47.147 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2935 ms
+2026-07-06 08:41:47.272 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-07-06 08:41:47.278 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
+2026-07-06 08:41:47.979 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-07-06 08:41:48.365 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@3a3ad8e7
+2026-07-06 08:41:48.368 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-07-06 08:41:49.578 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
+2026-07-06 08:41:49.618 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-07-06 08:41:49.637 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 7.269 seconds (process running for 8.427)
+2026-07-06 08:41:49.644 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:41:49.847 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=3
+2026-07-06 08:41:50.022 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=4, storeType=xiaomi, expireTime=2036-06-26T10:35
+2026-07-06 08:41:50.068 [scheduling-1] INFO  [] c.a.p.service.StoreRequestSupport - Use mock store request, storeType=xiaomi, action=query xiaomi package
+2026-07-06 08:41:50.195 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=141, storeType=xiaomi, before=auditing, after=pass
+2026-07-06 08:41:50.235 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=4, storeType=xiaomi, expireTime=2036-06-26T10:35
+2026-07-06 08:41:50.236 [scheduling-1] INFO  [] c.a.p.service.StoreRequestSupport - Use mock store request, storeType=xiaomi, action=query xiaomi package
+2026-07-06 08:41:50.278 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=142, storeType=xiaomi, before=auditing, after=pass
+2026-07-06 08:41:50.307 [scheduling-1] DEBUG [] c.a.p.service.TokenService - Use cached token, storeConfigId=4, storeType=xiaomi, expireTime=2036-06-26T10:35
+2026-07-06 08:41:50.307 [scheduling-1] INFO  [] c.a.p.service.StoreRequestSupport - Use mock store request, storeType=xiaomi, action=query xiaomi package
+2026-07-06 08:41:50.344 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Review status updated, releaseId=143, storeType=xiaomi, before=auditing, after=pass
+2026-07-06 08:42:50.367 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:42:50.373 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:43:50.375 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:43:50.380 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:44:50.391 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:44:50.398 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:45:50.404 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:45:50.418 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:46:50.419 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:46:50.435 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:47:50.450 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:47:50.464 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:48:50.476 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:48:50.484 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:49:50.490 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:49:50.497 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:50:50.512 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:50:50.517 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:51:50.523 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:51:50.529 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:52:50.543 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:52:50.548 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:53:39.152 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-07-06 08:53:39.153 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-07-06 08:53:39.156 [http-nio-0.0.0.0-8080-exec-1] INFO  [] o.s.web.servlet.DispatcherServlet - Completed initialization in 3 ms
+2026-07-06 08:53:39.165 [http-nio-0.0.0.0-8080-exec-1] INFO  [5aad66d831804df6b3ff17de02cd1be5] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/releases?current=1&size=100, clientIp=192.168.189.106
+2026-07-06 08:53:39.545 [http-nio-0.0.0.0-8080-exec-1] INFO  [5aad66d831804df6b3ff17de02cd1be5] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/releases?current=1&size=100, status=200, durationMs=383
+2026-07-06 08:53:39.959 [http-nio-0.0.0.0-8080-exec-2] INFO  [a13dad8624114be581dd014ee0d03130] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/store-configs, clientIp=192.168.189.106
+2026-07-06 08:53:39.959 [http-nio-0.0.0.0-8080-exec-3] INFO  [6dd2223f01f84380a1426505b3627dd5] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/apps, clientIp=192.168.189.106
+2026-07-06 08:53:40.142 [http-nio-0.0.0.0-8080-exec-3] INFO  [6dd2223f01f84380a1426505b3627dd5] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/apps, status=200, durationMs=183
+2026-07-06 08:53:40.293 [http-nio-0.0.0.0-8080-exec-2] INFO  [a13dad8624114be581dd014ee0d03130] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/store-configs, status=200, durationMs=334
+2026-07-06 08:53:47.382 [http-nio-0.0.0.0-8080-exec-4] INFO  [deb006e8e4a5451c88b6e3e1d1734595] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/releases?current=1&size=100, clientIp=192.168.189.106
+2026-07-06 08:53:47.421 [http-nio-0.0.0.0-8080-exec-4] INFO  [deb006e8e4a5451c88b6e3e1d1734595] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/releases?current=1&size=100, status=200, durationMs=40
+2026-07-06 08:53:50.564 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:53:50.570 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:54:50.575 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:54:50.603 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:55:50.616 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:55:50.625 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:56:50.637 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:56:50.651 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:57:50.668 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:57:50.673 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:58:50.689 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:58:50.697 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 08:59:20.391 [http-nio-0.0.0.0-8080-exec-5] INFO  [d3a94f2432c3423a85756554e8314e2e] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/store-configs, clientIp=192.168.189.106
+2026-07-06 08:59:21.550 [http-nio-0.0.0.0-8080-exec-5] INFO  [d3a94f2432c3423a85756554e8314e2e] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/store-configs, status=200, durationMs=1159
+2026-07-06 08:59:50.709 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 08:59:50.716 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 09:00:50.726 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 09:00:50.732 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 09:01:10.714 [http-nio-0.0.0.0-8080-exec-6] INFO  [f7ca6730456c456788153628c7d0344f] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/store-configs, clientIp=192.168.189.106
+2026-07-06 09:01:11.435 [http-nio-0.0.0.0-8080-exec-6] INFO  [f7ca6730456c456788153628c7d0344f] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/store-configs, status=200, durationMs=721
+2026-07-06 09:01:14.716 [http-nio-0.0.0.0-8080-exec-7] INFO  [fd01b8f81a3e42d0819b55ca2d2e1709] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/store-configs, clientIp=192.168.189.106
+2026-07-06 09:01:15.019 [http-nio-0.0.0.0-8080-exec-7] INFO  [fd01b8f81a3e42d0819b55ca2d2e1709] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/store-configs, status=200, durationMs=303
+2026-07-06 09:01:50.740 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 09:01:50.761 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 09:02:42.968 [http-nio-0.0.0.0-8080-exec-8] INFO  [91d975790efa44ff888ea52cae8c13e1] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=POST, uri=/api/store-configs, clientIp=192.168.189.106
+2026-07-06 09:02:43.279 [http-nio-0.0.0.0-8080-exec-8] INFO  [91d975790efa44ff888ea52cae8c13e1] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=POST, uri=/api/store-configs, status=200, durationMs=311
+2026-07-06 09:02:43.330 [http-nio-0.0.0.0-8080-exec-9] INFO  [7597a576386642f8beb4b6b4dde238ca] c.a.p.filter.RequestLoggingFilter - HTTP request start, method=GET, uri=/api/store-configs, clientIp=192.168.189.106
+2026-07-06 09:02:43.474 [http-nio-0.0.0.0-8080-exec-9] INFO  [7597a576386642f8beb4b6b4dde238ca] c.a.p.filter.RequestLoggingFilter - HTTP request end, method=GET, uri=/api/store-configs, status=200, durationMs=144
+2026-07-06 09:02:50.772 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 09:02:50.778 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 09:03:06.303 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-07-06 09:03:06.353 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2026-07-06 09:03:13.083 [background-preinit] INFO  [] o.h.validator.internal.util.Version - HV000001: Hibernate Validator 8.0.1.Final
+2026-07-06 09:03:13.153 [main] INFO  [] c.a.p.AppPublishServiceApplication - Starting AppPublishServiceApplication using Java 17.0.19 with PID 34104 (D:\app_publish\target\classes started by 86159 in D:\app_publish)
+2026-07-06 09:03:13.154 [main] DEBUG [] c.a.p.AppPublishServiceApplication - Running with Spring Boot v3.3.5, Spring v6.1.14
+2026-07-06 09:03:13.155 [main] INFO  [] c.a.p.AppPublishServiceApplication - The following 1 profile is active: "dev"
+2026-07-06 09:03:16.041 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-07-06 09:03:16.057 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-0.0.0.0-8080"]
+2026-07-06 09:03:16.064 [main] INFO  [] o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-07-06 09:03:16.065 [main] INFO  [] o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.31]
+2026-07-06 09:03:16.185 [main] INFO  [] o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-07-06 09:03:16.186 [main] INFO  [] o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 2933 ms
+2026-07-06 09:03:16.359 [main] DEBUG [] c.a.p.filter.JwtAuthenticationFilter - Filter 'jwtAuthenticationFilter' configured for use
+2026-07-06 09:03:16.363 [main] DEBUG [] c.a.p.filter.RequestLoggingFilter - Filter 'requestLoggingFilter' configured for use
+2026-07-06 09:03:17.181 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2026-07-06 09:03:17.640 [main] INFO  [] com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@57c6feea
+2026-07-06 09:03:17.642 [main] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2026-07-06 09:03:18.503 [main] INFO  [] o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-0.0.0.0-8080"]
+2026-07-06 09:03:18.528 [main] INFO  [] o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-07-06 09:03:18.539 [main] INFO  [] c.a.p.AppPublishServiceApplication - Started AppPublishServiceApplication in 6.527 seconds (process running for 7.352)
+2026-07-06 09:03:18.543 [scheduling-1] DEBUG [] c.a.p.job.ReleaseReviewPollingJob - Trigger release review polling job
+2026-07-06 09:03:18.626 [scheduling-1] INFO  [] c.a.p.s.ReleaseOrchestrationService - Start polling audit results, pendingCount=0
+2026-07-06 09:04:03.156 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2026-07-06 09:04:03.168 [SpringApplicationShutdownHook] INFO  [] com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

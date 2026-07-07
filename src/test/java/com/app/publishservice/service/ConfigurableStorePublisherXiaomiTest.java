@@ -18,13 +18,17 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.web.client.RestClient;
 
 import javax.crypto.Cipher;
+import java.io.ByteArrayInputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -39,6 +43,9 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ConfigurableStorePublisherXiaomiTest {
+
+    private static final String TEST_XIAOMI_CERTIFICATE_BASE64 =
+            "MIIDczCCAlugAwIBAgIINwvzQIQihIowDQYJKoZIhvcNAQEMBQAwaDELMAkGA1UEBhMCQ04xETAPBgNVBAgTCFNoYW5naGFpMREwDwYDVQQHEwhTaGFuZ2hhaTEQMA4GA1UEChMHRXhhbXBsZTELMAkGA1UECxMCUUExFDASBgNVBAMTC1Rlc3QgWGlhb21pMB4XDTI2MDcwNjAyNTM0N1oXDTM2MDcwMzAyNTM0N1owaDELMAkGA1UEBhMCQ04xETAPBgNVBAgTCFNoYW5naGFpMREwDwYDVQQHEwhTaGFuZ2hhaTEQMA4GA1UEChMHRXhhbXBsZTELMAkGA1UECxMCUUExFDASBgNVBAMTC1Rlc3QgWGlhb21pMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArW2HEMxHlAaYE5s/zLuhrOw7i4QKPBheHGjdvfFHOX940sbQOywPFYNjukcDmw968TReh+zlLMMorQ8Zr0NWlDTZ96Z1BLg2qvEs4QZpOpdY16WtpT4Lhe6IISVy+J1zcTO71Zq6VrlablRa+3ungmc49tzFyzP9xfb+QrOOq6viUkU1JMmD+rdUzV5BS8kckBbII7d5+yNLxAVSTD62POAlWt8ykCvfSMJYmRUsv5HDwkjXPtecLbTtWLuJmBgvKN3grWmMaynBGdpyND3dYeItA9fLT4Y6Kj6pLCvnIamsewPJ8qY05QtDmouMlK1mS+ll11q57SyvLOPHkWcUDwIDAQABoyEwHzAdBgNVHQ4EFgQUiIa0+L1Dop/l0RaEY0/+oMgT9AowDQYJKoZIhvcNAQEMBQADggEBABHIjEYO7ipV6AKU16WxGgfEKOKtycaDeB7QXssKaQhwqESGXwt12UU7nD74BkYt20BKd3sxi7oeM3x4MbfpSVIc4Ho6Vm6rNrWLu6SokV0Hp+yzTHP/dw8NHDxH55sy76zwUrx3Hmhfm9mGwBp5OWj4SKGaj3pcdsDmg947Ibe2ZD0sTb8I9xEMH6OSHaiTkPYWdY64kFiBRHcOkuf+GLiCZd3sxCfixUExw+0SU9siNWFsQu1FuAPfv6YbNR2aevnS4py70XCTgJchzj/+95ZjiRWwg45O2tku8wR9ehx1puNEQyoz11OslBDH3vzEdfGEnHLKCFuI8UHjVA1AT+w=";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -115,12 +122,7 @@ class ConfigurableStorePublisherXiaomiTest {
             assertEquals("com.demo.xiaomi.app", queryRequestData.get("packageName"));
             assertEquals("demo@xiaomi.test", queryRequestData.get("userName"));
 
-            Map<String, Object> querySig = jsonMap(decryptSig(queryForm.get().get("SIG"), keyPair.getPrivate()));
-            assertEquals("mi-access-password", querySig.get("password"));
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> querySigEntries = (List<Map<String, Object>>) querySig.get("sig");
-            assertEquals("RequestData", querySigEntries.get(0).get("name"));
-            assertEquals(md5Hex(queryForm.get().get("RequestData").getBytes(StandardCharsets.UTF_8)), querySigEntries.get(0).get("hash"));
+            assertEquals(queryForm.get().get("RequestData"), decryptSig(queryForm.get().get("SIG"), keyPair.getPublic()));
 
             Map<String, Object> submitRequestData = jsonMap(submitForm.get().get("RequestData"));
             assertEquals("demo@xiaomi.test", submitRequestData.get("userName"));
@@ -137,11 +139,7 @@ class ConfigurableStorePublisherXiaomiTest {
             assertEquals("screenshot-2.png", submitForm.get().get("screenshot_2.filename"));
             assertEquals("screenshot-3.png", submitForm.get().get("screenshot_3.filename"));
 
-            Map<String, Object> submitSig = jsonMap(decryptSig(submitForm.get().get("SIG"), keyPair.getPrivate()));
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> submitSigEntries = (List<Map<String, Object>>) submitSig.get("sig");
-            List<String> partNames = submitSigEntries.stream().map(entry -> String.valueOf(entry.get("name"))).toList();
-            assertEquals(List.of("RequestData", "apk", "icon", "screenshot_1", "screenshot_2", "screenshot_3"), partNames);
+            assertEquals(submitForm.get().get("RequestData"), decryptSig(submitForm.get().get("SIG"), keyPair.getPublic()));
             assertTrue(result.requestLog().contains("\"packageQuery\""));
             assertTrue(result.responseLog().contains("submit success"));
             assertEquals("com.demo.xiaomi.app:101", result.storeReleaseId());
@@ -246,6 +244,73 @@ class ConfigurableStorePublisherXiaomiTest {
         }
     }
 
+    @Test
+    void shouldSubmitXiaomiReleaseWhenPublicKeyIsCertificateBase64() throws Exception {
+        Path packagesDir = Files.createDirectories(tempDir.resolve("packages"));
+        Path assetsDir = Files.createDirectories(tempDir.resolve("assets").resolve("xiaomi"));
+        Path apk64 = packagesDir.resolve("demo.apk");
+        Path fallbackApk = packagesDir.resolve("fallback.apk");
+        Path icon = assetsDir.resolve("icon.png");
+        Path screenshot1 = assetsDir.resolve("screenshot-1.png");
+        Path screenshot2 = assetsDir.resolve("screenshot-2.png");
+        Path screenshot3 = assetsDir.resolve("screenshot-3.png");
+        Files.writeString(apk64, "xiaomi-apk", StandardCharsets.UTF_8);
+        Files.writeString(icon, "xiaomi-icon", StandardCharsets.UTF_8);
+        Files.writeString(screenshot1, "xiaomi-shot-1", StandardCharsets.UTF_8);
+        Files.writeString(screenshot2, "xiaomi-shot-2", StandardCharsets.UTF_8);
+        Files.writeString(screenshot3, "xiaomi-shot-3", StandardCharsets.UTF_8);
+
+        PublicKey certificatePublicKey = xiaomiCertificatePublicKey();
+        AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/dev/query", exchange -> {
+            queryForm.set(parseMultipart(exchange.getRequestHeaders().getFirst("Content-Type"), exchange.getRequestBody().readAllBytes()));
+            byte[] response = """
+                    {
+                      "result": 0,
+                      "message": "query success",
+                      "create": true,
+                      "updateVersion": false,
+                      "updateInfo": false
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.createContext("/dev/push", exchange -> {
+            byte[] response = """
+                    {
+                      "result": 0,
+                      "message": "submit success"
+                    }
+                    """.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            AppStoreConfig storeConfig = xiaomiStoreConfig(null);
+            storeConfig.setPublicKey(TEST_XIAOMI_CERTIFICATE_BASE64);
+            StoreSubmitResult result = publisher.submitRelease(
+                    storeConfig,
+                    appVersion(apk64, null, fallbackApk),
+                    new AppReleaseRecord(),
+                    ""
+            );
+
+            assertEquals(queryForm.get().get("RequestData"), decryptSig(queryForm.get().get("SIG"), certificatePublicKey));
+            assertEquals("submit success", result.message());
+        } finally {
+            server.stop(0);
+        }
+    }
+
     /**
      * 处理应用 Properties相关逻辑。
      */
@@ -302,11 +367,22 @@ class ConfigurableStorePublisherXiaomiTest {
         AppStoreConfig storeConfig = new AppStoreConfig();
         storeConfig.setStoreType(StoreType.fromCode("xiaomi"));
         storeConfig.setEmail("demo@xiaomi.test");
-        storeConfig.setPrivateKey("mi-access-password");
-        storeConfig.setPublicKey(Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
+        if (keyPair != null) {
+            storeConfig.setPrivateKey(xiaomiPrivateKeyPem(keyPair));
+            storeConfig.setPublicKey(Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded()));
+        } else {
+            storeConfig.setPrivateKey("xiaomi-access-password");
+            storeConfig.setPublicKey(TEST_XIAOMI_CERTIFICATE_BASE64);
+        }
         storeConfig.setPrivacyUrl("https://store-config.example.com/privacy");
         storeConfig.setIcon(Base64.getEncoder().encodeToString("store-config-icon".getBytes(StandardCharsets.UTF_8)));
         return storeConfig;
+    }
+
+    private String xiaomiPrivateKeyPem(KeyPair keyPair) {
+        return "-----BEGIN PRIVATE KEY-----\n"
+                + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8)).encodeToString(keyPair.getPrivate().getEncoded())
+                + "\n-----END PRIVATE KEY-----";
     }
 
     /**
@@ -362,6 +438,15 @@ class ConfigurableStorePublisherXiaomiTest {
         });
     }
 
+    private PublicKey xiaomiCertificatePublicKey() throws GeneralSecurityException {
+        byte[] certificateBytes = Base64.getDecoder().decode(TEST_XIAOMI_CERTIFICATE_BASE64);
+        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+        X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(
+                new ByteArrayInputStream(certificateBytes)
+        );
+        return certificate.getPublicKey();
+    }
+
     /**
      * 解析多部分表单。
      */
@@ -412,11 +497,11 @@ class ConfigurableStorePublisherXiaomiTest {
     /**
      * 解密Sig。
      */
-    private String decryptSig(String hex, PrivateKey privateKey) throws Exception {
+    private String decryptSig(String hex, PublicKey publicKey) throws Exception {
         byte[] encrypted = hexToBytes(hex);
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-        cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        int blockSize = (((RSAKey) privateKey).getModulus().bitLength() + 7) / 8;
+        Cipher cipher = xiaomiCipher();
+        cipher.init(Cipher.DECRYPT_MODE, publicKey);
+        int blockSize = (((RSAKey) publicKey).getModulus().bitLength() + 7) / 8;
         List<byte[]> chunks = new ArrayList<>();
         int totalSize = 0;
         for (int offset = 0; offset < encrypted.length; offset += blockSize) {
@@ -431,6 +516,14 @@ class ConfigurableStorePublisherXiaomiTest {
             offset += chunk.length;
         }
         return new String(plain, StandardCharsets.UTF_8);
+    }
+
+    private Cipher xiaomiCipher() throws Exception {
+        try {
+            return Cipher.getInstance("RSA/NONE/PKCS1Padding");
+        } catch (Exception ex) {
+            return Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        }
     }
 
     /**
@@ -448,19 +541,4 @@ class ConfigurableStorePublisherXiaomiTest {
     /**
      * 计算 MD5 摘要Hex。
      */
-    private String md5Hex(byte[] bytes) throws Exception {
-        java.security.MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
-        digest.update(bytes);
-        StringBuilder builder = new StringBuilder();
-        for (byte value : digest.digest()) {
-            String hex = Integer.toHexString(value & 0xFF);
-            if (hex.length() == 1) {
-                builder.append('0');
-            }
-            builder.append(hex);
-        }
-        return builder.toString();
-    }
-
-
 }

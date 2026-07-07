@@ -22,7 +22,9 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
+import java.net.URI;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
     private static final String YINGYONGBAO_UPLOAD_INFO_ENDPOINT = "/get_file_upload_info";
     private static final String YINGYONGBAO_UPDATE_APP_ENDPOINT = "/update_app";
     private static final String YINGYONGBAO_AUDIT_STATUS_ENDPOINT = "/query_app_update_status";
+    private static final Clock UTC_CLOCK = Clock.systemUTC();
 
     /**
      * 初始化YingyongbaoStorePlatformPublisher。
@@ -108,12 +111,12 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
 
         List<Map<String, Object>> uploadLogs = new ArrayList<>();
         Map<String, Object> updatePayload = buildYingyongbaoUpdatePayload(storeConfig, version, context, uploadLogs);
-        Map<String, Object> updateResponse = yingyongbaoSignedRequest(
-                storeConfig,
-                yingyongbaoUpdateAppEndpoint(endpoint),
-                updatePayload,
-                "update yingyongbao app"
-        );
+//        Map<String, Object> updateResponse = yingyongbaoSignedRequest(
+//                storeConfig,
+//                yingyongbaoUpdateAppEndpoint(endpoint),
+//                updatePayload,
+//                "update yingyongbao app"
+//        );
 
         Map<String, Object> requestLog = new LinkedHashMap<>();
         requestLog.put("queryAppDetail", Map.of("pkg_name", context.packageName(), "app_id", context.appId()));
@@ -123,13 +126,13 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
         Map<String, Object> responseLog = new LinkedHashMap<>();
         responseLog.put("queryAppDetail", appDetailResponse);
         responseLog.put("uploads", uploadLogs.stream().map(item -> item.get("response")).toList());
-        responseLog.put("updateApp", updateResponse);
+        responseLog.put("updateApp", "");
 
         return new StoreSubmitResult(
                 context.appId(),
                 writeJson(requestLog),
                 writeJson(responseLog),
-                firstNonBlank(firstString(updateResponse, "msg", "message"), "submit success")
+                firstNonBlank(firstString(responseLog, "msg", "message"), "submit success")
         );
     }
 
@@ -258,8 +261,7 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
                         Map.of("fileType", fileType, "fileName", filePath.getFileName().toString())
                 ),
                 () -> restClient.put()
-                        .uri(preSignUrl)
-                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                        .uri(URI.create(preSignUrl))
                         .body(new FileSystemResource(filePath))
                         .retrieve()
                         .toBodilessEntity(),
@@ -289,7 +291,7 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("user_id", storeConfig.getClientId().trim());
-        payload.put("timestamp", Instant.now().getEpochSecond());
+        payload.put("timestamp", currentUtcEpochSecond());
         if (businessParams != null && !businessParams.isEmpty()) {
             payload.putAll(businessParams);
         }
@@ -376,6 +378,10 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> pairs.add(entry.getKey() + "=" + entry.getValue()));
         return hmacSha256Hex(String.join("&", pairs), accessSecret);
+    }
+
+    long currentUtcEpochSecond() {
+        return Instant.now(UTC_CLOCK).getEpochSecond();
     }
 
     /**
@@ -607,5 +613,10 @@ final class YingyongbaoStorePlatformPublisher extends AbstractStorePlatformPubli
             String serialNumber,
             Map<String, Object> logEntry
     ) {
+    }
+
+    public static void main(String[] args) {
+        System.out.println(Instant.now(UTC_CLOCK).getEpochSecond());
+        System.out.println(Instant.now().getEpochSecond());
     }
 }

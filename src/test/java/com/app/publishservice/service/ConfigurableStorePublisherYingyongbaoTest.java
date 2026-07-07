@@ -22,11 +22,13 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -166,6 +168,42 @@ class ConfigurableStorePublisherYingyongbaoTest {
             assertEquals(ReleaseStatus.REJECT, result.releaseStatus());
             assertEquals("bad apk", result.rejectReason());
         } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void shouldUseUtcEpochSecondsForYingyongbaoTimestampWhenDefaultTimezoneIsShanghai() throws Exception {
+        AtomicReference<Map<String, String>> queryForm = new AtomicReference<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/query_app_update_status", exchange -> {
+            queryForm.set(parseForm(exchange.getRequestBody().readAllBytes()));
+            sendJson(exchange, """
+                    {
+                      "ret": 0,
+                      "msg": "success",
+                      "audit_status": 3
+                    }
+                    """);
+        });
+        server.start();
+
+        TimeZone originalTimeZone = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("Asia/Shanghai"));
+
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(RestClient.create(), objectMapper, appProperties(server));
+            AppReleaseRecord record = new AppReleaseRecord();
+            record.setId(20L);
+            record.setPackageName("com.demo.yyb.app");
+
+            publisher.queryReview(yingyongbaoStoreConfig(), record, "ignored-token");
+
+            long actualTimestamp = Long.parseLong(queryForm.get().get("timestamp"));
+            long nowUtcEpochSecond = Instant.now().getEpochSecond();
+            assertTrue(Math.abs(actualTimestamp - nowUtcEpochSecond) <= 5);
+        } finally {
+            TimeZone.setDefault(originalTimeZone);
             server.stop(0);
         }
     }

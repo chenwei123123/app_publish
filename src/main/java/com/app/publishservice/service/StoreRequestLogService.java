@@ -8,6 +8,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -57,6 +59,7 @@ public class StoreRequestLogService {
     /**
      * 处理日志 Success相关逻辑。
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logSuccess(
             AppStoreConfig storeConfig,
             String action,
@@ -86,6 +89,7 @@ public class StoreRequestLogService {
     /**
      * 处理日志 Failure相关逻辑。
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void logFailure(
             AppStoreConfig storeConfig,
             String action,

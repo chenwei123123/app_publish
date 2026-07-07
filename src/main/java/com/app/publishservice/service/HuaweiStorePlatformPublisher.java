@@ -41,9 +41,15 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     private static final String HUAWEI_APP_LANGUAGE_INFO_ENDPOINT = "/publish/v2/app-language-info";
     private static final String HUAWEI_UPLOAD_URL_ENDPOINT = "/publish/v2/upload-url/for-obs";
     private static final String HUAWEI_APP_FILE_INFO_ENDPOINT = "/publish/v2/app-file-info";
+    private static final String HUAWEI_PACKAGE_COMPILE_STATUS_ENDPOINT = "/publish/v2/package/compile/status";
     private static final String HUAWEI_APP_SUBMIT_ENDPOINT = "/publish/v2/app-submit";
     private static final DateTimeFormatter HUAWEI_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssZ");
     private static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
+    private static final int HUAWEI_COMPILE_STATUS_SUCCESS = 0;
+    private static final int HUAWEI_COMPILE_STATUS_COMPILING = 1;
+    private static final int HUAWEI_COMPILE_POLL_MAX_ATTEMPTS = 6;
+    private static final long HUAWEI_COMPILE_POLL_INTERVAL_MILLIS = 60_000L;
+    private static final int HUAWEI_SUBMIT_COMPILING_CODE = 204144727;
 
     /**
      * 初始化HuaweiStorePlatformPublisher。
@@ -140,6 +146,7 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         List<Path> packagePaths = resolveHuaweiPackagePaths(version);
         List<Map<String, Object>> uploadedFiles = uploadHuaweiPackages(storeConfig, token, appId, packagePaths, record);
         HuaweiFileInfoUpdateResult fileInfoUpdateResult = updateHuaweiAppFileInfo(storeConfig, token, appId, uploadedFiles, record);
+        HuaweiPackageCompileStatusResult packageCompileStatusResult = waitForHuaweiPackageCompile(storeConfig, token, appId, fileInfoUpdateResult, record);
         HuaweiLanguageInfoUpdateResult languageInfoUpdateResult = updateHuaweiAppLanguageInfo(storeConfig, token, appId, version, appDetailResponse, record);
         Map<String, Object> submitResponse = submitHuaweiApp(storeConfig, token, appId, version, record);
 
@@ -148,6 +155,7 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         requestLog.put("appDetail", Map.of("appId", appId, "releaseType", isStagedRelease(record) ? 3 : 1));
         requestLog.put("uploadPackages", uploadedFiles);
         requestLog.put("updateFileInfo", fileInfoUpdateResult.requestBody());
+        requestLog.put("queryPackageCompileStatus", packageCompileStatusResult.requestLog());
         requestLog.put("updateLanguageInfo", languageInfoUpdateResult.requestBody());
         requestLog.put("submit", buildHuaweiSubmitRequestLog(version, record));
 
@@ -155,6 +163,7 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         responseLog.put("appIdQuery", Map.of("appId", appId));
         responseLog.put("appDetail", appDetailResponse);
         responseLog.put("updateFileInfo", fileInfoUpdateResult.responseBody());
+        responseLog.put("queryPackageCompileStatus", packageCompileStatusResult.responseLog());
         responseLog.put("updateLanguageInfo", languageInfoUpdateResult.responseBody());
         responseLog.put("submit", submitResponse);
 
@@ -421,6 +430,124 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return new HuaweiLanguageInfoUpdateResult(body, response);
     }
 
+    private HuaweiPackageCompileStatusResult waitForHuaweiPackageCompile(
+            AppStoreConfig storeConfig,
+            String token,
+            String appId,
+            HuaweiFileInfoUpdateResult fileInfoUpdateResult,
+            AppReleaseRecord record
+    ) {
+        List<String> pkgIds = extractHuaweiPkgIds(fileInfoUpdateResult.responseBody());
+        if (pkgIds.isEmpty()) {
+            throw new IllegalStateException("Huawei app file info response does not contain pkgVersion");
+        }
+        Map<String, Object> requestLog = new LinkedHashMap<>();
+        requestLog.put("appId", appId);
+        requestLog.put("pkgIds", pkgIds);
+        requestLog.put("maxAttempts", HUAWEI_COMPILE_POLL_MAX_ATTEMPTS);
+        requestLog.put("intervalMillis", HUAWEI_COMPILE_POLL_INTERVAL_MILLIS);
+
+        List<Map<String, Object>> attempts = new ArrayList<>();
+        for (int attempt = 1; attempt <= HUAWEI_COMPILE_POLL_MAX_ATTEMPTS; attempt++) {
+            Map<String, Object> response = queryHuaweiPackageCompileStatus(storeConfig, token, appId, pkgIds);
+            Map<String, Object> attemptLog = new LinkedHashMap<>();
+            attemptLog.put("attempt", attempt);
+            attemptLog.put("response", response);
+            attempts.add(attemptLog);
+
+            HuaweiCompileDecision decision = evaluateHuaweiCompileStatus(response);
+            if (decision.success()) {
+                return new HuaweiPackageCompileStatusResult(requestLog, Map.of("attempts", attempts, "finalState", "success"));
+            }
+            if (decision.failed()) {
+                throw new IllegalStateException("Huawei package compile failed: " + decision.message());
+            }
+            if (attempt < HUAWEI_COMPILE_POLL_MAX_ATTEMPTS) {
+                sleepHuaweiCompilePoll();
+            }
+        }
+        throw new IllegalStateException("Huawei package compile status polling timed out after " + HUAWEI_COMPILE_POLL_MAX_ATTEMPTS + " attempts");
+    }
+
+    private Map<String, Object> queryHuaweiPackageCompileStatus(
+            AppStoreConfig storeConfig,
+            String token,
+            String appId,
+            List<String> pkgIds
+    ) {
+        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+        Map<String, Object> queryParams = new LinkedHashMap<>();
+        queryParams.put("appId", appId);
+        queryParams.put("pkgIds", String.join(",", pkgIds));
+        String url = huaweiBaseUrl(endpoint) + huaweiPackageCompileStatusEndpoint();
+        String responseBody = executeStoreRequest(
+                trace(storeConfig, "query huawei package compile status", "GET", url, queryParams, null),
+                () -> restClient.get()
+                        .uri(url + "?" + buildQueryString(queryParams))
+                        .header("Authorization", "Bearer " + token)
+                        .header("client_id", storeConfig.getClientId())
+                        .retrieve()
+                        .body(String.class),
+                () -> writeJson(mockHuaweiPackageCompileStatusResponse(pkgIds, HUAWEI_COMPILE_STATUS_SUCCESS))
+        );
+        Map<String, Object> response = readJson(responseBody);
+        ensureHuaweiSuccess(response, "query package compile status");
+        return response;
+    }
+
+    private List<String> extractHuaweiPkgIds(Map<String, Object> response) {
+        List<String> pkgIds = new ArrayList<>();
+        Object pkgVersionValue = response.get("pkgVersion");
+        if (pkgVersionValue instanceof List<?> entries) {
+            for (Object entry : entries) {
+                String pkgId = stringValue(entry);
+                if (StringUtils.hasText(pkgId)) {
+                    pkgIds.add(pkgId);
+                }
+            }
+        } else if (pkgVersionValue != null) {
+            String pkgId = stringValue(pkgVersionValue);
+            if (StringUtils.hasText(pkgId)) {
+                pkgIds.add(pkgId);
+            }
+        }
+        return pkgIds;
+    }
+
+    private HuaweiCompileDecision evaluateHuaweiCompileStatus(Map<String, Object> response) {
+        Object pkgStateListValue = response.get("pkgStateList");
+        if (!(pkgStateListValue instanceof List<?> pkgStates) || pkgStates.isEmpty()) {
+            return new HuaweiCompileDecision(false, false, "Huawei package compile status response is missing pkgStateList");
+        }
+        boolean allSuccess = true;
+        for (Object entry : pkgStates) {
+            Map<String, Object> pkgState = asMap(entry);
+            Integer successStatusValue = firstInteger(pkgState.get("successStatus"), pkgState.get("aabCompileStatus"));
+            int successStatus = successStatusValue == null ? HUAWEI_COMPILE_STATUS_COMPILING : successStatusValue;
+            if (successStatus == HUAWEI_COMPILE_STATUS_SUCCESS) {
+                continue;
+            }
+            allSuccess = false;
+            if (successStatus != HUAWEI_COMPILE_STATUS_COMPILING) {
+                String pkgId = firstString(pkgState, "pkgId");
+                String message = "pkgId=" + pkgId + ", successStatus=" + successStatus + ", failReason=" + stringValue(pkgState.get("failReason"));
+                return new HuaweiCompileDecision(false, true, message);
+            }
+        }
+        return allSuccess
+                ? new HuaweiCompileDecision(true, false, null)
+                : new HuaweiCompileDecision(false, false, "compiling");
+    }
+
+    private void sleepHuaweiCompilePoll() {
+        try {
+            Thread.sleep(HUAWEI_COMPILE_POLL_INTERVAL_MILLIS);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for Huawei package compile status", ex);
+        }
+    }
+
     /**
      * 提交华为应用。
      */
@@ -449,7 +576,7 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                 () -> writeJson(mockHuaweiSubmitResponse())
         );
         Map<String, Object> response = readJson(responseBody);
-        ensureHuaweiSuccess(response, "submit app");
+        ensureHuaweiSubmitAccepted(response);
         return response;
     }
 
@@ -563,6 +690,21 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return Map.of(
                 "ret", Map.of("code", 0, "msg", "success"),
                 "pkgVersion", List.of("mock-pkg-version")
+        );
+    }
+
+    private Map<String, Object> mockHuaweiPackageCompileStatusResponse(List<String> pkgIds, int successStatus) {
+        List<Map<String, Object>> pkgStateList = new ArrayList<>();
+        for (String pkgId : pkgIds) {
+            pkgStateList.add(Map.of(
+                    "pkgId", pkgId,
+                    "aabCompileStatus", successStatus,
+                    "successStatus", successStatus
+            ));
+        }
+        return Map.of(
+                "ret", Map.of("code", 0, "msg", "success"),
+                "pkgStateList", pkgStateList
         );
     }
 
@@ -713,6 +855,16 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         throw new StoreApiException(HttpStatus.BAD_GATEWAY, "Huawei " + action + " failed: code=" + code + ", msg=" + message);
     }
 
+    private void ensureHuaweiSubmitAccepted(Map<String, Object> response) {
+        Map<String, Object> ret = asMap(response.get("ret"));
+        int code = intValue(ret.get("code"));
+        if (code == 0 || code == HUAWEI_SUBMIT_COMPILING_CODE) {
+            return;
+        }
+        String message = firstNonBlank(firstString(ret, "msg", "message"), firstString(response, "ret"), "unknown error");
+        throw new StoreApiException(HttpStatus.BAD_GATEWAY, "Huawei submit app failed: code=" + code + ", msg=" + message);
+    }
+
     /**
      * 格式化华为 Date 时间。
      */
@@ -773,6 +925,10 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         return HUAWEI_APP_FILE_INFO_ENDPOINT;
     }
 
+    private String huaweiPackageCompileStatusEndpoint() {
+        return HUAWEI_PACKAGE_COMPILE_STATUS_ENDPOINT;
+    }
+
     private String huaweiAppLanguageInfoEndpoint() {
         return HUAWEI_APP_LANGUAGE_INFO_ENDPOINT;
     }
@@ -808,6 +964,19 @@ final class HuaweiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     private record HuaweiLanguageInfoUpdateResult(
             List<Map<String, Object>> requestBody,
             Map<String, Object> responseBody
+    ) {
+    }
+
+    private record HuaweiPackageCompileStatusResult(
+            Map<String, Object> requestLog,
+            Map<String, Object> responseLog
+    ) {
+    }
+
+    private record HuaweiCompileDecision(
+            boolean success,
+            boolean failed,
+            String message
     ) {
     }
 }

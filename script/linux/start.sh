@@ -104,9 +104,68 @@ if [[ ! -f "${JAR_PATH}" ]]; then
   exit 1
 fi
 
-JAVA_BIN="java"
-if [[ -n "${JAVA_HOME:-}" ]]; then
-  JAVA_BIN="${JAVA_HOME}/bin/java"
+is_java17() {
+  local java_bin="$1"
+  [[ -x "${java_bin}" ]] || return 1
+  local version_output
+  version_output="$("${java_bin}" -version 2>&1 | head -n 1 || true)"
+  [[ "${version_output}" == *'"17.'* || "${version_output}" == *'"17"'* ]]
+}
+
+resolve_java17_bin() {
+  local candidate_home=""
+  local candidate_bin=""
+  local candidate_dir=""
+  local found_bin=""
+
+  for candidate_home in "${JDK17_HOME:-}" "${JAVA17_HOME:-}"; do
+    [[ -n "${candidate_home}" ]] || continue
+    candidate_bin="${candidate_home}/bin/java"
+    if is_java17 "${candidate_bin}"; then
+      echo "${candidate_bin}"
+      return 0
+    fi
+  done
+
+  while IFS= read -r candidate_dir; do
+    [[ -n "${candidate_dir}" ]] || continue
+    found_bin="${candidate_dir}/bin/java"
+    if is_java17 "${found_bin}"; then
+      echo "${found_bin}"
+      return 0
+    fi
+  done < <(
+    find / -type d \( -iname '*jdk*17*' -o -iname '*java*17*' -o -iname '*openjdk*17*' \) 2>/dev/null
+  )
+
+  return 1
+}
+
+resolve_default_java_bin() {
+  if [[ -n "${JAVA_HOME:-}" && -x "${JAVA_HOME}/bin/java" ]]; then
+    echo "${JAVA_HOME}/bin/java"
+    return 0
+  fi
+
+  if command -v java >/dev/null 2>&1; then
+    command -v java
+    return 0
+  fi
+
+  return 1
+}
+
+JAVA_BIN="$(resolve_java17_bin || true)"
+if [[ -n "${JAVA_BIN}" ]]; then
+  echo "Detected JDK 17: ${JAVA_BIN}"
+else
+  JAVA_BIN="$(resolve_default_java_bin || true)"
+  if [[ -z "${JAVA_BIN}" ]]; then
+    echo "Java not found."
+    echo "Please configure JDK17_HOME, JAVA17_HOME, or JAVA_HOME."
+    exit 1
+  fi
+  echo "JDK 17 not found, fallback to default Java: ${JAVA_BIN}"
 fi
 
 echo "Starting ${APP_NAME} with profile=${PROFILE}"
@@ -126,6 +185,7 @@ if [[ -n "${ACTIVE_CONFIG_DIR}" ]]; then
   SPRING_CONFIG_ARG="--spring.config.additional-location=optional:file:${ACTIVE_CONFIG_DIR}/"
 fi
 echo "Using jar: ${JAR_PATH}"
+echo "Using Java: ${JAVA_BIN}"
 if [[ -n "${ACTIVE_CONFIG_DIR}" ]]; then
   echo "Config directory: ${ACTIVE_CONFIG_DIR}"
   [[ -f "${ACTIVE_CONFIG_DIR}/application.yml" ]] && echo "  Base config: ${ACTIVE_CONFIG_DIR}/application.yml"

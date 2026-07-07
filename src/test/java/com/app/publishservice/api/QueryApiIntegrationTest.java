@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -39,6 +40,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class QueryApiIntegrationTest {
+
+    private static final String TEST_XIAOMI_CERTIFICATE_BASE64 =
+            "MIIDczCCAlugAwIBAgIINwvzQIQihIowDQYJKoZIhvcNAQEMBQAwaDELMAkGA1UEBhMCQ04xETAPBgNVBAgTCFNoYW5naGFpMREwDwYDVQQHEwhTaGFuZ2hhaTEQMA4GA1UEChMHRXhhbXBsZTELMAkGA1UECxMCUUExFDASBgNVBAMTC1Rlc3QgWGlhb21pMB4XDTI2MDcwNjAyNTM0N1oXDTM2MDcwMzAyNTM0N1owaDELMAkGA1UEBhMCQ04xETAPBgNVBAgTCFNoYW5naGFpMREwDwYDVQQHEwhTaGFuZ2hhaTEQMA4GA1UEChMHRXhhbXBsZTELMAkGA1UECxMCUUExFDASBgNVBAMTC1Rlc3QgWGlhb21pMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArW2HEMxHlAaYE5s/zLuhrOw7i4QKPBheHGjdvfFHOX940sbQOywPFYNjukcDmw968TReh+zlLMMorQ8Zr0NWlDTZ96Z1BLg2qvEs4QZpOpdY16WtpT4Lhe6IISVy+J1zcTO71Zq6VrlablRa+3ungmc49tzFyzP9xfb+QrOOq6viUkU1JMmD+rdUzV5BS8kckBbII7d5+yNLxAVSTD62POAlWt8ykCvfSMJYmRUsv5HDwkjXPtecLbTtWLuJmBgvKN3grWmMaynBGdpyND3dYeItA9fLT4Y6Kj6pLCvnIamsewPJ8qY05QtDmouMlK1mS+ll11q57SyvLOPHkWcUDwIDAQABoyEwHzAdBgNVHQ4EFgQUiIa0+L1Dop/l0RaEY0/+oMgT9AowDQYJKoZIhvcNAQEMBQADggEBABHIjEYO7ipV6AKU16WxGgfEKOKtycaDeB7QXssKaQhwqESGXwt12UU7nD74BkYt20BKd3sxi7oeM3x4MbfpSVIc4Ho6Vm6rNrWLu6SokV0Hp+yzTHP/dw8NHDxH55sy76zwUrx3Hmhfm9mGwBp5OWj4SKGaj3pcdsDmg947Ibe2ZD0sTb8I9xEMH6OSHaiTkPYWdY64kFiBRHcOkuf+GLiCZd3sxCfixUExw+0SU9siNWFsQu1FuAPfv6YbNR2aevnS4py70XCTgJchzj/+95ZjiRWwg45O2tku8wR9ehx1puNEQyoz11OslBDH3vzEdfGEnHLKCFuI8UHjVA1AT+w=";
+    private static final String TEST_XIAOMI_PUBLIC_KEY_PEM = """
+            -----BEGIN PUBLIC KEY-----
+            MIIBCgKCAQEArW2HEMxHlAaYE5s/zLuhrOw7i4QKPBheHGjdvfFHOX940sbQOywP
+            FYNjukcDmw968TReh+zlLMMorQ8Zr0NWlDTZ96Z1BLg2qvEs4QZpOpdY16WtpT4L
+            he6IISVy+J1zcTO71Zq6VrlablRa+3ungmc49tzFyzP9xfb+QrOOq6viUkU1JMmD
+            +rdUzV5BS8kckBbII7d5+yNLxAVSTD62POAlWt8ykCvfSMJYmRUsv5HDwkjXPtec
+            LbTtWLuJmBgvKN3grWmMaynBGdpyND3dYeItA9fLT4Y6Kj6pLCvnIamsewPJ8qY0
+            5QtDmouMlK1mS+ll11q57SyvLOPHkWcUDwIDAQAB
+            -----END PUBLIC KEY-----
+            """.stripIndent();
 
     @Autowired
     private MockMvc mockMvc;
@@ -69,9 +83,13 @@ class QueryApiIntegrationTest {
         assertTrue(openapiYaml.contains("StoreConfigRequest"));
         assertTrue(openapiYaml.contains("StoreConfigMultipartRequest"));
         assertTrue(openapiYaml.contains("multipart/form-data"));
+        assertTrue(openapiYaml.contains("publicKeyFile"));
 
         mockMvc.perform(get("/swagger-ui.html"))
                 .andExpect(status().is3xxRedirection());
+        mockMvc.perform(get("/v3/api-docs/swagger-config"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value("/v3/api-docs.yaml"));
     }
 
     /**
@@ -117,8 +135,15 @@ class QueryApiIntegrationTest {
                 "image/png",
                 "icon-bytes".getBytes(StandardCharsets.UTF_8)
         );
+        MockMultipartFile updatePublicKey = new MockMultipartFile(
+                "publicKeyFile",
+                "xiaomi-public.pem",
+                "application/octet-stream",
+                "-----BEGIN PUBLIC KEY-----\nupdate-public-key\n-----END PUBLIC KEY-----".getBytes(StandardCharsets.UTF_8)
+        );
         mockMvc.perform(multipart("/api/store-configs/{configId}", firstConfigId)
                         .file(updateIcon)
+                        .file(updatePublicKey)
                         .with(request -> {
                             request.setMethod("PUT");
                             return request;
@@ -139,6 +164,7 @@ class QueryApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.accountName").value("main-account"))
                 .andExpect(jsonPath("$.data.clientId").value("demo-client-updated"))
+                .andExpect(jsonPath("$.data.publicKey").value("-----BEGIN PUBLIC KEY-----\nupdate-public-key\n-----END PUBLIC KEY-----"))
                 .andExpect(jsonPath("$.data.privacyUrl").value("https://xiaomi.example.com/privacy"))
                 .andExpect(jsonPath("$.data.appId").value("yyb-app-001"))
                 .andExpect(jsonPath("$.data.icon").value("aWNvbi1ieXRlcw=="));
@@ -159,8 +185,15 @@ class QueryApiIntegrationTest {
                 "image/png",
                 "create-icon".getBytes(StandardCharsets.UTF_8)
         );
+        MockMultipartFile createPublicKey = new MockMultipartFile(
+                "publicKeyFile",
+                "create-public.pem",
+                "application/octet-stream",
+                "create-public-key".getBytes(StandardCharsets.UTF_8)
+        );
         mockMvc.perform(multipart("/api/store-configs")
                         .file(createIcon)
+                        .file(createPublicKey)
                         .param("storeType", "oppo")
                         .param("accountName", "backup-account")
                         .param("email", "backup@example.com")
@@ -175,6 +208,7 @@ class QueryApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.storeType").value("oppo"))
                 .andExpect(jsonPath("$.data.accountName").value("backup-account"))
+                .andExpect(jsonPath("$.data.publicKey").value("create-public-key"))
                 .andExpect(jsonPath("$.data.appId").value("sanxing-content-001"));
 
         mockMvc.perform(post("/api/store-configs")
@@ -320,6 +354,90 @@ class QueryApiIntegrationTest {
     /**
      * 测试Initialize 应用版本 When Save 应用 Contains 版本编码场景。
      */
+    @Test
+    void shouldCreateAndUpdateStoreConfigWithPublicKeyFile() throws Exception {
+        StoreConfigRequest createRequest = new StoreConfigRequest();
+        createRequest.setStoreType("xiaomi");
+        createRequest.setAccountName("xiaomi-account");
+        createRequest.setEmail("xiaomi@example.com");
+        createRequest.setPublicKeyFile(new MockMultipartFile(
+                "publicKeyFile",
+                "xiaomi-create-public.pem",
+                "application/octet-stream",
+                "-----BEGIN PUBLIC KEY-----\ncreate-public-key\n-----END PUBLIC KEY-----".getBytes(StandardCharsets.UTF_8)
+        ));
+        createRequest.setApiStatus(1);
+        Long configId = appManagementService.saveStoreConfig(createRequest).id();
+
+        mockMvc.perform(get("/api/store-configs/{configId}", configId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.storeType").value("xiaomi"))
+                .andExpect(jsonPath("$.data.publicKey").value("-----BEGIN PUBLIC KEY-----\ncreate-public-key\n-----END PUBLIC KEY-----"));
+
+        MockMultipartFile updatePublicKey = new MockMultipartFile(
+                "publicKeyFile",
+                "xiaomi-update-public.pem",
+                "application/octet-stream",
+                "-----BEGIN PUBLIC KEY-----\nupdate-public-key\n-----END PUBLIC KEY-----".getBytes(StandardCharsets.UTF_8)
+        );
+
+        mockMvc.perform(multipart("/api/store-configs/{configId}", configId)
+                        .file(updatePublicKey)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                        .param("storeType", "xiaomi")
+                        .param("accountName", "xiaomi-account-updated")
+                        .param("email", "xiaomi-updated@example.com")
+                        .param("apiStatus", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accountName").value("xiaomi-account-updated"))
+                .andExpect(jsonPath("$.data.publicKey").value("-----BEGIN PUBLIC KEY-----\nupdate-public-key\n-----END PUBLIC KEY-----"));
+    }
+
+    @Test
+    void shouldCreateAndUpdateXiaomiStoreConfigWithCerFile() throws Exception {
+        StoreConfigRequest createRequest = new StoreConfigRequest();
+        createRequest.setStoreType("xiaomi");
+        createRequest.setAccountName("xiaomi-cer-account");
+        createRequest.setEmail("xiaomi-cer@example.com");
+        createRequest.setPublicKeyFile(new MockMultipartFile(
+                "publicKeyFile",
+                "xiaomi-create-public.cer",
+                "application/pkix-cert",
+                Base64.getDecoder().decode(TEST_XIAOMI_CERTIFICATE_BASE64)
+        ));
+        createRequest.setApiStatus(1);
+        Long configId = appManagementService.saveStoreConfig(createRequest).id();
+
+        mockMvc.perform(get("/api/store-configs/{configId}", configId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.storeType").value("xiaomi"))
+                .andExpect(jsonPath("$.data.publicKey").value(TEST_XIAOMI_PUBLIC_KEY_PEM));
+
+        MockMultipartFile updatePublicKey = new MockMultipartFile(
+                "publicKeyFile",
+                "xiaomi-update-public.cer",
+                "application/pkix-cert",
+                Base64.getDecoder().decode(TEST_XIAOMI_CERTIFICATE_BASE64)
+        );
+
+        mockMvc.perform(multipart("/api/store-configs/{configId}", configId)
+                        .file(updatePublicKey)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                        .param("storeType", "xiaomi")
+                        .param("accountName", "xiaomi-cer-account-updated")
+                        .param("email", "xiaomi-cer-updated@example.com")
+                        .param("apiStatus", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.accountName").value("xiaomi-cer-account-updated"))
+                .andExpect(jsonPath("$.data.publicKey").value(TEST_XIAOMI_PUBLIC_KEY_PEM));
+    }
+
     @Test
     void shouldInitializeAppVersionWhenSaveAppContainsVersionCode() throws Exception {
         AppUpsertRequest request = new AppUpsertRequest();

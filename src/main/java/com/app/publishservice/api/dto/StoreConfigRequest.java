@@ -53,6 +53,9 @@ public class StoreConfigRequest {
     @Schema(description = "小米图标文件，上传后自动转为 Base64 保存", type = "string", format = "binary")
     private MultipartFile iconFile;
 
+    @Schema(description = "平台公钥文件，上传后按 UTF-8 文本读取并保存，当前主要用于小米渠道", type = "string", format = "binary")
+    private MultipartFile publicKeyFile;
+
     @Schema(description = "API 状态，1 表示启用，0 表示禁用")
     private Integer apiStatus = 1;
 
@@ -174,6 +177,14 @@ public class StoreConfigRequest {
 
     public void setIconFile(MultipartFile iconFile) {
         this.iconFile = iconFile;
+    }
+
+    public MultipartFile getPublicKeyFile() {
+        return publicKeyFile;
+    }
+
+    public void setPublicKeyFile(MultipartFile publicKeyFile) {
+        this.publicKeyFile = publicKeyFile;
     }
 
     public Integer getApiStatus() {

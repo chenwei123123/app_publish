@@ -19,11 +19,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -100,6 +102,26 @@ class StoreRequestLogServiceIntegrationTest {
         assertEquals("upstream bad gateway", logs.get(1).getErrorMessage());
     }
 
+    @Test
+    void shouldPersistRequestLogWhenOuterTransactionRollsBack() {
+        AppStoreConfig storeConfig = createStoreConfig();
+        AppReleaseRecord releaseRecord = createReleaseRecord();
+
+        assertThrows(IllegalStateException.class, () -> writeLogThenFail(storeConfig, releaseRecord));
+
+        List<AppStoreRequestLog> logs = storeRequestLogRepository.selectList(
+                Wrappers.<AppStoreRequestLog>lambdaQuery()
+                        .eq(AppStoreRequestLog::getReleaseRecordId, releaseRecord.getId())
+                        .orderByAsc(AppStoreRequestLog::getRequestOrder)
+                        .orderByAsc(AppStoreRequestLog::getId)
+        );
+
+        assertEquals(1, logs.size());
+        assertEquals("SUCCESS", logs.get(0).getRequestStatus());
+        assertEquals("refresh huawei token", logs.get(0).getAction());
+        assertTrue(logs.get(0).getResponseBody().contains("\"ret\""));
+    }
+
     /**
      * 创建商店配置。
      */
@@ -141,5 +163,23 @@ class StoreRequestLogServiceIntegrationTest {
         releaseRecord.setReleaseStatus(ReleaseStatus.API_PENDING);
         releaseRecordRepository.insert(releaseRecord);
         return releaseRecord;
+    }
+
+    @Transactional
+    protected void writeLogThenFail(AppStoreConfig storeConfig, AppReleaseRecord releaseRecord) {
+        try (StoreRequestLogContextHolder.Scope ignored = StoreRequestLogContextHolder.open(releaseRecord.getId())) {
+            storeRequestLogService.logSuccess(
+                    storeConfig,
+                    "refresh huawei token",
+                    "POST",
+                    "https://connect-api.cloud.huawei.com/api/oauth2/v1/token",
+                    null,
+                    Map.of("grant_type", "client_credentials", "client_id", "demo-client-id", "client_secret", "demo-client-secret"),
+                    200,
+                    "{\"ret\":{\"code\":0,\"msg\":\"success\"}}",
+                    12L
+            );
+        }
+        throw new IllegalStateException("Huawei token response does not contain access_token");
     }
 }

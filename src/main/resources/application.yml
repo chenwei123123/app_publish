@@ -20,7 +20,7 @@ springdoc:
     enabled: true
   swagger-ui:
     path: /swagger-ui.html
-    url: /openapi.yaml
+    url: /v3/api-docs.yaml
 
 app:
   token-refresh-ahead-seconds: 300

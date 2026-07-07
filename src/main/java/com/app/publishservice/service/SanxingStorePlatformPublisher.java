@@ -53,6 +53,7 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     private static final String SANXING_CREATE_UPLOAD_SESSION_ENDPOINT = "/seller/createUploadSessionId";
     private static final String SANXING_ADD_BINARY_ENDPOINT = "/seller/v2/content/binary";
     private static final String SANXING_CONTENT_UPDATE_ENDPOINT = "/seller/contentUpdate";
+    private static final String SANXING_STAGED_ROLLOUT_BINARY_ENDPOINT = "/seller/v2/content/stagedRolloutBinary";
     private static final String SANXING_STAGED_ROLLOUT_ENDPOINT = "/seller/v2/content/stagedRolloutRate";
     private static final String SANXING_CONTENT_SUBMIT_ENDPOINT = "/seller/contentSubmit";
 
@@ -169,7 +170,35 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
 
         Map<String, Object> contentUpdatePayload = buildSanxingContentUpdatePayload(version, context, currentContentInfo);
+        Map<String, Object> queryStagedRolloutPayload = null;
+        Map<String, Object> queryStagedRolloutResponse = null;
+        Map<String, Object> disableStagedRolloutPayload = null;
+        Map<String, Object> disableStagedRolloutResponse = null;
+        if (record != null && isStagedRelease(record) && isSanxingSaleContent(currentContentInfo)) {
+            queryStagedRolloutPayload = buildSanxingStagedRolloutQueryPayload(context.contentId(), "SALE");
+            queryStagedRolloutResponse = querySanxingStagedRolloutRate(storeConfig, token, context.contentId(), "SALE");
+            if (hasSanxingEnabledStagedRollout(queryStagedRolloutResponse)) {
+                disableStagedRolloutPayload = buildSanxingDisableStagedRolloutPayload(context.contentId(), "SALE");
+                disableStagedRolloutResponse = sanxingJsonRequest(
+                        storeConfig,
+                        token,
+                        "PUT",
+                        sanxingBaseUrl(endpoint) + SANXING_STAGED_ROLLOUT_ENDPOINT,
+                        disableStagedRolloutPayload,
+                        "disable sanxing staged rollout"
+                );
+            }
+        }
+
         Map<String, Object> contentUpdateResponse = null;
+
+        Map<String, Object> uploadSession = createSanxingUploadSession(storeConfig, token);
+        Map<String, Object> uploadResult = uploadSanxingFile(storeConfig, token, context.packagePath(), uploadSession);
+        String fileKey = firstString(uploadResult, "fileKey", "filekey");
+        if (!StringUtils.hasText(fileKey)) {
+            throw new IllegalStateException("Sanxing fileUpload response does not contain fileKey");
+        }
+
         if (isSanxingSaleContent(currentContentInfo)) {
             contentUpdateResponse = sanxingJsonRequest(
                     storeConfig,
@@ -179,13 +208,6 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                     contentUpdatePayload,
                     "update sanxing content"
             );
-        }
-
-        Map<String, Object> uploadSession = createSanxingUploadSession(storeConfig, token);
-        Map<String, Object> uploadResult = uploadSanxingFile(storeConfig, token, context.packagePath(), uploadSession);
-        String fileKey = firstString(uploadResult, "fileKey", "filekey");
-        if (!StringUtils.hasText(fileKey)) {
-            throw new IllegalStateException("Sanxing fileUpload response does not contain fileKey");
         }
 
         Map<String, Object> addBinaryPayload = buildSanxingAddBinaryPayload(context, currentContentInfo, fileKey);
@@ -209,9 +231,21 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
             );
         }
 
+        Map<String, Object> stagedRolloutBinaryPayload = null;
+        Map<String, Object> stagedRolloutBinaryResponse = null;
         Map<String, Object> stagedRolloutPayload = null;
         Map<String, Object> stagedRolloutResponse = null;
         if (record != null && isStagedRelease(record)) {
+            String stagedRolloutBinarySeq = extractSanxingBinarySeq(addBinaryResponse);
+            stagedRolloutBinaryPayload = buildSanxingStagedRolloutBinaryPayload(context.contentId(), stagedRolloutBinarySeq);
+            stagedRolloutBinaryResponse = sanxingJsonRequest(
+                    storeConfig,
+                    token,
+                    "PUT",
+                    sanxingBaseUrl(endpoint) + SANXING_STAGED_ROLLOUT_BINARY_ENDPOINT,
+                    stagedRolloutBinaryPayload,
+                    "update sanxing staged rollout binary"
+            );
             stagedRolloutPayload = buildSanxingStagedRolloutPayload(context.contentId(), record);
             stagedRolloutResponse = sanxingJsonRequest(
                     storeConfig,
@@ -232,8 +266,17 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
                 "sessionId", firstString(uploadSession, "sessionId"),
                 "fileName", context.packagePath().getFileName().toString()
         ));
+        if (queryStagedRolloutPayload != null) {
+            requestLog.put("queryStagedRollout", queryStagedRolloutPayload);
+        }
+        if (disableStagedRolloutPayload != null) {
+            requestLog.put("disableStagedRollout", disableStagedRolloutPayload);
+        }
         requestLog.put("addBinary", addBinaryPayload);
         requestLog.put("contentUpdate", contentUpdatePayload);
+        if (stagedRolloutBinaryPayload != null) {
+            requestLog.put("stagedRolloutBinary", stagedRolloutBinaryPayload);
+        }
         if (stagedRolloutPayload != null) {
             requestLog.put("stagedRollout", stagedRolloutPayload);
         }
@@ -242,8 +285,17 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         responseLog.put("contentInfo", contentInfoList);
         responseLog.put("createUploadSession", uploadSession);
         responseLog.put("fileUpload", uploadResult);
+        if (queryStagedRolloutResponse != null) {
+            responseLog.put("queryStagedRollout", queryStagedRolloutResponse);
+        }
+        if (disableStagedRolloutResponse != null) {
+            responseLog.put("disableStagedRollout", disableStagedRolloutResponse);
+        }
         responseLog.put("addBinary", addBinaryResponse);
         responseLog.put("contentUpdate", contentUpdateResponse);
+        if (stagedRolloutBinaryResponse != null) {
+            responseLog.put("stagedRolloutBinary", stagedRolloutBinaryResponse);
+        }
         if (stagedRolloutResponse != null) {
             responseLog.put("stagedRollout", stagedRolloutResponse);
         }
@@ -478,63 +530,17 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
             Map<String, Object> contentInfo
     ) {
         AppInfo appInfo = version.getAppInfo();
-        Map<String, Object> metadata = context.metadata();
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("contentId", context.contentId());
-        payload.put("appTitle", requireSanxingText(
-                firstNonBlank(firstString(contentInfo, "appTitle"), appInfo == null ? null : appInfo.getAppName()),
-                "Sanxing contentUpdate requires appTitle"
-        ));
-        payload.put("contentStatus", "REGISTERING");
+        //payload.put("contentStatus", "REGISTERING");
         payload.put("defaultLanguageCode", requireSanxingText(firstString(contentInfo, "defaultLanguageCode"), "Sanxing contentUpdate requires defaultLanguageCode"));
-        payload.put("applicationType", firstNonBlank(firstString(contentInfo, "applicationType"), "android"));
-        payload.put("longDescription", appInfo == null ?  firstString(contentInfo, "longDescription") : appInfo.getAppDescription());
-        payload.put("shortDescription", firstString(contentInfo, "shortDescription"));
-        payload.put("newFeature", appInfo == null ?  firstString(contentInfo, "newFeature") : appInfo.getAppDescription());
-        putIfHasText(payload, "ageLimit", firstString(contentInfo, "ageLimit"));
-        putIfHasText(payload, "chinaAgeLimit", firstString(contentInfo, "chinaAgeLimit"));
-        putIfHasText(payload, "openSourceURL", firstString(contentInfo, "openSourceURL"));
-
-        String privacyUrl = firstNonBlank(
-                firstString(contentInfo, "privatePolicyURL"),
-                appInfo == null ? null : appInfo.getPrivacyUrl(),
-                stringValue(sanxingMetadata(metadata, "privatePolicyURL"))
-        );
-        payload.put("privatePolicyURLYN", StringUtils.hasText(privacyUrl) ? "Y" : "N");
-        payload.put("privatePolicyURL", StringUtils.hasText(privacyUrl) ? privacyUrl.trim() : "");
-
-        putIfHasText(payload, "youTubeURL", firstString(contentInfo, "youTubeURL"));
-        putIfHasText(payload, "copyrightHolder", firstString(contentInfo, "copyrightHolder"));
-        putIfHasText(payload, "supportEMail", firstString(contentInfo, "supportEMail"));
-        putIfHasText(payload, "supportedSiteUrl", firstString(contentInfo, "supportedSiteUrl"));
-        putIfHasText(payload, "standardPrice", firstString(contentInfo, "standardPrice"));
+        payload.put("newFeature", appInfo == null ? firstString(contentInfo, "newFeature") : appInfo.getAppDescription());
         payload.put("paid", firstNonBlank(firstString(contentInfo, "paid"), "N"));
         payload.put("publicationType", firstNonBlank(
                 firstString(contentInfo, "publicationType"),
-                stringValue(sanxingMetadata(metadata, "publicationType")),
                 "01"
         ));
-        putIfPresent(payload, "startPublicationDate", contentInfo.get("startPublicationDate"));
-        putIfPresent(payload, "stopPublicationDate", contentInfo.get("stopPublicationDate"));
-        if (contentInfo.containsKey("usExportLaws")) {
-            payload.put("usExportLaws", contentInfo.get("usExportLaws"));
-        }
-        putIfHasText(payload, "reviewComment", firstNonBlank(
-                firstString(contentInfo, "reviewComment"),
-                version.getUpdateLog(),
-                stringValue(sanxingMetadata(metadata, "reviewComment"))
-        ));
-        putIfPresent(payload, "reviewFilename", contentInfo.get("reviewFilename"));
-        putIfPresent(payload, "reviewFilekey", contentInfo.get("reviewFilekey"));
-        putIfPresent(payload, "iconKey", contentInfo.get("iconKey"));
-        putIfPresent(payload, "heroImageKey", contentInfo.get("heroImageKey"));
-        putIfPresent(payload, "supportedLanguages", contentInfo.get("supportedLanguages"));
-
-        // Keep existing locale, screenshot, and sale country settings unchanged.
-        payload.put("addLanguage", "null");
-        payload.put("screenshots", "null");
-        payload.put("sellCountryList", "null");
         return payload;
     }
 
@@ -548,6 +554,83 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         payload.put("appStatus", "REGISTRATION");
         payload.put("rolloutRate", record.getGrayPercent());
         return payload;
+    }
+
+    private Map<String, Object> buildSanxingStagedRolloutQueryPayload(String contentId, String appStatus) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("contentId", contentId);
+        payload.put("appStatus", appStatus);
+        return payload;
+    }
+
+    private Map<String, Object> buildSanxingDisableStagedRolloutPayload(String contentId, String appStatus) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("contentId", contentId);
+        payload.put("function", "DISABLE_ROLLOUT");
+        payload.put("appStatus", appStatus);
+        return payload;
+    }
+
+    private Map<String, Object> buildSanxingStagedRolloutBinaryPayload(String contentId, String binarySeq) {
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("contentId", contentId);
+        payload.put("function", "ADD");
+        payload.put("binarySeq", requireSanxingText(binarySeq, "Sanxing staged rollout binary requires binarySeq"));
+        return payload;
+    }
+
+    private String extractSanxingBinarySeq(Map<String, Object> addBinaryResponse) {
+        return firstNonBlank(
+                firstString(addBinaryResponse, "binarySeq"),
+                firstString(asMap(addBinaryResponse.get("data")), "binarySeq")
+        );
+    }
+
+    private Map<String, Object> querySanxingStagedRolloutRate(
+            AppStoreConfig storeConfig,
+            String token,
+            String contentId,
+            String appStatus
+    ) {
+        StoreApiProperties.StoreEndpointProperties endpoint = endpoint(storeConfig);
+        Map<String, Object> queryParams = new LinkedHashMap<>();
+        queryParams.put("contentId", contentId);
+        queryParams.put("appStatus", appStatus);
+        String url = sanxingBaseUrl(endpoint) + SANXING_STAGED_ROLLOUT_ENDPOINT;
+        String responseBody = executeStoreRequest(
+                trace(storeConfig, "query sanxing staged rollout", "GET", url, queryParams, Map.of("service-account-id", resolveSanxingServiceAccountId(storeConfig))),
+                () -> restClient.get()
+                        .uri(url + "?" + buildQueryString(queryParams))
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .header("service-account-id", resolveSanxingServiceAccountId(storeConfig))
+                        .retrieve()
+                        .body(String.class),
+                () -> writeJson(mockSanxingStagedRolloutRateResponse(false))
+        );
+        Map<String, Object> response = readJson(responseBody);
+        ensureSanxingSuccess(response, "query sanxing staged rollout");
+        return response;
+    }
+
+    private boolean hasSanxingEnabledStagedRollout(Map<String, Object> response) {
+        Map<String, Object> data = asMap(response.get("data"));
+        Integer rolloutRate = firstInteger(
+                data.get("rolloutRate"),
+                response.get("rolloutRate")
+        );
+        if (rolloutRate != null && rolloutRate > 0) {
+            return true;
+        }
+        Object countriesValue = firstNonNull(data.get("countries"), response.get("countries"));
+        if (countriesValue instanceof List<?> countries) {
+            for (Object entry : countries) {
+                Integer countryRate = firstInteger(asMap(entry).get("rolloutRate"));
+                if (countryRate != null && countryRate > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**
@@ -630,9 +713,28 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         contentInfo.put("longDescription", "Mock Sanxing long description");
         contentInfo.put("shortDescription", "Mock Sanxing short description");
         contentInfo.put("newFeature", "Mock Sanxing new feature");
+        contentInfo.put("ageLimit", "0");
+        contentInfo.put("chinaAgeLimit", "0");
+        contentInfo.put("openSourceURL", "");
         contentInfo.put("paid", "N");
         contentInfo.put("publicationType", "01");
+        contentInfo.put("privatePolicyURLYN", "Y");
         contentInfo.put("privatePolicyURL", "https://mock.sanxing.local/privacy");
+        contentInfo.put("youTubeURL", "");
+        contentInfo.put("copyrightHolder", "");
+        contentInfo.put("supportEMail", "mock@sanxing.local");
+        contentInfo.put("supportedSiteUrl", "");
+        contentInfo.put("standardPrice", "0");
+        contentInfo.put("reviewComment", "Mock Sanxing review comment");
+        contentInfo.put("reviewFilename", "mock-review.txt");
+        contentInfo.put("reviewFilekey", "mock-review-file-key");
+        contentInfo.put("iconKey", "mock-icon-key");
+        contentInfo.put("heroImageKey", "mock-hero-key");
+        contentInfo.put("supportedLanguages", List.of("EN"));
+        contentInfo.put("addLanguage", List.of(Map.of("languageCode", "EN")));
+        contentInfo.put("screenshots", List.of(Map.of("imageKey", "mock-shot-1")));
+        contentInfo.put("sellCountryList", List.of("US", "KR"));
+        contentInfo.put("usExportLaws", Boolean.TRUE);
         contentInfo.put("binaryList", List.of(Map.of(
                 "versionCode", "100",
                 "binarySeq", "1"
@@ -654,17 +756,42 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         );
     }
 
+    private Map<String, Object> mockSanxingStagedRolloutRateResponse(boolean enabled) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("rolloutRate", enabled ? 30 : 0);
+        data.put("countries", enabled ? List.of(Map.of("countryCode", "USA", "rolloutRate", 35)) : List.of());
+        return Map.of(
+                "resultCode", "0000",
+                "resultMessage", "Ok",
+                "data", data
+        );
+    }
+
     private Map<String, Object> mockSanxingJsonResponse(String action, Map<String, Object> payload) {
         if ("add sanxing binary".equals(action)) {
             return Map.of(
                     "resultCode", "0000",
-                    "fileKey", firstString(payload, "filekey")
+                    "fileKey", firstString(payload, "filekey"),
+                    "data", Map.of("binarySeq", "mock-binary-seq")
             );
         }
         if ("update sanxing content".equals(action)) {
             return Map.of(
                     "resultCode", "0000",
                     "contentId", firstString(payload, "contentId")
+            );
+        }
+        if ("disable sanxing staged rollout".equals(action)) {
+            return Map.of(
+                    "resultCode", "0000",
+                    "contentId", firstString(payload, "contentId")
+            );
+        }
+        if ("update sanxing staged rollout binary".equals(action)) {
+            return Map.of(
+                    "resultCode", "0000",
+                    "contentId", firstString(payload, "contentId"),
+                    "binarySeq", firstString(payload, "binarySeq")
             );
         }
         if ("update sanxing staged rollout".equals(action)) {

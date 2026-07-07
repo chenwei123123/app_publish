@@ -632,6 +632,10 @@ components:
           type: string
           format: binary
           description: 小米图标文件，上传后自动转为 Base64 保存
+        publicKeyFile:
+          type: string
+          format: binary
+          description: 平台公钥文件，上传后按 UTF-8 文本读取并保存，当前主要用于小米渠道
         appId:
           type: string
           description: 应用宝 appId / 三星 contentId

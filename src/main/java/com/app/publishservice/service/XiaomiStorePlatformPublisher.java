@@ -24,6 +24,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
 import javax.crypto.Cipher;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,6 +35,8 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.PublicKey;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAKey;
 import java.security.spec.X509EncodedKeySpec;
 import java.time.LocalDateTime;
@@ -665,7 +668,7 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
     private String encryptXiaomiSig(String plainText, String publicKeyValue) {
         try {
             PublicKey publicKey = parseXiaomiPublicKey(publicKeyValue);
-            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+            Cipher cipher = xiaomiCipher();
             cipher.init(Cipher.ENCRYPT_MODE, publicKey);
             int keySizeBytes = (((RSAKey) publicKey).getModulus().bitLength() + 7) / 8;
             int maxBlockSize = keySizeBytes - 11;
@@ -681,17 +684,55 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
         }
     }
 
+    private Cipher xiaomiCipher() throws GeneralSecurityException {
+        try {
+            return Cipher.getInstance("RSA/NONE/PKCS1Padding");
+        } catch (GeneralSecurityException ex) {
+            return Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        }
+    }
+
     /**
      * 解析小米 Public Key。
      */
     private PublicKey parseXiaomiPublicKey(String publicKeyValue) throws GeneralSecurityException {
-        String normalized = publicKeyValue
-                .replace("-----BEGIN PUBLIC KEY-----", "")
-                .replace("-----END PUBLIC KEY-----", "")
+        if (!StringUtils.hasText(publicKeyValue)) {
+            throw new GeneralSecurityException("Xiaomi public key is blank");
+        }
+        String trimmed = publicKeyValue.trim();
+        if (trimmed.contains("-----BEGIN CERTIFICATE-----")) {
+            return parseXiaomiCertificate(decodePem(trimmed, "CERTIFICATE"));
+        }
+        if (trimmed.contains("-----BEGIN PUBLIC KEY-----")) {
+            return parseRsaPublicKey(decodePem(trimmed, "PUBLIC KEY"));
+        }
+        byte[] decoded = Base64.getMimeDecoder().decode(trimmed);
+        try {
+            return parseRsaPublicKey(decoded);
+        } catch (GeneralSecurityException ex) {
+            return parseXiaomiCertificate(decoded);
+        }
+    }
+
+    private byte[] decodePem(String pem, String type) {
+        String normalized = pem
+                .replace("-----BEGIN " + type + "-----", "")
+                .replace("-----END " + type + "-----", "")
                 .replaceAll("\\s+", "");
-        byte[] keyBytes = Base64.getDecoder().decode(normalized);
-        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(keyBytes);
+        return Base64.getDecoder().decode(normalized);
+    }
+
+    private PublicKey parseRsaPublicKey(byte[] publicKeyBytes) throws GeneralSecurityException {
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(publicKeyBytes);
         return KeyFactory.getInstance("RSA").generatePublic(keySpec);
+    }
+
+    private PublicKey parseXiaomiCertificate(byte[] certificateBytes) throws GeneralSecurityException {
+        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+        X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(
+                new ByteArrayInputStream(certificateBytes)
+        );
+        return certificate.getPublicKey();
     }
 
     /**

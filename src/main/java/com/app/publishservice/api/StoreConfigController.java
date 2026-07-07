@@ -42,7 +42,7 @@ public class StoreConfigController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "创建应用商店账号", description = "以表单方式创建应用商店账号配置，支持上传小米图标文件")
+    @Operation(summary = "创建应用商店账号", description = "以表单方式创建应用商店账号配置，支持上传小米图标文件和公钥文件")
     public ApiResponse<StoreConfigResponse> createMultipart(@Valid @ModelAttribute StoreConfigRequest request) {
         return ApiResponse.success(appManagementService.saveStoreConfig(request));
     }
@@ -58,7 +58,7 @@ public class StoreConfigController {
     }
 
     @PutMapping(value = "/{configId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "更新应用商店账号", description = "以表单方式根据配置 ID 更新应用商店账号配置，支持上传小米图标文件")
+    @Operation(summary = "更新应用商店账号", description = "以表单方式根据配置 ID 更新应用商店账号配置，支持上传小米图标文件和公钥文件")
     public ApiResponse<StoreConfigResponse> updateMultipart(
             @Parameter(description = "配置 ID", required = true) @PathVariable Long configId,
             @Valid @ModelAttribute StoreConfigRequest request

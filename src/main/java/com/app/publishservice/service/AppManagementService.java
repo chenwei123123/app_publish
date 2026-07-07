@@ -27,7 +27,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.GeneralSecurityException;
+import java.security.PublicKey;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
@@ -276,7 +283,7 @@ public class AppManagementService {
         config.setPhone(request.getPhone());
         config.setClientId(request.getClientId());
         config.setClientSecret(request.getClientSecret());
-        config.setPublicKey(request.getPublicKey());
+        config.setPublicKey(resolveStoreConfigPublicKey(storeType, config, request));
         config.setPrivateKey(request.getPrivateKey());
         config.setToken(request.getToken());
         config.setIpWhitelist(request.getIpWhitelist());
@@ -505,6 +512,50 @@ public class AppManagementService {
         return config.getIcon();
     }
 
+    private String resolveStoreConfigPublicKey(StoreType storeType, AppStoreConfig config, StoreConfigRequest request) {
+        MultipartFile publicKeyFile = request.getPublicKeyFile();
+        if (publicKeyFile != null && !publicKeyFile.isEmpty()) {
+            try {
+                return normalizeStoreConfigPublicKey(storeType, publicKeyFile.getBytes());
+            } catch (IOException ex) {
+                throw new IllegalStateException("Failed to read public key file", ex);
+            }
+        }
+        if (request.getPublicKey() != null) {
+            return normalizeNullableText(request.getPublicKey());
+        }
+        return config.getPublicKey();
+    }
+
+    private String normalizeStoreConfigPublicKey(StoreType storeType, byte[] publicKeyBytes) {
+        if (storeType != null && "xiaomi".equalsIgnoreCase(storeType.getCode())) {
+            String certificatePublicKey = tryExtractCertificatePublicKey(publicKeyBytes);
+            if (certificatePublicKey != null) {
+                return certificatePublicKey;
+            }
+        }
+        return normalizeNullableText(new String(publicKeyBytes, StandardCharsets.UTF_8));
+    }
+
+    private String tryExtractCertificatePublicKey(byte[] certificateBytes) {
+        try {
+            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+            X509Certificate certificate = (X509Certificate) certificateFactory.generateCertificate(
+                    new ByteArrayInputStream(certificateBytes)
+            );
+            PublicKey publicKey = certificate.getPublicKey();
+            return formatPublicKeyPem(publicKey.getEncoded());
+        } catch (GeneralSecurityException ex) {
+            return null;
+        }
+    }
+
+    private String formatPublicKeyPem(byte[] publicKeyBytes) {
+        return "-----BEGIN PUBLIC KEY-----\n"
+                + Base64.getMimeEncoder(64, "\n".getBytes(StandardCharsets.UTF_8)).encodeToString(publicKeyBytes)
+                + "\n-----END PUBLIC KEY-----";
+    }
+
     private String normalizeStoreConfigIcon(String value) {
         String normalized = normalizeNullableText(value);
         if (normalized == null) {
@@ -567,20 +618,18 @@ public class AppManagementService {
                         .last("limit 1")
         );
         if (existingVersion != null) {
-            boolean changed = false;
+
             if (!Objects.equals(existingVersion.getVersionName(), normalizedVersionCode)) {
                 existingVersion.setVersionName(normalizedVersionCode);
-                changed = true;
             }
             if (!Objects.equals(existingVersion.getBuildCode(), normalizedBuildCode)) {
                 existingVersion.setBuildCode(normalizedBuildCode);
                 existingVersion.setPackageUrl32(null);
                 existingVersion.setPackageUrl64(null);
-                changed = true;
             }
-            if (changed) {
-                appVersionRepository.updateById(existingVersion);
-            }
+            existingVersion.setCreateTime(LocalDateTime.now());
+            appVersionRepository.updateById(existingVersion);
+
             return;
         }
 
