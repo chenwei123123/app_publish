@@ -11,11 +11,13 @@ import com.app.publishservice.domain.enums.StoreType;
 import com.app.publishservice.service.model.StoreReviewResult;
 import com.app.publishservice.service.model.StoreSubmitResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -72,6 +74,168 @@ class ConfigurableStorePublisherMockFlowTest {
         }
     }
 
+    @Test
+    void shouldContinueSanxingSubmitWhenStagedRolloutRateReturns3208() throws Exception {
+        Path apk = tempDir.resolve("sanxing-3208.apk");
+        Files.writeString(apk, "sanxing-3208", StandardCharsets.UTF_8);
+
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        final boolean[] submitCalled = {false};
+        try {
+            server.createContext("/seller/contentInfo", exchange -> {
+                byte[] response = """
+                        [
+                          {
+                            "contentId": "123456789012",
+                            "contentStatus": "FOR_SALE",
+                            "appTitle": "Sanxing Demo",
+                            "defaultLanguageCode": "ENG",
+                            "applicationType": "android",
+                            "longDescription": "Existing description",
+                            "newFeature": "",
+                            "privatePolicyURL": "https://store.sanxing.test/privacy",
+                            "paid": "N",
+                            "publicationType": "01",
+                            "binaryList": [
+                              {
+                                "binarySeq": "1",
+                                "versionCode": "100"
+                              }
+                            ]
+                          }
+                        ]
+                        """.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                exchange.getResponseBody().write(response);
+                exchange.close();
+            });
+            server.createContext("/seller/createUploadSessionId", exchange -> {
+                String uploadUrl = "http://127.0.0.1:" + server.getAddress().getPort() + "/galaxyapi/fileUpload";
+                byte[] response = ("""
+                        {
+                          "sessionId": "session-sanxing-3208",
+                          "url": "%s"
+                        }
+                        """.formatted(uploadUrl)).getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                exchange.getResponseBody().write(response);
+                exchange.close();
+            });
+            server.createContext("/galaxyapi/fileUpload", exchange -> {
+                byte[] response = """
+                        {
+                          "resultCode": "0000",
+                          "fileKey": "file-key-sanxing-3208"
+                        }
+                        """.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                exchange.getResponseBody().write(response);
+                exchange.close();
+            });
+            server.createContext("/seller/contentUpdate", exchange -> {
+                byte[] response = """
+                        {
+                          "ctntId": "123456789012",
+                          "contentStatus": "REGISTERING",
+                          "httpStatus": "OK"
+                        }
+                        """.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                exchange.getResponseBody().write(response);
+                exchange.close();
+            });
+            server.createContext("/seller/v2/content/binary", exchange -> {
+                byte[] response = """
+                        {
+                          "resultCode": "0000",
+                          "data": {
+                            "binarySeq": "2"
+                          }
+                        }
+                        """.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                exchange.getResponseBody().write(response);
+                exchange.close();
+            });
+            server.createContext("/seller/v2/content/stagedRolloutBinary", exchange -> {
+                byte[] response = """
+                        {
+                          "resultCode": "0000",
+                          "resultMessage": "Ok"
+                        }
+                        """.getBytes(StandardCharsets.UTF_8);
+                exchange.getResponseHeaders().add("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, response.length);
+                exchange.getResponseBody().write(response);
+                exchange.close();
+            });
+            server.createContext("/seller/v2/content/stagedRolloutRate", exchange -> {
+                byte[] response;
+                if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    response = """
+                            {
+                              "resultCode": "3208",
+                              "resultMessage": "There is no binary set for staged rollout.",
+                              "data": {
+                                "rolloutRate": 0,
+                                "countries": []
+                              }
+                            }
+                            """.getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().add("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(400, response.length);
+                } else {
+                    response = """
+                            {
+                              "resultCode": "3208",
+                              "resultMessage": "There is no binary set for staged rollout."
+                            }
+                            """.getBytes(StandardCharsets.UTF_8);
+                    exchange.getResponseHeaders().add("Content-Type", "application/json");
+                    exchange.sendResponseHeaders(200, response.length);
+                }
+                exchange.getResponseBody().write(response);
+                exchange.close();
+            });
+            server.createContext("/seller/contentSubmit", exchange -> {
+                submitCalled[0] = true;
+                exchange.sendResponseHeaders(204, -1);
+                exchange.close();
+            });
+            server.start();
+
+            ConfigurableStorePublisher publisher = new ConfigurableStorePublisher(
+                    RestClient.create(),
+                    new ObjectMapper(),
+                    sanxingHttpAppProperties(server)
+            );
+            AppStoreConfig storeConfig = storeConfig("sanxing");
+            storeConfig.setAppId("123456789012");
+
+            AppVersion version = appVersion();
+            version.setPackageUrl32(apk.toString());
+            version.setPackageUrl64(apk.toString());
+            version.setPackageUrl(apk.toString());
+
+            AppReleaseRecord record = submitRecord("sanxing");
+            record.setReleaseType(2L);
+            record.setGrayPercent(30L);
+
+            StoreSubmitResult submitResult = publisher.submitRelease(storeConfig, version, record, "sanxing-token");
+
+            assertTrue(submitCalled[0]);
+            assertEquals("123456789012", submitResult.storeReleaseId());
+            assertTrue(submitResult.responseLog().contains("\"resultCode\":\"3208\""));
+        } finally {
+            server.stop(0);
+        }
+    }
+
     /**
      * 构建应用配置。
      */
@@ -84,6 +248,16 @@ class ConfigurableStorePublisherMockFlowTest {
             endpoint.setMockEnabled(true);
             appProperties.getStoreApi().getStores().put(storeTypeCode, endpoint);
         }
+        return appProperties;
+    }
+
+    private AppProperties sanxingHttpAppProperties(HttpServer server) {
+        AppProperties appProperties = new AppProperties();
+        appProperties.setStorageRoot(tempDir.resolve("storage").toString());
+        StoreApiProperties.StoreEndpointProperties endpoint = new StoreApiProperties.StoreEndpointProperties();
+        endpoint.setMockEnabled(false);
+        endpoint.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+        appProperties.getStoreApi().getStores().put("sanxing", endpoint);
         return appProperties;
     }
 
