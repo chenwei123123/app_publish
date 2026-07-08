@@ -597,16 +597,25 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         queryParams.put("contentId", contentId);
         queryParams.put("appStatus", appStatus);
         String url = sanxingBaseUrl(endpoint) + SANXING_STAGED_ROLLOUT_ENDPOINT;
-        String responseBody = executeStoreRequest(
-                trace(storeConfig, "query sanxing staged rollout", "GET", url, queryParams, Map.of("service-account-id", resolveSanxingServiceAccountId(storeConfig))),
-                () -> restClient.get()
-                        .uri(url + "?" + buildQueryString(queryParams))
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                        .header("service-account-id", resolveSanxingServiceAccountId(storeConfig))
-                        .retrieve()
-                        .body(String.class),
-                () -> writeJson(mockSanxingStagedRolloutRateResponse(false))
-        );
+        String responseBody;
+        try {
+            responseBody = executeStoreRequest(
+                    trace(storeConfig, "query sanxing staged rollout", "GET", url, queryParams, Map.of("service-account-id", resolveSanxingServiceAccountId(storeConfig))),
+                    () -> restClient.get()
+                            .uri(url + "?" + buildQueryString(queryParams))
+                            .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                            .header("service-account-id", resolveSanxingServiceAccountId(storeConfig))
+                            .retrieve()
+                            .body(String.class),
+                    () -> writeJson(mockSanxingStagedRolloutRateResponse(false))
+            );
+        } catch (StoreApiException ex) {
+            if (isSanxingEmptyStagedRolloutResponse(ex)) {
+                log.info("Sanxing staged rollout query returned no rollout binaries, contentId={}, appStatus={}", contentId, appStatus);
+                return emptySanxingStagedRolloutResponse();
+            }
+            throw ex;
+        }
         Map<String, Object> response = readJson(responseBody);
         ensureSanxingSuccess(response, "query sanxing staged rollout");
         return response;
@@ -636,6 +645,26 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     /**
      * 映射三星状态。
      */
+    private boolean isSanxingEmptyStagedRolloutResponse(StoreApiException ex) {
+        if (ex == null || ex.getStatus() != HttpStatus.BAD_GATEWAY) {
+            return false;
+        }
+        String message = ex.getMessage();
+        if (!StringUtils.hasText(message)) {
+            return false;
+        }
+        String normalized = message.toLowerCase(Locale.ROOT);
+        return normalized.contains("no binaries set to rollout")
+                || normalized.contains("there are currently no binaries set to rollout for this content");
+    }
+
+    private Map<String, Object> emptySanxingStagedRolloutResponse() {
+        return Map.of(
+                "resultCode", "0000",
+                "data", Map.of("rolloutRate", 0)
+        );
+    }
+
     private ReleaseStatus mapSanxingStatus(String rawStatus, Map<String, Object> contentInfo, AppReleaseRecord record) {
         String normalized = rawStatus == null ? "" : rawStatus.trim().toUpperCase(Locale.ROOT);
         return switch (normalized) {
