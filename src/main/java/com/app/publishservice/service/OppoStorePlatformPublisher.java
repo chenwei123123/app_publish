@@ -310,7 +310,15 @@ final class OppoStorePlatformPublisher extends AbstractStorePlatformPublisher im
         copyOppoSubmitField(payload, "pic_url", currentVersionInfo, multiInfoData);
         copyOppoSubmitField(payload, "online_type", currentVersionInfo, multiInfoData);
         copyOppoSubmitField(payload, "test_desc", currentVersionInfo, multiInfoData);
-        copyOppoSubmitField(payload, "copyright_url", currentVersionInfo, multiInfoData);
+        Object electronicCertUrl = normalizeOppoSubmitFieldValue(
+                "electronic_cert_url",
+                firstNonNull(currentVersionInfo.get("electronic_cert_url"), multiInfoData.get("electronic_cert_url"))
+        );
+        if (electronicCertUrl != null) {
+            payload.put("copyright_url", electronicCertUrl);
+        } else {
+            copyOppoSubmitField(payload, "copyright_url", currentVersionInfo, multiInfoData);
+        }
         copyOppoSubmitField(payload, "business_username", currentVersionInfo, multiInfoData);
         copyOppoSubmitField(payload, "business_email", currentVersionInfo, multiInfoData);
         copyOppoSubmitField(payload, "business_mobile", currentVersionInfo, multiInfoData);

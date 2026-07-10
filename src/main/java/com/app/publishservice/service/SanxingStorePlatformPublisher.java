@@ -211,13 +211,14 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         }
 
         Map<String, Object> addBinaryPayload = buildSanxingAddBinaryPayload(context, currentContentInfo, fileKey);
-        Map<String, Object> addBinaryResponse = sanxingJsonRequest(
+        Map<String, Object> addBinaryResponse = addSanxingBinary(
                 storeConfig,
                 token,
-                "POST",
-                sanxingBaseUrl(endpoint) + SANXING_ADD_BINARY_ENDPOINT,
-                addBinaryPayload,
-                "add sanxing binary"
+                endpoint,
+                context.contentId(),
+                record,
+                currentContentInfo,
+                addBinaryPayload
         );
 
         if (contentUpdateResponse == null) {
@@ -331,7 +332,10 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     private StoreReviewResult querySanxingReview(AppStoreConfig storeConfig, AppReleaseRecord record, String token) {
         String contentId = resolveSanxingContentId(storeConfig, record, null);
         List<Map<String, Object>> contentInfoList = querySanxingContentInfo(storeConfig, token, contentId);
-        Map<String, Object> contentInfo = firstSanxingContentInfo(contentInfoList, contentId);
+        Map<String, Object> contentInfo = findSanxingContentInfoByTargetVersion(contentInfoList, contentId, record);
+        if (contentInfo.isEmpty()) {
+            contentInfo = firstSanxingContentInfo(contentInfoList, contentId);
+        }
         if (contentInfo.isEmpty()) {
             throw new IllegalStateException("Sanxing review query did not find contentId: " + contentId);
         }
@@ -579,6 +583,53 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         return payload;
     }
 
+    private Map<String, Object> addSanxingBinary(
+            AppStoreConfig storeConfig,
+            String token,
+            StoreApiProperties.StoreEndpointProperties endpoint,
+            String contentId,
+            AppReleaseRecord record,
+            Map<String, Object> contentInfo,
+            Map<String, Object> addBinaryPayload
+    ) {
+        try {
+            return sanxingJsonRequest(
+                    storeConfig,
+                    token,
+                    "POST",
+                    sanxingBaseUrl(endpoint) + SANXING_ADD_BINARY_ENDPOINT,
+                    addBinaryPayload,
+                    "add sanxing binary"
+            );
+        } catch (StoreApiException ex) {
+            if (isSanxingBinaryAlreadyInUse(ex)) {
+                List<Map<String, Object>> latestContentInfos = querySanxingContentInfo(storeConfig, token, contentId);
+                Map<String, Object> matchedContentInfo = findSanxingContentInfoByTargetVersion(latestContentInfos, contentId, record);
+                if (!sanxingBinaryMatchesTargetVersion(matchedContentInfo, record)) {
+                    throw ex;
+                }
+                String existingBinarySeq = resolveSanxingBinarySeqForRecord(matchedContentInfo, record);
+                log.info(
+                        "Sanxing add binary returned already-in-use for target version, reuse existing binary, contentId={}, versionCode={}, binarySeq={}",
+                        contentId,
+                        resolveSanxingExpectedVersionCode(record),
+                        existingBinarySeq
+                );
+                Map<String, Object> response = new LinkedHashMap<>();
+                response.put("resultCode", "0000");
+                response.put("resultMessage", "This binary is already in use.");
+                if (StringUtils.hasText(existingBinarySeq)) {
+                    response.put("binarySeq", existingBinarySeq);
+                    response.put("data", Map.of("binarySeq", existingBinarySeq));
+                }
+                response.put("contentInfoRefreshed", Boolean.TRUE);
+                response.put("reusedExistingBinary", Boolean.TRUE);
+                return response;
+            }
+            throw ex;
+        }
+    }
+
     private String extractSanxingBinarySeq(Map<String, Object> addBinaryResponse) {
         return firstNonBlank(
                 firstString(addBinaryResponse, "binarySeq"),
@@ -668,10 +719,20 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     private ReleaseStatus mapSanxingStatus(String rawStatus, Map<String, Object> contentInfo, AppReleaseRecord record) {
         String normalized = rawStatus == null ? "" : rawStatus.trim().toUpperCase(Locale.ROOT);
         return switch (normalized) {
-            case "REJECT", "REJECTED" -> ReleaseStatus.REJECT;
-            case "FOR_SALE", "READY_FOR_SALE", "SALE" -> ReleaseStatus.PASS;
-            case "SUSPENDED", "TERMINATED", "STOP", "STOPPED" -> ReleaseStatus.OFFLINE;
-            case "REGISTERING", "UPDATING", "RE_REGISTERING", "REGISTRATION" -> ReleaseStatus.AUDITING;
+            case "REJECT", "REJECTED",
+                    "PRE_REVIEWS_REJECTED", "CONTENT_REVIEW_REJECTED", "DEVICE_TEST_REJECTED", "TEST_CONFIRMATION_REJECTED",
+                    "BETA_PRE_REVIEW_REJECTED",
+                    "CANCELED", "PRE_REVIEWS_CANCELED", "CONTENT_REVIEW_CANCELED", "DEVICE_TEST_CANCELED", "TEST_CONFIRMATION_CANCELED" -> ReleaseStatus.REJECT;
+            case "FOR_SALE", "READY_FOR_SALE", "SALE", "BETA_DEPLOYED" -> ReleaseStatus.PASS;
+            case "SUSPENDED", "TERMINATED", "STOP", "STOPPED", "BETA_SUSPENDED" -> ReleaseStatus.OFFLINE;
+            case "REGISTERING", "UPDATING", "RE_REGISTERING", "REGISTRATION",
+                    "READY_FOR_REVIEW",
+                    "READY_TO_PRE_REVIEWS", "UNDER_PRE_REVIEWS", "PRE_REVIEWS_SUSPENDED", "PRE_REVIEWS_DELAYED",
+                    "READY_FOR_CONTENT_REVIEW", "UNDER_CONTENT_REVIEW", "CONTENT_REVIEW_SUSPENDED", "CONTENT_REVIEW_DELAYED",
+                    "READY_FOR_DEVICE_TEST", "UNDER_DEVICE_TEST", "DEVICE_TEST_SUSPENDED", "DEVICE_TEST_DELAYED",
+                    "READY_FOR_TEST_CONFIRMATION", "UNDER_TEST_CONFIRMATION", "TEST_CONFIRMATION_SUSPENDED", "TEST_CONFIRMATION_DELAYED",
+                    "READY_FOR_CHANGE",
+                    "BETA_REGISTERING", "READY_FOR_BETA_TESTING", "BETA_UPDATING" -> ReleaseStatus.AUDITING;
             default -> sanxingBinaryMatchesTargetVersion(contentInfo, record) ? ReleaseStatus.PASS : ReleaseStatus.AUDITING;
         };
     }
@@ -684,18 +745,7 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         if (!StringUtils.hasText(expectedVersionCode)) {
             return false;
         }
-        Object binaryListValue = contentInfo.get("binaryList");
-        if (!(binaryListValue instanceof List<?> binaryList)) {
-            return false;
-        }
-        for (Object item : binaryList) {
-            Map<String, Object> binary = asMap(item);
-            String versionCode = firstString(binary, "versionCode");
-            if (expectedVersionCode.equals(versionCode)) {
-                return true;
-            }
-        }
-        return false;
+        return sanxingContentInfoContainsVersion(contentInfo, expectedVersionCode);
     }
 
     /**
@@ -706,7 +756,43 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         if (!StringUtils.hasText(versionCode) && record.getAppVersion() != null) {
             versionCode = record.getAppVersion().getVersionCode();
         }
-        return StringUtils.hasText(versionCode) ? versionCode.trim() : "";
+        return StringUtils.hasText(versionCode) ? versionCode.trim().replaceAll("\\.","") : "";
+    }
+
+    private String resolveSanxingBinarySeqForRecord(Map<String, Object> contentInfo, AppReleaseRecord record) {
+        String expectedVersionCode = resolveSanxingExpectedVersionCode(record);
+        if (!StringUtils.hasText(expectedVersionCode)) {
+            return "";
+        }
+        return resolveSanxingBinarySeq(contentInfo, expectedVersionCode);
+    }
+
+    private boolean sanxingContentInfoContainsVersion(Map<String, Object> contentInfo, String expectedVersionCode) {
+        Object binaryListValue = contentInfo.get("binaryList");
+        if (!(binaryListValue instanceof List<?> binaryList)) {
+            return false;
+        }
+        for (Object item : binaryList) {
+            Map<String, Object> binary = asMap(item);
+            if (expectedVersionCode.equals(firstString(binary, "versionCode"))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String resolveSanxingBinarySeq(Map<String, Object> contentInfo, String expectedVersionCode) {
+        Object binaryListValue = contentInfo.get("binaryList");
+        if (!(binaryListValue instanceof List<?> binaryList)) {
+            return "";
+        }
+        for (Object item : binaryList) {
+            Map<String, Object> binary = asMap(item);
+            if (expectedVersionCode.equals(firstString(binary, "versionCode"))) {
+                return firstString(binary, "binarySeq");
+            }
+        }
+        return "";
     }
 
     /**
@@ -733,42 +819,50 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
     }
 
     private List<Map<String, Object>> mockSanxingContentInfo(String contentId) {
-        Map<String, Object> contentInfo = new LinkedHashMap<>();
-        contentInfo.put("contentId", contentId);
-        contentInfo.put("contentStatus", "FOR_SALE");
-        contentInfo.put("appTitle", "Mock Sanxing App");
-        contentInfo.put("defaultLanguageCode", "EN");
-        contentInfo.put("applicationType", "android");
-        contentInfo.put("longDescription", "Mock Sanxing long description");
-        contentInfo.put("shortDescription", "Mock Sanxing short description");
-        contentInfo.put("newFeature", "Mock Sanxing new feature");
-        contentInfo.put("ageLimit", "0");
-        contentInfo.put("chinaAgeLimit", "0");
-        contentInfo.put("openSourceURL", "");
-        contentInfo.put("paid", "N");
-        contentInfo.put("publicationType", "01");
-        contentInfo.put("privatePolicyURLYN", "Y");
-        contentInfo.put("privatePolicyURL", "https://mock.sanxing.local/privacy");
-        contentInfo.put("youTubeURL", "");
-        contentInfo.put("copyrightHolder", "");
-        contentInfo.put("supportEMail", "mock@sanxing.local");
-        contentInfo.put("supportedSiteUrl", "");
-        contentInfo.put("standardPrice", "0");
-        contentInfo.put("reviewComment", "Mock Sanxing review comment");
-        contentInfo.put("reviewFilename", "mock-review.txt");
-        contentInfo.put("reviewFilekey", "mock-review-file-key");
-        contentInfo.put("iconKey", "mock-icon-key");
-        contentInfo.put("heroImageKey", "mock-hero-key");
-        contentInfo.put("supportedLanguages", List.of("EN"));
-        contentInfo.put("addLanguage", List.of(Map.of("languageCode", "EN")));
-        contentInfo.put("screenshots", List.of(Map.of("imageKey", "mock-shot-1")));
-        contentInfo.put("sellCountryList", List.of("US", "KR"));
-        contentInfo.put("usExportLaws", Boolean.TRUE);
-        contentInfo.put("binaryList", List.of(Map.of(
-                "versionCode", "100",
+        Map<String, Object> saleContentInfo = new LinkedHashMap<>();
+        saleContentInfo.put("contentId", contentId);
+        saleContentInfo.put("contentStatus", "FOR_SALE");
+        saleContentInfo.put("appTitle", "Mock Sanxing App");
+        saleContentInfo.put("defaultLanguageCode", "EN");
+        saleContentInfo.put("applicationType", "android");
+        saleContentInfo.put("longDescription", "Mock Sanxing long description");
+        saleContentInfo.put("shortDescription", "Mock Sanxing short description");
+        saleContentInfo.put("newFeature", "Mock Sanxing new feature");
+        saleContentInfo.put("ageLimit", "0");
+        saleContentInfo.put("chinaAgeLimit", "0");
+        saleContentInfo.put("openSourceURL", "");
+        saleContentInfo.put("paid", "N");
+        saleContentInfo.put("publicationType", "01");
+        saleContentInfo.put("privatePolicyURLYN", "Y");
+        saleContentInfo.put("privatePolicyURL", "https://mock.sanxing.local/privacy");
+        saleContentInfo.put("youTubeURL", "");
+        saleContentInfo.put("copyrightHolder", "");
+        saleContentInfo.put("supportEMail", "mock@sanxing.local");
+        saleContentInfo.put("supportedSiteUrl", "");
+        saleContentInfo.put("standardPrice", "0");
+        saleContentInfo.put("reviewComment", "Mock Sanxing review comment");
+        saleContentInfo.put("reviewFilename", "mock-review.txt");
+        saleContentInfo.put("reviewFilekey", "mock-review-file-key");
+        saleContentInfo.put("iconKey", "mock-icon-key");
+        saleContentInfo.put("heroImageKey", "mock-hero-key");
+        saleContentInfo.put("supportedLanguages", List.of("EN"));
+        saleContentInfo.put("addLanguage", List.of(Map.of("languageCode", "EN")));
+        saleContentInfo.put("screenshots", List.of(Map.of("imageKey", "mock-shot-1")));
+        saleContentInfo.put("sellCountryList", List.of("US", "KR"));
+        saleContentInfo.put("usExportLaws", Boolean.TRUE);
+        saleContentInfo.put("binaryList", List.of(Map.of(
+                "versionCode", "99",
                 "binarySeq", "1"
         )));
-        return List.of(contentInfo);
+
+        Map<String, Object> registeringContentInfo = new LinkedHashMap<>(saleContentInfo);
+        registeringContentInfo.put("contentStatus", "REGISTERING");
+        registeringContentInfo.put("binaryList", List.of(Map.of(
+                "versionCode", "100",
+                "binarySeq", "2"
+        )));
+
+        return List.of(saleContentInfo, registeringContentInfo);
     }
 
     private Map<String, Object> mockSanxingUploadSession() {
@@ -877,6 +971,26 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
             }
         }
         return matchedContentInfo.isEmpty() ? contentInfos.get(0) : matchedContentInfo;
+    }
+
+    private Map<String, Object> findSanxingContentInfoByTargetVersion(
+            List<Map<String, Object>> contentInfos,
+            String contentId,
+            AppReleaseRecord record
+    ) {
+        String expectedVersionCode = resolveSanxingExpectedVersionCode(record);
+        if (!StringUtils.hasText(expectedVersionCode) || contentInfos == null || contentInfos.isEmpty()) {
+            return Map.of();
+        }
+        for (Map<String, Object> contentInfo : contentInfos) {
+            if (!contentId.equals(firstString(contentInfo, "contentId", "ctntId"))) {
+                continue;
+            }
+            if (sanxingContentInfoContainsVersion(contentInfo, expectedVersionCode)) {
+                return contentInfo;
+            }
+        }
+        return Map.of();
     }
 
     private boolean isSanxingSaleContent(Map<String, Object> contentInfo) {
@@ -1152,6 +1266,14 @@ final class SanxingStorePlatformPublisher extends AbstractStorePlatformPublisher
         if (response.containsKey("httpStatus") && !"OK".equalsIgnoreCase(firstString(response, "httpStatus"))) {
             throw new StoreApiException(HttpStatus.BAD_GATEWAY, "Sanxing " + action + " failed: httpStatus=" + firstString(response, "httpStatus"));
         }
+    }
+
+    private boolean isSanxingBinaryAlreadyInUse(StoreApiException ex) {
+        if (ex == null || !StringUtils.hasText(ex.getMessage())) {
+            return false;
+        }
+        String normalized = ex.getMessage().toLowerCase(Locale.ROOT);
+        return  normalized.contains("binary is already in use");
     }
 
     /**

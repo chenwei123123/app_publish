@@ -564,7 +564,7 @@ final class XiaomiStorePlatformPublisher extends AbstractStorePlatformPublisher 
                 versionCode = record.getStoreReleaseId().substring(separator + 1);
             }
         }
-        return StringUtils.hasText(versionCode) ? versionCode.trim() : "";
+        return StringUtils.hasText(versionCode) ? versionCode.trim().replaceAll("//.","") : "";
     }
 
     /**
